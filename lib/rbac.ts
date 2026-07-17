@@ -2,8 +2,9 @@
 import { db } from "@/lib/db"
 
 export type ModuleName =
-  | "tasks" | "projects" | "equipment" | "quote" | "purchase"
+  | "dash" | "tasks" | "projects" | "centers" | "equipment" | "quote" | "purchase"
   | "auditplan" | "settings" | "members" | "customers" | "report"
+  | "samples" | "plan" | "quality"
 
 export type ActionName = "view" | "create" | "edit" | "delete" | "approve"
 
@@ -22,7 +23,7 @@ export async function getUserPermissions(userId: string): Promise<Set<string>> {
   return perms
 }
 
-export async function can(userId: string, module: ModuleName, action: ActionName): Promise<boolean> {
+export async function can(userId: string, mod: ModuleName, action: ActionName): Promise<boolean> {
   const perms = await getUserPermissions(userId)
-  return perms.has(`${module}:${action}`) || perms.has(`*:${action}`)
+  return perms.has(`${mod}:${action}`) || perms.has(`*:${action}`) || perms.has(`${mod}:*`)
 }

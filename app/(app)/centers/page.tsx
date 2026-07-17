@@ -1,11 +1,18 @@
-// Trang "centers" -- TODO: chuyen logic tu ban HTML goc: 04-state-entities.js (Centers)
-// Nho: moi tinh toan quan trong (gia, kiem tra trung lich...) nen chay o server (Route Handler / Server Action),
-// khong de lai toan bo o client nhu ban cu.
-export default function CentersPage() {
-  return (
-    <main style={{ padding: 24 }}>
-      <h1>centers</h1>
-      <p>Stub trang "centers" -- chua co du lieu thuc, dang cho migrate logic + ket noi Postgres.</p>
-    </main>
-  )
+import { db } from "@/lib/db"
+import CentersClient from "./CentersClient"
+
+export default async function CentersPage() {
+  const centers = await db.center.findMany({ include: { projects: { include: { customer: true } }, equipment: true } })
+  const rows = centers.map((c) => ({
+    id: c.id,
+    name: c.name,
+    manager: c.manager,
+    phone: c.phone,
+    address: c.address,
+    notes: c.notes,
+    projectCount: c.projects.length,
+    equipmentValue: c.equipment.length,
+    customerCount: new Set(c.projects.map((p) => p.customerId).filter(Boolean)).size,
+  }))
+  return <CentersClient centers={rows} />
 }

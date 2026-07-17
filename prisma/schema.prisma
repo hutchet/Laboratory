@@ -61,11 +61,11 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-// ================== RBAC (Buoc 3) ==================
+// ================== RBAC ==================
 
 model Role {
   id   String @id @default(cuid())
-  name String @unique // admin | manager | technician | quote_staff | viewer
+  name String @unique
 
   permissions Permission[]
   userRoles   UserRole[]
@@ -74,8 +74,8 @@ model Role {
 model Permission {
   id     String @id @default(cuid())
   roleId String
-  module String // "tasks" | "equipment" | "quotes" | "settings" | "*" (tat ca)...
-  action String // "view" | "create" | "edit" | "delete"
+  module String
+  action String
 
   role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
@@ -94,17 +94,25 @@ model UserRole {
 }
 
 // ================== NGHIEP VU TASKFLOW ==================
-// TODO Buoc 5: viet script import du lieu tu localStorage export cua ban HTML goc vao cac bang duoi day.
 
 model Project {
-  id        String    @id @default(cuid())
-  name      String
-  status    String?
-  startDate DateTime?
-  endDate   DateTime?
-  tasks     Task[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id         String    @id @default(cuid())
+  name       String
+  status     String?
+  startDate  DateTime?
+  endDate    DateTime?
+  value      Float?
+  customerId String?
+  centerId   String?
+
+  customer Customer? @relation(fields: [customerId], references: [id])
+  center   Center?   @relation(fields: [centerId], references: [id])
+  tasks    Task[]
+  reports  Report[]
+  plans    TestPlan[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Task {
@@ -112,6 +120,7 @@ model Task {
   title       String
   description String?
   status      String?
+  priority    String?
   assigneeId  String?
   projectId   String?
   dueDate     DateTime?
@@ -123,11 +132,15 @@ model Task {
 }
 
 model Member {
-  id    String  @id @default(cuid())
-  name  String
-  role  String?
-  email String? @unique
-  phone String?
+  id         String   @id @default(cuid())
+  name       String
+  code       String?
+  role       String?
+  gender     String?
+  team       String?
+  accessRole String?
+  email      String?  @unique
+  phone      String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -137,6 +150,10 @@ model Report {
   id        String   @id @default(cuid())
   title     String
   content   String?
+  projectId String?
+
+  project Project? @relation(fields: [projectId], references: [id])
+
   createdAt DateTime @default(now())
 }
 
@@ -144,16 +161,33 @@ model Center {
   id      String  @id @default(cuid())
   name    String
   address String?
+  manager String?
+  phone   String?
+  notes   String?
 
   equipment         Equipment[]
   equipmentBookings EquipmentBooking[]
+  projects          Project[]
 }
 
 model Equipment {
-  id       String  @id @default(cuid())
-  name     String
-  code     String? @unique
-  centerId String?
+  id           String    @id @default(cuid())
+  name         String
+  code         String?   @unique
+  category     String?
+  manufacturer String?
+  model        String?
+  qty          Int?
+  status       String?
+  room         String?
+  area         Float?
+  power        Float?
+  spec         String?
+  calLast      DateTime?
+  calInterval  Int?
+  calCert      String?
+  calVendor    String?
+  centerId     String?
 
   center   Center?            @relation(fields: [centerId], references: [id])
   bookings EquipmentBooking[]
@@ -174,11 +208,16 @@ model EquipmentBooking {
 model Customer {
   id      String  @id @default(cuid())
   name    String
+  contact String?
   email   String?
   phone   String?
   address String?
+  value   Float?
+  notes   String?
 
-  quotes Quote[]
+  quotes   Quote[]
+  projects Project[]
+  samples  Sample[]
 }
 
 model Quote {
@@ -253,7 +292,9 @@ model AuditPlan {
   scheduledAt DateTime?
   status      String?
 
-  logs AuditLog[]
+  logs   AuditLog[]
+  phases AuditPhase[]
+  items  AuditItem[]
 }
 
 model AuditLog {
@@ -265,9 +306,111 @@ model AuditLog {
   auditPlan AuditPlan? @relation(fields: [auditPlanId], references: [id])
 }
 
+model AuditPhase {
+  id          String @id @default(cuid())
+  auditPlanId String
+  name        String
+  order       Int?
+
+  auditPlan AuditPlan   @relation(fields: [auditPlanId], references: [id], onDelete: Cascade)
+  items     AuditItem[]
+}
+
+model AuditItem {
+  id          String    @id @default(cuid())
+  auditPlanId String
+  phaseId     String?
+  name        String
+  assignee    String?
+  planStart   DateTime?
+  planEnd     DateTime?
+  actualStart DateTime?
+  actualEnd   DateTime?
+  status      String?
+  note        String?
+
+  auditPlan AuditPlan   @relation(fields: [auditPlanId], references: [id], onDelete: Cascade)
+  phase     AuditPhase? @relation(fields: [phaseId], references: [id])
+}
+
 model PurchaseItem {
-  id       String @id @default(cuid())
+  id       String  @id @default(cuid())
   name     String
   quantity Int?
   cost     Float?
+  status   String?
+  note     String?
+}
+
+// ================== SAMPLES (LIMS) ==================
+
+model Sample {
+  id         String    @id @default(cuid())
+  code       String?
+  name       String
+  customerId String?
+  status     String? // received | testing | done
+  receivedAt DateTime?
+
+  customer  Customer?   @relation(fields: [customerId], references: [id])
+  testItems TestItem[]
+
+  createdAt DateTime @default(now())
+}
+
+// ================== TEST PLAN ==================
+
+model TestPlan {
+  id        String  @id @default(cuid())
+  projectId String
+  title     String?
+
+  project Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  items   TestItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model TestItem {
+  id          String    @id @default(cuid())
+  testPlanId  String
+  sampleId    String?
+  name        String
+  priority    String?
+  standard    String?
+  assignee    String?
+  planStart   DateTime?
+  planEnd     DateTime?
+  actualStart DateTime?
+  actualEnd   DateTime?
+  result      String? // pass | fail | pending
+  progress    Int?
+  note        String?
+
+  testPlan TestPlan @relation(fields: [testPlanId], references: [id], onDelete: Cascade)
+  sample   Sample?  @relation(fields: [sampleId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ================== QUALITY (ISO 17025) ==================
+
+model QualityChecklistItem {
+  id      String   @id @default(cuid())
+  name    String
+  done    Boolean  @default(false)
+  dueDate DateTime?
+}
+
+model QualityAuditEntry {
+  id        String   @id @default(cuid())
+  entity    String?
+  actor     String?
+  role      String?
+  area      String?
+  action    String?
+  note      String?
+  createdAt DateTime @default(now())
 }
