@@ -38,17 +38,17 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: "/equipment", label: "Thiết bị", dataPage: "equipment", icon: <Icon path='<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>' /> },
       { href: "/equipment", label: "Đặt lịch", dataPage: "analytics", icon: <Icon path='<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>' /> },
-      { href: "/quote", label: "Khấu hao thiết bị", dataPage: "quote-depreciation", icon: <Icon path='<path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/>' /> },
+      { href: "/quote?tab=quote-depreciation", label: "Khấu hao thiết bị", dataPage: "quote-depreciation", icon: <Icon path='<path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/>' /> },
     ],
   },
   {
     heading: "BÁO GIÁ DỰ ÁN",
     items: [
-      { href: "/quote", label: "Tổng quan báo giá", dataPage: "quote-overview", icon: <Icon path='<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>' /> },
-      { href: "/quote", label: "Danh mục bài thử nghiệm", dataPage: "quote-catalog", icon: <Icon path='<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>' /> },
-      { href: "/quote", label: "Đơn giá thiết bị", dataPage: "quote-matrix", icon: <Icon path='<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>' /> },
-      { href: "/quote", label: "Đơn giá nhân sự", dataPage: "quote-personnel", icon: <Icon path='<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>' /> },
-      { href: "/quote", label: "Chi phí biến đổi khác", dataPage: "quote-variable", icon: <Icon path='<path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-6"/>' /> },
+      { href: "/quote?tab=quote-overview", label: "Tổng quan báo giá", dataPage: "quote-overview", icon: <Icon path='<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>' /> },
+      { href: "/quote?tab=quote-catalog", label: "Danh mục bài thử nghiệm", dataPage: "quote-catalog", icon: <Icon path='<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>' /> },
+      { href: "/quote?tab=quote-matrix", label: "Đơn giá thiết bị", dataPage: "quote-matrix", icon: <Icon path='<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>' /> },
+      { href: "/quote?tab=quote-personnel", label: "Đơn giá nhân sự", dataPage: "quote-personnel", icon: <Icon path='<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>' /> },
+      { href: "/quote?tab=quote-variable", label: "Chi phí biến đổi khác", dataPage: "quote-variable", icon: <Icon path='<path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-6"/>' /> },
     ],
   },
   {

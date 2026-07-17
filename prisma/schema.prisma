@@ -110,6 +110,7 @@ model Project {
   tasks    Task[]
   reports  Report[]
   plans    TestPlan[]
+  quotes   Quote[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -188,6 +189,7 @@ model Equipment {
   calCert      String?
   calVendor    String?
   centerId     String?
+  hourlyRate   Float?
 
   center   Center?            @relation(fields: [centerId], references: [id])
   bookings EquipmentBooking[]
@@ -223,11 +225,18 @@ model Customer {
 model Quote {
   id          String  @id @default(cuid())
   customerId  String?
+  projectId   String?
   title       String
+  code        String?
+  quoteDate   DateTime?
+  vatPercent  Float?    @default(10)
+  creator     String?
+  notes       String?
   status      String?
   totalAmount Float?
 
   customer Customer? @relation(fields: [customerId], references: [id])
+  project  Project?  @relation(fields: [projectId], references: [id])
 
   catalogItems      QuoteCatalogItem[]
   matrixItems       QuoteMatrixItem[]
@@ -240,11 +249,12 @@ model Quote {
 }
 
 model QuoteCatalogItem {
-  id       String @id @default(cuid())
-  quoteId  String
-  name     String
-  price    Float?
-  quantity Int?
+  id         String @id @default(cuid())
+  quoteId    String
+  name       String
+  standard   String?
+  price      Float?
+  quantity   Int?
 
   quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
 }
@@ -284,6 +294,63 @@ model QuoteVariableItem {
   value   String?
 
   quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+}
+
+// --- Bảng giá gốc (master data) dùng chung cho mọi báo giá ---
+// Tương ứng các trang cấu hình: Danh mục bài thử (quote-catalog),
+// Đơn giá nhân sự (quote-personnel), Khấu hao thiết bị (quote-depreciation),
+// Chi phí biến đổi khác (quote-variable). Khi lập báo giá, người dùng chọn
+// từ các bảng gốc này để thêm vào Quote*Item tương ứng.
+model TestCatalogItem {
+  id         String  @id @default(cuid())
+  code       String?
+  name       String
+  standard   String?
+  sampleQty  String?
+  leadTime   String?
+  price      Float?
+
+  createdAt DateTime @default(now())
+}
+
+model PersonnelRateConfig {
+  id          String @id @default("singleton")
+  techRate    Float  @default(0)
+  engRate     Float  @default(0)
+  leadRate    Float  @default(0)
+  mgrRate     Float  @default(0)
+  overheadPct Float  @default(0)
+}
+
+model PersonnelRouting {
+  id          String @id @default(cuid())
+  testCode    String?
+  testName    String
+  prepHours   String?
+  setupHours  String?
+  testHours   String?
+  reportHours String?
+
+  createdAt DateTime @default(now())
+}
+
+model DepreciationAsset {
+  id          String @id @default(cuid())
+  assetName   String
+  assetGroup  String?
+  totalValue  Float?
+  years       Float?
+
+  createdAt DateTime @default(now())
+}
+
+model VariableCost {
+  id          String @id @default(cuid())
+  costType    String
+  description String?
+  amount      Float?
+
+  createdAt DateTime @default(now())
 }
 
 model AuditPlan {
