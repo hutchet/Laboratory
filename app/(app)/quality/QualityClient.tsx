@@ -1,129 +1,130 @@
 "use client"
 
 import { useMemo, useState, useTransition } from "react"
-import { addChecklistItem, toggleChecklistItem, deleteChecklistItem, addAuditEntry } from "./actions"
+import { addChecklistItem, toggleChecklistItem, deleteChecklistItem } from "./actions"
 
 type Checklist = { id: string; name: string; done: boolean; dueDate: string | null }
-type Cal = { id: string; name: string; code: string | null; calLast: string | null; calInterval: number | null; calVendor: string | null; calCert: string | null; dueLabel: string; dueDate: string | null }
+type Calibration = { id: string; name: string; code: string | null; calLast: string | null; calInterval: number | null; calVendor: string | null; calCert: string | null; dueLabel: string; dueDate: string }
 type AuditEntry = { id: string; entity: string | null; actor: string | null; role: string | null; area: string | null; action: string | null; note: string | null; createdAt: string }
 
-const DUE_LABEL: Record<string, string> = { overdue: "Qua han", soon: "Sap den han", ok: "Con han" }
+const ISO_CRITERIA = [
+  "4. Yêu cầu chung: Tính khách quan, bảo mật",
+  "5. Yêu cầu về cơ cấu: Trách nhiệm pháp lý, cơ cấu tổ chức",
+  "6. Yêu cầu về nguồn lực: Nhân sự, cơ sở vật chất, thiết bị, hiệu chuẩn",
+  "7. Yêu cầu về quá trình: Xem xét yêu cầu, phương pháp thử, mẫu, hồ sơ kỹ thuật, báo cáo kết quả",
+  "8. Yêu cầu hệ thống quản lý: Kiểm soát tài liệu, hồ sơ, hành động khắc phục, đánh giá nội bộ",
+]
 
-export default function QualityClient({ checklist, calibration, auditEntries }: { checklist: Checklist[]; calibration: Cal[]; auditEntries: AuditEntry[] }) {
-  const [entityFilter, setEntityFilter] = useState("")
-  const [q, setQ] = useState("")
+export default function QualityClient({ checklist, calibration, auditEntries }: { checklist: Checklist[]; calibration: Calibration[]; auditEntries: AuditEntry[] }) {
+  const [entityFilter, setEntityFilter] = useState("all")
+  const [search, setSearch] = useState("")
   const [pending, startTransition] = useTransition()
 
   const overdue = calibration.filter((c) => c.dueLabel === "overdue").length
   const soon = calibration.filter((c) => c.dueLabel === "soon").length
   const ok = calibration.filter((c) => c.dueLabel === "ok").length
-  const auditCount = auditEntries.length
 
-  const filteredAudit = useMemo(() => auditEntries.filter((a) => {
-    if (entityFilter && a.entity !== entityFilter) return false
-    if (q && !(a.note ?? "").toLowerCase().includes(q.toLowerCase())) return false
-    return true
-  }), [auditEntries, entityFilter, q])
+  const entities = useMemo(() => Array.from(new Set(auditEntries.map((a) => a.entity).filter(Boolean))) as string[], [auditEntries])
 
-  const entities = Array.from(new Set(auditEntries.map((a) => a.entity).filter(Boolean))) as string[]
+  const shownEntries = useMemo(() => {
+    let list = entityFilter === "all" ? auditEntries : auditEntries.filter((a) => a.entity === entityFilter)
+    if (search) list = list.filter((a) => [a.action, a.note, a.actor].filter(Boolean).join(" ").toLowerCase().includes(search.toLowerCase()))
+    return list
+  }, [auditEntries, entityFilter, search])
+
+  const calibrationSorted = useMemo(() => {
+    const order: Record<string, number> = { overdue: 0, soon: 1, ok: 2 }
+    return [...calibration].sort((a, b) => (order[a.dueLabel] ?? 3) - (order[b.dueLabel] ?? 3))
+  }, [calibration])
 
   function onToggle(id: string, done: boolean) {
-    startTransition(async () => { await toggleChecklistItem(id, done) })
+    startTransition(async () => { await toggleChecklistItem(id, !done) })
   }
-
-  function onDeleteChecklist(id: string) {
+  function onDelete(id: string) {
     startTransition(async () => { await deleteChecklistItem(id) })
   }
-
   function onAddChecklist(formData: FormData) {
     startTransition(async () => { await addChecklistItem(formData) })
-  }
-
-  function onAddAudit(formData: FormData) {
-    startTransition(async () => { await addAuditEntry(formData) })
   }
 
   return (
     <section id="page-quality">
       <div className="grid kpis" style={{ marginBottom: 18 }}>
-        <div className="kcard kr"><div className="v" id="ql-k-overdue">{overdue}</div><div className="l">Thiet bi qua han hieu chuan</div><div className="s">Can xu ly ngay</div></div>
-        <div className="kcard kp"><div className="v" id="ql-k-soon">{soon}</div><div className="l">Sap den han (&le;30 ngay)</div><div className="s">Can len lich tai hieu chuan</div></div>
-        <div className="kcard kg"><div className="v" id="ql-k-ok">{ok}</div><div className="l">Con han</div><div className="s">Dang tuan thu</div></div>
-        <div className="kcard kb"><div className="v" id="ql-k-audit">{auditCount}</div><div className="l">So ban ghi Audit trail</div><div className="s">Toan bo lich su thao tac</div></div>
+        <div className="kcard kr"><div className="v" id="ql-k-overdue">{overdue}</div><div className="l">Thiết bị quá hạn hiệu chuẩn</div><div className="s">Cần xử lý ngay</div></div>
+        <div className="kcard kp"><div className="v" id="ql-k-soon">{soon}</div><div className="l">Sắp đến hạn (≤30 ngày)</div><div className="s">Cần lên lịch tái hiệu chuẩn</div></div>
+        <div className="kcard kg"><div className="v" id="ql-k-ok">{ok}</div><div className="l">Còn hạn</div><div className="s">Đang tuân thủ</div></div>
+        <div className="kcard kb"><div className="v" id="ql-k-audit">{auditEntries.length}</div><div className="l">Số bản ghi Audit trail</div><div className="s">Toàn bộ lịch sử thao tác</div></div>
       </div>
 
       <div className="card" style={{ marginBottom: 18 }}>
-        <div className="ch"><h3>Tieu chi kiem soat theo ISO/IEC 17025:2017</h3><span>Phong thu nghiem duoc quan ly theo cac dieu khoan cua tieu chuan</span></div>
-        <form action={onAddChecklist} style={{ marginBottom: 10 }}>
-          <input name="name" placeholder="Noi dung checklist moi" required />
-          <input type="date" name="dueDate" />
-          <button className="btn-line" type="submit">+ Them</button>
-        </form>
+        <div className="ch"><h3>Tiêu chí kiểm soát theo ISO/IEC 17025:2017</h3><span>Phòng thử nghiệm được quản lý theo các điều khoản của tiêu chuẩn — không phải tiêu chí nội bộ của phần mềm này</span></div>
         <div id="ql-checklist" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {checklist.map((c) => (
-            <div className="row" key={c.id}>
-              <label><input type="checkbox" checked={c.done} onChange={(e) => onToggle(c.id, e.target.checked)} /> {c.name}</label>
-              <span>{c.dueDate ? c.dueDate.slice(0, 10) : "-"}</span>
-              <button className="btn-line" onClick={() => onDeleteChecklist(c.id)}>Xoa</button>
-            </div>
-          ))}
+          {ISO_CRITERIA.map((c) => (<div key={c} style={{ fontSize: 13, color: "var(--muted)" }}>• {c}</div>))}
+          <div style={{ borderTop: "1px solid var(--line)", marginTop: 8, paddingTop: 8 }}>
+            {checklist.map((c) => (
+              <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                <input type="checkbox" checked={c.done} onChange={() => onToggle(c.id, c.done)} />
+                <span style={{ textDecoration: c.done ? "line-through" : "none", flex: 1 }}>{c.name}</span>
+                {c.dueDate && <span style={{ fontSize: 11, color: "var(--muted)" }}>{new Date(c.dueDate).toLocaleDateString("vi-VN")}</span>}
+                <button className="btn-line" onClick={() => onDelete(c.id)}>Xóa</button>
+              </div>
+            ))}
+          </div>
+          <form action={onAddChecklist} style={{ display: "flex", gap: 8, marginTop: 8 }}>
+            <input name="name" placeholder="Thêm hạng mục kiểm soát nội bộ..." style={{ flex: 1 }} required />
+            <input type="date" name="dueDate" />
+            <button type="submit" className="btn-pri" disabled={pending}>+ Thêm</button>
+          </form>
         </div>
       </div>
 
       <div className="card" style={{ marginBottom: 18, padding: 0, overflowX: "auto" }}>
-        <div className="ch" style={{ padding: "16px 18px 0" }}><h3>Lich tai hieu chuan thiet bi</h3><span>Sap xep theo muc do khan cap</span></div>
+        <div className="ch" style={{ padding: "16px 18px 0" }}><h3>Lịch tái hiệu chuẩn thiết bị</h3><span>Sắp xếp theo mức độ khẩn cấp</span></div>
         <table style={{ marginTop: 12 }}>
-          <thead><tr><th>Thiet bi</th><th>Ma</th><th>Hieu chuan gan nhat</th><th>Chu ky (thang)</th><th>Han tai hieu chuan</th><th>Trang thai</th></tr></thead>
+          <thead><tr><th>Thiết bị</th><th>Mã</th><th>Hiệu chuẩn gần nhất</th><th>Chu kỳ (tháng)</th><th>Hạn tái hiệu chuẩn</th><th>Trạng thái</th></tr></thead>
           <tbody id="ql-cal-body">
-            {calibration.map((c) => (
+            {calibrationSorted.map((c) => (
               <tr key={c.id}>
                 <td>{c.name}</td>
                 <td>{c.code ?? "-"}</td>
-                <td>{c.calLast ? c.calLast.slice(0, 10) : "-"}</td>
+                <td>{c.calLast ? new Date(c.calLast).toLocaleDateString("vi-VN") : "-"}</td>
                 <td>{c.calInterval ?? "-"}</td>
-                <td>{c.dueDate ? c.dueDate.slice(0, 10) : "-"}</td>
-                <td>{DUE_LABEL[c.dueLabel] ?? "-"}</td>
+                <td>{new Date(c.dueDate).toLocaleDateString("vi-VN")}</td>
+                <td>{c.dueLabel === "overdue" ? "Quá hạn" : c.dueLabel === "soon" ? "Sắp tới" : "Còn hạn"}</td>
               </tr>
             ))}
           </tbody>
         </table>
-        {calibration.length === 0 && <div className="empty" id="ql-cal-empty">Chua co thiet bi nao khai bao thong tin hieu chuan.</div>}
+        {calibrationSorted.length === 0 && <div className="empty" id="ql-cal-empty">Chưa có thiết bị nào khai báo thông tin hiệu chuẩn.</div>}
       </div>
 
       <div className="card" style={{ padding: 0, overflowX: "auto" }}>
         <div className="ch ch-toolbar" style={{ padding: "16px 18px 0" }}>
-          <div><h3>Nhat ky thao tac (Audit trail)</h3><span>Ghi nhan ai da lam gi, vao luc nao</span></div>
+          <div><h3>Nhật ký thao tác (Audit trail)</h3><span>Ghi nhận ai đã làm gì, vào lúc nào</span></div>
           <div style={{ display: "flex", gap: 8 }}>
             <select id="ql-filter-entity" style={{ minWidth: 160 }} value={entityFilter} onChange={(e) => setEntityFilter(e.target.value)}>
-              <option value="">Tat ca doi tuong</option>
+              <option value="all">Tất cả khu vực</option>
               {entities.map((e) => (<option key={e} value={e}>{e}</option>))}
             </select>
-            <input id="ql-search" placeholder="Tim theo noi dung..." style={{ width: 200, maxWidth: "100%" }} value={q} onChange={(e) => setQ(e.target.value)} />
+            <input id="ql-search" placeholder="Tìm theo nội dung..." style={{ width: 200, maxWidth: "100%" }} value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
         </div>
-        <form action={onAddAudit} style={{ padding: "10px 18px" }}>
-          <input name="entity" placeholder="Doi tuong" />
-          <input name="actor" placeholder="Nguoi thuc hien" />
-          <input name="action" placeholder="Hanh dong" />
-          <input name="note" placeholder="Chi tiet" />
-          <button className="btn-line" type="submit">+ Ghi nhan</button>
-        </form>
         <table style={{ marginTop: 12 }}>
-          <thead><tr><th>Thoi gian</th><th>Nguoi thuc hien</th><th>Vai tro</th><th>Khu vuc</th><th>Hanh dong</th><th>Chi tiet</th></tr></thead>
+          <thead><tr><th>Thời gian</th><th>Người thực hiện</th><th>Vai trò</th><th>Khu vực</th><th>Hành động</th><th>Chi tiết</th></tr></thead>
           <tbody id="ql-audit-body">
-            {filteredAudit.map((a) => (
+            {shownEntries.map((a) => (
               <tr key={a.id}>
-                <td>{a.createdAt.slice(0, 16).replace("T", " ")}</td>
+                <td>{new Date(a.createdAt).toLocaleString("vi-VN")}</td>
                 <td>{a.actor ?? "-"}</td>
                 <td>{a.role ?? "-"}</td>
-                <td>{a.area ?? a.entity ?? "-"}</td>
+                <td>{a.area ?? "-"}</td>
                 <td>{a.action ?? "-"}</td>
                 <td>{a.note ?? "-"}</td>
               </tr>
             ))}
           </tbody>
         </table>
-        {filteredAudit.length === 0 && <div className="empty" id="ql-audit-empty">Chua co nhat ky nao.</div>}
+        {shownEntries.length === 0 && <div className="empty" id="ql-audit-empty">Chưa có nhật ký nào.</div>}
       </div>
     </section>
   )

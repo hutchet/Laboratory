@@ -4,10 +4,10 @@ import SettingsClient from "./SettingsClient"
 
 export default async function SettingsPage() {
   const session = await auth()
-  let roleLabel = "Chua xac dinh"
+  let roleLabel = "Chưa xác định"
   if (session?.user?.id) {
     const roles = await db.userRole.findMany({ where: { userId: session.user.id }, include: { role: true } })
-    roleLabel = roles.map((r) => r.role.name).join(", ") || "Chua co vai tro"
+    roleLabel = roles.map((r) => r.role.name).join(", ") || "Chưa có vai trò"
   }
   return <SettingsClient roleLabel={roleLabel} />
 }

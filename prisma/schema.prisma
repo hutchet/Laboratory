@@ -204,9 +204,13 @@ model EquipmentBooking {
   startTime   DateTime
   endTime     DateTime
   bookedBy    String?
+  department  String?
+  purpose     String?
 
   equipment Equipment @relation(fields: [equipmentId], references: [id])
   center    Center?   @relation(fields: [centerId], references: [id])
+
+  createdAt DateTime @default(now())
 }
 
 model Customer {

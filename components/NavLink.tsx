@@ -24,6 +24,10 @@ export default function NavLink({
     const currentTab = searchParams.get("tab") || "quote-overview"
     active = hrefTab === currentTab
   }
+  if (active && hrefPath === "/equipment") {
+    const currentTab = searchParams.get("tab") || "equipment"
+    active = hrefTab === currentTab
+  }
   return (
     <Link href={href} className={active ? "nav active" : "nav"} data-page={dataPage}>
       {icon}

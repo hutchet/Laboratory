@@ -3,63 +3,98 @@
 import { useMemo, useState, useTransition } from "react"
 import { createPlan, addPhase, saveItem, deleteItem, deletePlan } from "./actions"
 
-type Item = { id: string; name: string; phaseId: string | null; assignee: string | null; planStart: string | null; planEnd: string | null; actualStart: string | null; actualEnd: string | null; status: string | null; note: string | null }
-type Phase = { id: string; name: string }
-type Plan = { id: string; title: string; status: string | null; phases: Phase[]; items: Item[] }
+type ItemRow = {
+  id: string; name: string; phaseId: string | null; assignee: string | null
+  planStart: string | null; planEnd: string | null; actualStart: string | null; actualEnd: string | null
+  status: string | null; note: string | null
+}
+type Plan = { id: string; title: string; status: string | null; phases: { id: string; name: string }[]; items: ItemRow[] }
 
-const STATUS_LABEL: Record<string, string> = { todo: "Chua bat dau", doing: "Dang trien khai", done: "Hoan thanh", overdue: "Qua han" }
+function daysBetween(a: string | null, b: string | null) {
+  if (!a || !b) return null
+  return Math.max(0, Math.round((new Date(b).getTime() - new Date(a).getTime()) / 86400000))
+}
+
+function statusLabel(s: string | null) {
+  if (s === "done") return "Hoàn thành"
+  if (s === "doing") return "Đang triển khai"
+  if (s === "overdue") return "Quá hạn"
+  return "Chưa bắt đầu"
+}
+
+function Donut({ done, doing, overdue, todo }: { done: number; doing: number; overdue: number; todo: number }) {
+  const total = done + doing + overdue + todo
+  const r = 15.9155
+  const circ = 2 * Math.PI * r
+  const seg = (n: number) => (total ? (n / total) * circ : 0)
+  const doneLen = seg(done); const doingLen = seg(doing); const overdueLen = seg(overdue); const todoLen = seg(todo)
+  return (
+    <svg width="120" height="120" viewBox="0 0 42 42">
+      <circle cx="21" cy="21" r={r} fill="transparent" stroke="var(--line)" strokeWidth="5" />
+      <circle cx="21" cy="21" r={r} fill="transparent" stroke="var(--green)" strokeWidth="5" strokeDasharray={`${doneLen} ${circ - doneLen}`} strokeDashoffset="25" transform="rotate(-90 21 21)" />
+      <circle cx="21" cy="21" r={r} fill="transparent" stroke="var(--amber)" strokeWidth="5" strokeDasharray={`${doingLen} ${circ - doingLen}`} strokeDashoffset={25 - doneLen} transform="rotate(-90 21 21)" />
+      <circle cx="21" cy="21" r={r} fill="transparent" stroke="var(--red)" strokeWidth="5" strokeDasharray={`${overdueLen} ${circ - overdueLen}`} strokeDashoffset={25 - doneLen - doingLen} transform="rotate(-90 21 21)" />
+      <circle cx="21" cy="21" r={r} fill="transparent" stroke="var(--pri)" strokeWidth="5" strokeDasharray={`${todoLen} ${circ - todoLen}`} strokeDashoffset={25 - doneLen - doingLen - overdueLen} transform="rotate(-90 21 21)" />
+    </svg>
+  )
+}
 
 export default function AuditPlanClient({ plans }: { plans: Plan[] }) {
-  const [q, setQ] = useState("")
   const [activeId, setActiveId] = useState<string | null>(null)
-  const [editing, setEditing] = useState<Item | null>(null)
-  const [showForm, setShowForm] = useState(false)
+  const [search, setSearch] = useState("")
+  const [showCreate, setShowCreate] = useState(false)
+  const [showPhaseForm, setShowPhaseForm] = useState(false)
+  const [editing, setEditing] = useState<ItemRow | null>(null)
+  const [showItemForm, setShowItemForm] = useState(false)
   const [pending, startTransition] = useTransition()
 
-  const filtered = useMemo(() => plans.filter((p) => !q || p.title.toLowerCase().includes(q.toLowerCase())), [plans, q])
   const active = plans.find((p) => p.id === activeId) ?? null
+  const shownPlans = plans.filter((p) => p.title.toLowerCase().includes(search.toLowerCase()))
 
-  const total = active?.items.length ?? 0
-  const doneN = active?.items.filter((i) => i.status === "done").length ?? 0
-  const doingN = active?.items.filter((i) => i.status === "doing").length ?? 0
-  const now = new Date()
-  const overdueN = active?.items.filter((i) => i.planEnd && new Date(i.planEnd) < now && i.status !== "done").length ?? 0
-  const progress = total ? Math.round((doneN / total) * 100) : 0
+  const stats = useMemo(() => {
+    if (!active) return { total: 0, done: 0, doing: 0, overdue: 0, todo: 0, progress: 0 }
+    const now = new Date()
+    let done = 0, doing = 0, overdue = 0, todo = 0
+    for (const it of active.items) {
+      if (it.actualEnd) done++
+      else if (it.planEnd && new Date(it.planEnd) < now) overdue++
+      else if (it.planStart && new Date(it.planStart) <= now) doing++
+      else todo++
+    }
+    const total = active.items.length
+    return { total, done, doing, overdue, todo, progress: total ? Math.round((done / total) * 100) : 0 }
+  }, [active])
 
-  const workloadMap: Record<string, number> = {}
-  for (const i of active?.items ?? []) {
-    const key = i.assignee || "Chua giao"
-    workloadMap[key] = (workloadMap[key] || 0) + 1
+  const workload = useMemo(() => {
+    if (!active) return [] as { name: string; count: number }[]
+    const map: Record<string, number> = {}
+    for (const it of active.items) {
+      const key = it.assignee || "Chưa gán"
+      map[key] = (map[key] || 0) + 1
+    }
+    return Object.entries(map).map(([name, count]) => ({ name, count }))
+  }, [active])
+
+  function onCreate(formData: FormData) {
+    startTransition(async () => { await createPlan(formData); setShowCreate(false) })
   }
-
-  function onCreatePlan(formData: FormData) {
-    startTransition(async () => { await createPlan(formData) })
-  }
-
   function onAddPhase(formData: FormData) {
     if (!active) return
     formData.set("auditPlanId", active.id)
-    startTransition(async () => { await addPhase(formData) })
+    startTransition(async () => { await addPhase(formData); setShowPhaseForm(false) })
   }
-
-  function onSubmitItem(formData: FormData) {
+  function onSaveItem(formData: FormData) {
     if (!active) return
     formData.set("auditPlanId", active.id)
     if (editing) formData.set("id", editing.id)
-    startTransition(async () => {
-      await saveItem(formData)
-      setShowForm(false)
-      setEditing(null)
-    })
+    startTransition(async () => { await saveItem(formData); setShowItemForm(false); setEditing(null) })
   }
-
   function onDeleteItem(id: string) {
-    if (!confirm("Xoa dau viec nay?")) return
+    if (!confirm("Xóa đầu việc này?")) return
     startTransition(async () => { await deleteItem(id) })
   }
-
   function onDeletePlan(id: string) {
-    if (!confirm("Xoa ke hoach nay?")) return
+    if (!confirm("Xóa kế hoạch audit này?")) return
     startTransition(async () => { await deletePlan(id); setActiveId(null) })
   }
 
@@ -67,36 +102,37 @@ export default function AuditPlanClient({ plans }: { plans: Plan[] }) {
     return (
       <section id="page-auditplan">
         <div id="ap-plan-overview">
-          <div className="section-head" style={{ marginBottom: 16 }}>
-            <h3>Ke hoach audit</h3>
+          <div className="section-head">
+            <h3>Kế hoạch audit</h3>
             <div className="tools">
               <div className="search" style={{ maxWidth: 260 }}>
-                <input id="ap-plan-search" placeholder="Tim ke hoach..." value={q} onChange={(e) => setQ(e.target.value)} />
+                <input id="ap-plan-search" placeholder="Tìm kế hoạch..." value={search} onChange={(e) => setSearch(e.target.value)} />
               </div>
-              <form action={onCreatePlan} style={{ display: "flex", gap: 8 }}>
-                <input name="title" placeholder="Ten ke hoach moi" required />
-                <button className="btn-pri" id="ap-plan-create-btn" type="submit">+ Tao ke hoach</button>
-              </form>
+              <button className="btn-pri" id="ap-plan-create-btn" onClick={() => setShowCreate(true)}>+ Tạo kế hoạch</button>
             </div>
           </div>
-          <div id="ap-plan-cards" className="grid">
-            {filtered.map((p) => {
-              const d = p.items.filter((i) => i.status === "done").length
-              const t = p.items.length
-              return (
-                <div className="card" key={p.id}>
-                  <div className="ch"><h3>{p.title}</h3></div>
-                  <div className="row"><span>Dau viec</span><span>{d}/{t}</span></div>
-                  <div className="row"><span>Hang muc (phase)</span><span>{p.phases.length}</span></div>
-                  <div className="row">
-                    <button className="btn-line" onClick={() => setActiveId(p.id)}>Xem chi tiet</button>
-                    <button className="btn-line" onClick={() => onDeletePlan(p.id)}>Xoa</button>
-                  </div>
+          {showCreate && (
+            <div className="card" style={{ marginBottom: 14 }}>
+              <form action={onCreate}>
+                <div className="row">
+                  <div className="field" style={{ flex: 1 }}><label>Tên kế hoạch audit</label><input name="title" placeholder="VD: Kế hoạch audit ISO 17025" required /></div>
                 </div>
-              )
-            })}
+                <div className="row" style={{ marginTop: 10 }}>
+                  <button type="submit" className="btn-pri" disabled={pending}>Tạo</button>
+                  <button type="button" className="btn-line" onClick={() => setShowCreate(false)}>Hủy</button>
+                </div>
+              </form>
+            </div>
+          )}
+          <div id="ap-plan-cards" className="chips">
+            {shownPlans.map((p) => (
+              <div key={p.id} className="card" style={{ cursor: "pointer", minWidth: 220 }} onClick={() => setActiveId(p.id)}>
+                <div style={{ fontWeight: 600 }}>{p.title}</div>
+                <div style={{ fontSize: 12, color: "var(--muted)" }}>{p.items.length} đầu việc · {statusLabel(p.status)}</div>
+              </div>
+            ))}
+            {shownPlans.length === 0 && <div className="empty">Chưa có kế hoạch audit nào.</div>}
           </div>
-          {filtered.length === 0 && <div className="empty">Chua co ke hoach audit nao.</div>}
         </div>
       </section>
     )
@@ -104,42 +140,47 @@ export default function AuditPlanClient({ plans }: { plans: Plan[] }) {
 
   return (
     <section id="page-auditplan">
-      <div className="ch">
-        <button className="btn-line" onClick={() => setActiveId(null)}>&larr; Danh sach ke hoach</button>
-        <h3>{active.title}</h3>
-      </div>
       <div id="ap-plan-detail-shell">
-        <div className="grid kpis" style={{ marginBottom: 18 }}>
-          <div className="kcard kb"><div className="v" id="ap-k-total">{total}</div><div className="l">Tong dau viec</div><div className="s">Trong ke hoach audit</div></div>
-          <div className="kcard kg"><div className="v" id="ap-k-done">{doneN}</div><div className="l">Hoan thanh</div><div className="s">Da co ngay ket thuc thuc te</div></div>
-          <div className="kcard kp"><div className="v" id="ap-k-doing">{doingN}</div><div className="l">Dang trien khai</div><div className="s">Trong khung thoi gian ke hoach</div></div>
-          <div className="kcard kr"><div className="v" id="ap-k-overdue">{overdueN}</div><div className="l">Qua han</div><div className="s">Tre ngay ket thuc ke hoach</div></div>
+        <div className="section-head">
+          <button className="btn-line" onClick={() => setActiveId(null)}>← Danh sách kế hoạch</button>
         </div>
-
+        <div className="grid kpis" style={{ marginBottom: 18 }}>
+          <div className="kcard kb"><div className="v" id="ap-k-total">{stats.total}</div><div className="l">Tổng đầu việc</div><div className="s">Trong kế hoạch audit</div></div>
+          <div className="kcard kg"><div className="v" id="ap-k-done">{stats.done}</div><div className="l">Hoàn thành</div><div className="s">Đã có ngày kết thúc thực tế</div></div>
+          <div className="kcard kp"><div className="v" id="ap-k-doing">{stats.doing}</div><div className="l">Đang triển khai</div><div className="s">Trong khung thời gian kế hoạch</div></div>
+          <div className="kcard kr"><div className="v" id="ap-k-overdue">{stats.overdue}</div><div className="l">Quá hạn</div><div className="s">Trễ ngày kết thúc kế hoạch</div></div>
+        </div>
         <div className="card" style={{ marginBottom: 18 }} id="ap-overview-card">
-          <div className="ch"><div><h3 id="ap-ov-title">Tong quan tien do ISO 17025</h3><span>Toan bo ke hoach audit</span></div></div>
+          <div className="ch">
+            <div><h3 id="ap-ov-title">{active.title}</h3><span>Toàn bộ kế hoạch audit theo file Excel</span></div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button className="txt-act del" id="ap-ov-del-btn" onClick={() => onDeletePlan(active.id)}>Xóa</button>
+            </div>
+          </div>
           <div className="pl-donut-wrap">
             <div className="pl-donut-col">
-              <div style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600, marginBottom: 6, textAlign: "center" }}>Trang thai dau viec</div>
+              <div style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600, marginBottom: 6, textAlign: "center" }}>Trạng thái đầu việc</div>
               <div className="pl-donut-inline">
-                <svg width="120" height="120" viewBox="0 0 42 42" id="ap-donut-status" />
+                <Donut done={stats.done} doing={stats.doing} overdue={stats.overdue} todo={stats.todo} />
                 <div className="pl-legend pl-legend-side" id="ap-legend-status">
-                  {Object.entries({ todo: total - doneN - doingN - overdueN, doing: doingN, done: doneN, overdue: overdueN }).map(([k, v]) => (
-                    <div key={k}>{STATUS_LABEL[k]}: {v as number}</div>
-                  ))}
+                  <span className="li"><span className="dot" style={{ background: "var(--green)" }} />Hoàn thành ({stats.done})</span>
+                  <span className="li"><span className="dot" style={{ background: "var(--amber)" }} />Đang triển khai ({stats.doing})</span>
+                  <span className="li"><span className="dot" style={{ background: "var(--red)" }} />Quá hạn ({stats.overdue})</span>
+                  <span className="li"><span className="dot" style={{ background: "var(--pri)" }} />Chưa bắt đầu ({stats.todo})</span>
                 </div>
               </div>
             </div>
             <div style={{ flex: 1, minWidth: 170 }}>
-              <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 6 }}>Ty le hoan thanh</div>
-              <div className="pctbig" id="ap-k-progress" style={{ marginBottom: 14 }}>{progress}%</div>
-              <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 6 }}>So nhom hang muc (phase)</div>
-              <div className="pctbig" style={{ fontSize: 22, color: "var(--ink)" }}><span id="ap-k-phases">{active.phases.length}</span> nhom</div>
+              <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 6 }}>Tỷ lệ hoàn thành</div>
+              <div className="pctbig" id="ap-k-progress" style={{ marginBottom: 14 }}>{stats.progress}%</div>
+              <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 6 }}>Số nhóm hạng mục (phase)</div>
+              <div className="pctbig" style={{ fontSize: 22, color: "var(--ink)" }}><span id="ap-k-phases">{active.phases.length}</span> nhóm</div>
             </div>
             <div style={{ flex: 1, minWidth: 190 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Khoi luong theo nguoi phu trach</div>
+              <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Khối lượng theo người phụ trách</div>
               <div id="ap-pic-workload">
-                {Object.entries(workloadMap).map(([name, count]) => (<div className="row" key={name}><span>{name}</span><span>{count}</span></div>))}
+                {workload.map((w) => (<div key={w.name} style={{ fontSize: 12.5, marginBottom: 4 }}>{w.name}: {w.count}</div>))}
+                {workload.length === 0 && <div className="empty">Chưa có dữ liệu.</div>}
               </div>
             </div>
           </div>
@@ -148,108 +189,120 @@ export default function AuditPlanClient({ plans }: { plans: Plan[] }) {
         <div className="card" style={{ marginBottom: 18 }}>
           <div className="pl-toolbar">
             <div>
-              <h3 style={{ fontSize: 16, fontWeight: 600 }}>So do tien do (Gantt) ke hoach audit ISO 17025</h3>
-              <span style={{ fontSize: 12, color: "var(--muted)" }}>Theo moc thoi gian ke hoach cua tung dau viec, nhom theo hang muc</span>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <div className="pl-daynav" id="ap-daynav" />
-              <div className="pl-zoom" id="ap-zoom" />
+              <h3 style={{ fontSize: 16, fontWeight: 600 }}>Sơ đồ tiến độ (Gantt) kế hoạch audit ISO 17025</h3>
+              <span style={{ fontSize: 12, color: "var(--muted)" }}>Theo mốc thời gian kế hoạch (Planning Start → End) của từng đầu việc, nhóm theo hạng mục</span>
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 14, fontSize: 12, color: "var(--muted)", flexWrap: "wrap", marginBottom: 10 }}>
-            <span><span className="ap-legend-dot" style={{ background: "var(--green)" }} />Hoan thanh</span>
-            <span><span className="ap-legend-dot" style={{ background: "var(--amber)" }} />Dang trien khai</span>
-            <span><span className="ap-legend-dot" style={{ background: "var(--red)" }} />Qua han</span>
-            <span><span className="ap-legend-dot" style={{ background: "var(--pri)" }} />Chua bat dau</span>
+            <span><span className="ap-legend-dot" style={{ background: "var(--green)" }} />Hoàn thành</span>
+            <span><span className="ap-legend-dot" style={{ background: "var(--amber)" }} />Đang triển khai</span>
+            <span><span className="ap-legend-dot" style={{ background: "var(--red)" }} />Quá hạn</span>
+            <span><span className="ap-legend-dot" style={{ background: "var(--pri)" }} />Chưa bắt đầu</span>
           </div>
           <div className="pl-gantt-wrap" id="ap-gantt-wrap">
             {active.items.filter((i) => i.planStart && i.planEnd).map((i) => (
-              <div className="row" key={i.id}><span>{i.name}</span><span>{i.planStart!.slice(0, 10)} &rarr; {i.planEnd!.slice(0, 10)}</span></div>
+              <div key={i.id} style={{ padding: "6px 12px", borderBottom: "1px solid var(--line)", fontSize: 12.5 }}>
+                {i.name}: {new Date(i.planStart as string).toLocaleDateString("vi-VN")} → {new Date(i.planEnd as string).toLocaleDateString("vi-VN")}
+              </div>
             ))}
-            {active.items.filter((i) => i.planStart && i.planEnd).length === 0 && <div style={{ color: "var(--muted)", fontSize: 13 }}>Chua co du lieu moc thoi gian de ve Gantt. Them ngay bat dau/ket thuc ke hoach cho dau viec de hien thi tai day.</div>}
+            {active.items.filter((i) => i.planStart && i.planEnd).length === 0 && <div className="empty" style={{ padding: 20 }}>Chưa có mốc thời gian kế hoạch để vẽ Gantt.</div>}
           </div>
         </div>
 
         <div className="card" style={{ marginBottom: 18 }}>
-          <div className="ch"><h3>Ke hoach theo hang muc</h3><span id="ap-phase-count">{active.phases.length} hang muc</span></div>
+          <div className="ch"><h3>Kế hoạch theo hạng mục</h3><span id="ap-phase-count">{active.phases.length} hạng mục</span></div>
           <div style={{ marginBottom: 12 }}>
-            <form action={onAddPhase} style={{ display: "flex", gap: 8 }}>
-              <input name="name" placeholder="Ten hang muc moi" required />
-              <button className="btn-pri" id="ap-add-phase-btn" type="submit">+ Them hang muc</button>
-            </form>
+            {!showPhaseForm && <button className="btn-pri" id="ap-add-phase-btn" onClick={() => setShowPhaseForm(true)}>+ Thêm hạng mục</button>}
+            {showPhaseForm && (
+              <form action={onAddPhase} style={{ display: "flex", gap: 8 }}>
+                <input name="name" placeholder="Tên hạng mục" required />
+                <button type="submit" className="btn-pri" disabled={pending}>Thêm</button>
+                <button type="button" className="btn-line" onClick={() => setShowPhaseForm(false)}>Hủy</button>
+              </form>
+            )}
           </div>
           <div id="ap-phase-list">
-            {active.phases.map((ph) => (<span className="chip" key={ph.id}>{ph.name}</span>))}
+            {active.phases.map((ph) => (
+              <div key={ph.id} className="row" style={{ padding: "8px 0", borderBottom: "1px solid var(--line)" }}>
+                <b>{ph.name}</b><span style={{ marginLeft: 8, color: "var(--muted)", fontSize: 12 }}>{active.items.filter((i) => i.phaseId === ph.id).length} đầu việc</span>
+              </div>
+            ))}
+            {active.phases.length === 0 && <div className="empty">Chưa có hạng mục.</div>}
           </div>
         </div>
 
         <div className="card">
           <div className="ch" style={{ padding: 0 }}>
-            <div><h3>Chi tiet dau viec ke hoach audit ISO 17025</h3><span id="ap-detail-count">{active.items.length} dau viec</span></div>
+            <div><h3>Chi tiết đầu việc kế hoạch audit ISO 17025</h3><span id="ap-detail-count">{active.items.length} đầu việc</span></div>
             <div style={{ display: "flex", gap: 8 }}>
-              <button type="button" className="btn-line" id="ap-export-excel" onClick={() => alert("Xuat Excel se duoc bo sung.")}>&#10515; Xuat Excel</button>
-              <button type="button" className="btn-pri" onClick={() => { setEditing(null); setShowForm(true) }}>+ Them dau viec</button>
+              <button type="button" className="btn-line" onClick={() => alert("Xuất Excel sẽ được bổ sung ở bản sau.")}>⤓ Xuất Excel</button>
+              <button type="button" className="btn-pri" onClick={() => { setEditing(null); setShowItemForm(true) }}>+ Thêm đầu việc</button>
             </div>
           </div>
 
-          {showForm && (
-            <div className="card" style={{ marginTop: 12 }}>
-              <form action={onSubmitItem}>
+          {showItemForm && (
+            <div className="card" style={{ margin: "12px 0", background: "var(--bg)" }}>
+              <form action={onSaveItem}>
+                <input type="hidden" name="phaseId" value={editing?.phaseId ?? ""} />
                 <div className="row">
-                  <div className="field"><label>Dau viec</label><input name="name" defaultValue={editing?.name ?? ""} required /></div>
+                  <div className="field" style={{ flex: 2 }}><label>Đầu việc</label><input name="name" defaultValue={editing?.name ?? ""} required /></div>
+                  <div className="field"><label>Người phụ trách</label><input name="assignee" defaultValue={editing?.assignee ?? ""} /></div>
                   <div className="field">
-                    <label>Hang muc</label>
+                    <label>Hạng mục</label>
                     <select name="phaseId" defaultValue={editing?.phaseId ?? ""}>
-                      <option value="">-- Khong --</option>
+                      <option value="">-- Không thuộc hạng mục --</option>
                       {active.phases.map((ph) => (<option key={ph.id} value={ph.id}>{ph.name}</option>))}
                     </select>
                   </div>
-                  <div className="field"><label>Nguoi phu trach</label><input name="assignee" defaultValue={editing?.assignee ?? ""} /></div>
                 </div>
-                <div className="row">
-                  <div className="field"><label>Bat dau KH</label><input type="date" name="planStart" defaultValue={editing?.planStart ? editing.planStart.slice(0, 10) : ""} /></div>
-                  <div className="field"><label>Ket thuc KH</label><input type="date" name="planEnd" defaultValue={editing?.planEnd ? editing.planEnd.slice(0, 10) : ""} /></div>
+                <div className="row" style={{ marginTop: 10 }}>
+                  <div className="field"><label>Bắt đầu KH</label><input type="date" name="planStart" defaultValue={editing?.planStart ? editing.planStart.slice(0, 10) : ""} /></div>
+                  <div className="field"><label>Kết thúc KH</label><input type="date" name="planEnd" defaultValue={editing?.planEnd ? editing.planEnd.slice(0, 10) : ""} /></div>
                   <div className="field">
-                    <label>Trang thai</label>
+                    <label>Trạng thái</label>
                     <select name="status" defaultValue={editing?.status ?? "todo"}>
-                      <option value="todo">Chua bat dau</option>
-                      <option value="doing">Dang trien khai</option>
-                      <option value="done">Hoan thanh</option>
+                      <option value="todo">Chưa bắt đầu</option>
+                      <option value="doing">Đang triển khai</option>
+                      <option value="done">Hoàn thành</option>
+                      <option value="overdue">Quá hạn</option>
                     </select>
                   </div>
                 </div>
-                <div className="field"><label>Ghi chu</label><input name="note" defaultValue={editing?.note ?? ""} /></div>
-                <div className="row">
-                  <button className="btn-pri" type="submit" disabled={pending}>Luu</button>
-                  <button className="btn-line" type="button" onClick={() => setShowForm(false)}>Huy</button>
+                <div className="row" style={{ marginTop: 10 }}>
+                  <div className="field" style={{ flex: 1 }}><label>Ghi chú</label><input name="note" defaultValue={editing?.note ?? ""} /></div>
+                </div>
+                <div className="row" style={{ marginTop: 10 }}>
+                  <button type="submit" className="btn-pri" disabled={pending}>{editing ? "Lưu" : "Thêm"}</button>
+                  <button type="button" className="btn-line" onClick={() => { setShowItemForm(false); setEditing(null) }}>Hủy</button>
                 </div>
               </form>
             </div>
           )}
 
           <table style={{ marginTop: 12 }}>
-            <thead><tr><th>No</th><th>Dau viec</th><th>Nguoi phu trach</th><th>Bat dau KH</th><th>Ket thuc KH</th><th>Bat dau TT</th><th>Ket thuc TT</th><th>Trang thai</th><th>Ghi chu</th></tr></thead>
+            <thead><tr><th>No</th><th>Đầu việc</th><th>Người phụ trách</th><th>Bắt đầu KH</th><th>Kết thúc KH</th><th>Bắt đầu TT</th><th>Kết thúc TT</th><th>T.lượng (ngày)</th><th>Trạng thái</th><th>Ghi chú</th><th>Thao tác</th></tr></thead>
             <tbody id="ap-detail-body">
-              {active.items.map((i, idx) => (
-                <tr key={i.id}>
+              {active.items.map((it, idx) => (
+                <tr key={it.id}>
                   <td>{idx + 1}</td>
-                  <td>{i.name}</td>
-                  <td>{i.assignee ?? "-"}</td>
-                  <td>{i.planStart ? i.planStart.slice(0, 10) : "-"}</td>
-                  <td>{i.planEnd ? i.planEnd.slice(0, 10) : "-"}</td>
-                  <td>{i.actualStart ? i.actualStart.slice(0, 10) : "-"}</td>
-                  <td>{i.actualEnd ? i.actualEnd.slice(0, 10) : "-"}</td>
-                  <td>{STATUS_LABEL[i.status ?? "todo"]}</td>
+                  <td>{it.name}</td>
+                  <td>{it.assignee ?? "-"}</td>
+                  <td>{it.planStart ? new Date(it.planStart).toLocaleDateString("vi-VN") : "-"}</td>
+                  <td>{it.planEnd ? new Date(it.planEnd).toLocaleDateString("vi-VN") : "-"}</td>
+                  <td>{it.actualStart ? new Date(it.actualStart).toLocaleDateString("vi-VN") : "-"}</td>
+                  <td>{it.actualEnd ? new Date(it.actualEnd).toLocaleDateString("vi-VN") : "-"}</td>
+                  <td>{daysBetween(it.planStart, it.planEnd) ?? "-"}</td>
+                  <td>{statusLabel(it.status)}</td>
+                  <td>{it.note ?? "-"}</td>
                   <td>
-                    {i.note ?? "-"}
-                    <button className="btn-line" onClick={() => { setEditing(i); setShowForm(true) }}>Sua</button>
-                    <button className="btn-line" onClick={() => onDeleteItem(i.id)}>Xoa</button>
+                    <button className="btn-line" onClick={() => { setEditing(it); setShowItemForm(true) }}>Sửa</button>
+                    <button className="btn-line" onClick={() => onDeleteItem(it.id)}>Xóa</button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {active.items.length === 0 && <div className="empty">Chua co dau viec nao.</div>}
+          {active.items.length === 0 && <div className="empty">Chưa có đầu việc nào.</div>}
         </div>
       </div>
     </section>

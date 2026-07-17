@@ -1,0 +1,155 @@
+"use client"
+
+import { useMemo, useState, useTransition } from "react"
+import { createBooking, deleteBooking } from "./actions"
+
+type EquipRow = { id: string; name: string; category: string | null; status: string | null }
+type Booking = {
+  id: string; equipmentId: string; equipmentName: string; startTime: string; endTime: string
+  bookedBy: string | null; department: string | null; purpose: string | null
+}
+
+const HOURS = Array.from({ length: 13 }, (_, i) => 7 + i) // 07:00 - 19:00
+
+function fmtDate(d: Date) {
+  const y = d.getFullYear(); const m = String(d.getMonth() + 1).padStart(2, "0"); const day = String(d.getDate()).padStart(2, "0")
+  return `${y}-${m}-${day}`
+}
+
+export default function AnalyticsClient({ equipment, bookings }: { equipment: EquipRow[]; bookings: Booking[] }) {
+  const [date, setDate] = useState(() => fmtDate(new Date()))
+  const [cat, setCat] = useState("all")
+  const [pending, startTransition] = useTransition()
+  const [slotPick, setSlotPick] = useState<{ equipmentId: string; hour: number } | null>(null)
+
+  const cats = useMemo(() => Array.from(new Set(equipment.map((e) => e.category).filter(Boolean))) as string[], [equipment])
+  const equipShown = cat === "all" ? equipment : equipment.filter((e) => e.category === cat)
+
+  const dayBookings = useMemo(() => bookings.filter((b) => b.startTime.slice(0, 10) === date), [bookings, date])
+
+  const total = equipment.length
+  const ready = equipment.filter((e) => e.status === "ready").length
+  const maint = equipment.filter((e) => e.status === "maintenance").length
+  const todayBookings = useMemo(() => bookings.filter((b) => b.startTime.slice(0, 10) === fmtDate(new Date())), [bookings])
+
+  function bookingFor(equipmentId: string, hour: number) {
+    return dayBookings.find((b) => {
+      if (b.equipmentId !== equipmentId) return false
+      const sh = new Date(b.startTime).getHours()
+      const eh = new Date(b.endTime).getHours()
+      return hour >= sh && hour < eh
+    })
+  }
+
+  function shiftDate(deltaDays: number) {
+    const d = new Date(date); d.setDate(d.getDate() + deltaDays); setDate(fmtDate(d))
+  }
+
+  function onCreate(formData: FormData) {
+    formData.set("date", date)
+    startTransition(async () => { await createBooking(formData); setSlotPick(null) })
+  }
+
+  function onCancel(id: string) {
+    if (!confirm("Hủy lịch đặt này?")) return
+    startTransition(async () => { await deleteBooking(id) })
+  }
+
+  return (
+    <section id="page-analytics">
+      <div className="grid kpis" style={{ marginBottom: 18 }}>
+        <div className="kcard kb"><div className="v" id="eqk-total">{total}</div><div className="l">Tổng thiết bị</div></div>
+        <div className="kcard kg"><div className="v" id="eqk-ready">{ready}</div><div className="l">Sẵn sàng</div></div>
+        <div className="kcard kr"><div className="v" id="eqk-maint">{maint}</div><div className="l">Đang bảo trì</div></div>
+        <div className="kcard kp"><div className="v" id="eqk-today">{todayBookings.length}</div><div className="l" id="eqk-today-s">Lịch đặt hôm nay</div></div>
+      </div>
+
+      <div className="card" style={{ marginBottom: 14 }}>
+        <div className="eqdatenav">
+          <button className="btn-line" id="eq-date-prev" onClick={() => shiftDate(-1)}>‹</button>
+          <span className="eqdatenav-pick">
+            <input id="eq-date-input" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+          </span>
+          <button className="btn-line" id="eq-date-next" onClick={() => shiftDate(1)}>›</button>
+          <button className="btn-line" id="eq-date-today" onClick={() => setDate(fmtDate(new Date()))}>Hôm nay</button>
+        </div>
+
+        <div className="chips" id="eq-cat-chips" style={{ margin: "10px 0" }}>
+          <button className={cat === "all" ? "chip active" : "chip"} onClick={() => setCat("all")}>Tất cả</button>
+          {cats.map((c) => (<button key={c} className={cat === c ? "chip active" : "chip"} onClick={() => setCat(c)}>{c}</button>))}
+        </div>
+
+        <div className="eqlegend">
+          <span><i className="sw sw-free" /> Còn trống</span>
+          <span><i className="sw sw-booked" /> Đã đặt</span>
+          <span><i className="sw sw-maint" /> Đang bảo trì</span>
+        </div>
+
+        <div className="eqgrid-wrap" id="eq-grid-wrap">
+          <table className="eqgrid">
+            <thead>
+              <tr><th>Thiết bị</th>{HOURS.map((h) => (<th key={h}>{h}:00</th>))}</tr>
+            </thead>
+            <tbody>
+              {equipShown.map((e) => (
+                <tr key={e.id}>
+                  <td>{e.name}</td>
+                  {HOURS.map((h) => {
+                    const b = bookingFor(e.id, h)
+                    if (e.status === "maintenance") return <td key={h} className="eqcol-maint" title="Đang bảo trì" />
+                    if (b) return <td key={h} className="eqcol-booked" title={`${b.bookedBy ?? ""} - ${b.purpose ?? ""}`} />
+                    return (
+                      <td key={h} className="eqcol-free" onClick={() => setSlotPick({ equipmentId: e.id, hour: h })}>
+                        {slotPick && slotPick.equipmentId === e.id && slotPick.hour === h ? "✎" : ""}
+                      </td>
+                    )
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {slotPick && (
+        <div className="card" style={{ marginBottom: 14 }}>
+          <h3>Đặt lịch: {equipment.find((e) => e.id === slotPick.equipmentId)?.name}</h3>
+          <form action={onCreate}>
+            <input type="hidden" name="equipmentId" value={slotPick.equipmentId} />
+            <div className="row">
+              <div className="field"><label>Giờ bắt đầu</label><input name="startHour" type="time" defaultValue={`${String(slotPick.hour).padStart(2, "0")}:00`} /></div>
+              <div className="field"><label>Giờ kết thúc</label><input name="endHour" type="time" defaultValue={`${String(slotPick.hour + 1).padStart(2, "0")}:00`} /></div>
+              <div className="field"><label>Người đặt</label><input name="bookedBy" placeholder="Họ tên" /></div>
+              <div className="field"><label>Phòng ban</label><input name="department" placeholder="VD: QC" /></div>
+              <div className="field" style={{ flex: 2 }}><label>Mục đích</label><input name="purpose" placeholder="Mục đích sử dụng" /></div>
+            </div>
+            <div className="row" style={{ marginTop: 10 }}>
+              <button type="submit" className="btn-pri" disabled={pending}>Xác nhận đặt lịch</button>
+              <button type="button" className="btn-line" onClick={() => setSlotPick(null)}>Hủy</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      <div className="card">
+        <h3 id="eq-list-sub">Lịch đặt trong ngày</h3>
+        <table>
+          <thead><tr><th>Khung giờ</th><th>Thiết bị</th><th>Người đặt</th><th>Phòng ban</th><th>Mục đích</th><th>Thao tác</th></tr></thead>
+          <tbody id="eq-booking-body">
+            {dayBookings.map((b) => (
+              <tr key={b.id}>
+                <td>{new Date(b.startTime).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })} - {new Date(b.endTime).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}</td>
+                <td>{b.equipmentName}</td>
+                <td>{b.bookedBy ?? "-"}</td>
+                <td>{b.department ?? "-"}</td>
+                <td>{b.purpose ?? "-"}</td>
+                <td><button className="btn-line" onClick={() => onCancel(b.id)}>Hủy</button></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {dayBookings.length === 0 && <div id="eq-booking-empty" className="empty">Chưa có lịch đặt trong ngày này.</div>}
+      </div>
+    </section>
+  )
+}

@@ -36,8 +36,8 @@ const NAV_GROUPS: NavGroup[] = [
   {
     heading: "Thiết bị",
     items: [
-      { href: "/equipment", label: "Thiết bị", dataPage: "equipment", icon: <Icon path='<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>' /> },
-      { href: "/equipment", label: "Đặt lịch", dataPage: "analytics", icon: <Icon path='<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>' /> },
+      { href: "/equipment?tab=equipment", label: "Thiết bị", dataPage: "equipment", icon: <Icon path='<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>' /> },
+      { href: "/equipment?tab=analytics", label: "Đặt lịch", dataPage: "analytics", icon: <Icon path='<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>' /> },
       { href: "/quote?tab=quote-depreciation", label: "Khấu hao thiết bị", dataPage: "quote-depreciation", icon: <Icon path='<path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/>' /> },
     ],
   },
