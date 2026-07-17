@@ -1,9 +1,3 @@
-// Thiet ke schema Postgres cho TaskFlow (Buoc 0 - ban dau, can ra soat cung team truoc khi migrate du lieu thuc)
-// Anh xa tu cac localStorage key cua ban HTML goc:
-// TKEY->Task, MKEY->Member, PKEY->Project, RKEY->Report, EQKEY->Equipment, EQBKEY->EquipmentBooking,
-// EQCENTERKEY->EquipmentCenterLink, CUKEY->Customer, CTKEY->Center, QTKEY/QTCKEY/QTPKEY/QTDKEY/QTMKEY/QTVKEY->Quote*,
-// AUKEY->AuditLogEntry, APKEY/APLISTKEY->AuditPlan*, PMKEY->PurchaseItem
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,275 +7,267 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ---------- RBAC (Buoc 2-3) ----------
+// ================== AUTH (Auth.js / NextAuth PrismaAdapter) ==================
 
 model User {
-  id            String     @id @default(cuid())
-  email         String     @unique
+  id            String    @id @default(cuid())
   name          String?
-  passwordHash  String?
+  email         String?   @unique
+  emailVerified DateTime?
   image         String?
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
-  roles         UserRole[]
-  auditLogs     AuditLogEntry[]
-  bookings      EquipmentBooking[]
-  purchaseRequests PurchaseItem[]
+  passwordHash  String?
+
+  accounts  Account[]
+  sessions  Session[]
+  userRoles UserRole[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ================== RBAC (Buoc 3) ==================
+
 model Role {
-  id          String           @id @default(cuid())
-  name        String           @unique // admin | manager | technician | quote_staff | viewer
-  users       UserRole[]
-  permissions RolePermission[]
+  id   String @id @default(cuid())
+  name String @unique // admin | manager | technician | quote_staff | viewer
+
+  permissions Permission[]
+  userRoles   UserRole[]
 }
 
 model Permission {
-  id      String           @id @default(cuid())
-  module  String           // tasks | projects | equipment | quote | purchase | auditplan | settings | members | customers | report
-  action  String           // view | create | edit | delete | approve
-  roles   RolePermission[]
+  id     String @id @default(cuid())
+  roleId String
+  module String // "tasks" | "equipment" | "quotes" | "settings" | "*" (tat ca)...
+  action String // "view" | "create" | "edit" | "delete"
 
-  @@unique([module, action])
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, module, action])
 }
 
 model UserRole {
+  id     String @id @default(cuid())
   userId String
   roleId String
-  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role   Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
-  @@id([userId, roleId])
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
 }
 
-model RolePermission {
-  roleId       String
-  permissionId String
-  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
-
-  @@id([roleId, permissionId])
-}
-
-// ---------- Danh muc dung chung ----------
-
-model Member {
-  id        String   @id @default(cuid())
-  name      String
-  email     String?  @unique
-  phone     String?
-  jobTitle  String?
-  avatar    String?
-  createdAt DateTime @default(now())
-  tasks     Task[]
-}
-
-model Customer {
-  id        String   @id @default(cuid())
-  name      String
-  contact   String?
-  phone     String?
-  address   String?
-  createdAt DateTime @default(now())
-  projects  Project[]
-  centers   Center[]
-  quotes    Quote[]
-}
-
-model Center {
-  id         String     @id @default(cuid())
-  name       String
-  address    String?
-  customerId String?
-  customer   Customer?  @relation(fields: [customerId], references: [id])
-  equipment  Equipment[]
-  projects   Project[]
-}
-
-// ---------- Du an & Cong viec ----------
+// ================== NGHIEP VU TASKFLOW ==================
+// TODO Buoc 5: viet script import du lieu tu localStorage export cua ban HTML goc vao cac bang duoi day.
 
 model Project {
-  id          String   @id @default(cuid())
-  code        String?  @unique
-  name        String
-  description String?
-  status      String   @default("planning")
-  customerId  String?
-  customer    Customer? @relation(fields: [customerId], references: [id])
-  centerId    String?
-  center      Center?  @relation(fields: [centerId], references: [id])
-  startDate   DateTime?
-  endDate     DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  tasks       Task[]
-  reports     Report[]
-  bookings    EquipmentBooking[]
-  quotes      Quote[]
+  id        String    @id @default(cuid())
+  name      String
+  status    String?
+  startDate DateTime?
+  endDate   DateTime?
+  tasks     Task[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
 
 model Task {
-  id         String    @id @default(cuid())
-  title      String
+  id          String    @id @default(cuid())
+  title       String
   description String?
-  projectId  String?
-  project    Project?  @relation(fields: [projectId], references: [id])
-  assigneeId String?
-  assignee   Member?   @relation(fields: [assigneeId], references: [id])
-  status     String    @default("todo")
-  priority   String    @default("normal")
-  dueDate    DateTime?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  status      String?
+  assigneeId  String?
+  projectId   String?
+  dueDate     DateTime?
+
+  project Project? @relation(fields: [projectId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Member {
+  id    String  @id @default(cuid())
+  name  String
+  role  String?
+  email String? @unique
+  phone String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Report {
   id        String   @id @default(cuid())
-  projectId String?
-  project   Project? @relation(fields: [projectId], references: [id])
   title     String
   content   String?
   createdAt DateTime @default(now())
 }
 
-// ---------- Thiet bi & Dat lich ----------
+model Center {
+  id      String  @id @default(cuid())
+  name    String
+  address String?
+
+  equipment         Equipment[]
+  equipmentBookings EquipmentBooking[]
+}
 
 model Equipment {
-  id         String   @id @default(cuid())
-  code       String   @unique
-  name       String
-  category   String?
-  brand      String?
-  spec       String?
-  centerId   String?
-  center     Center?  @relation(fields: [centerId], references: [id])
-  status     String   @default("active")
-  bookings   EquipmentBooking[]
+  id       String  @id @default(cuid())
+  name     String
+  code     String? @unique
+  centerId String?
+
+  center   Center?            @relation(fields: [centerId], references: [id])
+  bookings EquipmentBooking[]
 }
 
 model EquipmentBooking {
   id          String   @id @default(cuid())
   equipmentId String
-  equipment   Equipment @relation(fields: [equipmentId], references: [id])
-  projectId   String?
-  project     Project? @relation(fields: [projectId], references: [id])
-  bookedById  String?
-  bookedBy    User?    @relation(fields: [bookedById], references: [id])
+  centerId    String?
   startTime   DateTime
   endTime     DateTime
-  status      String   @default("booked")
-  createdAt   DateTime @default(now())
+  bookedBy    String?
 
-  @@index([equipmentId, startTime, endTime])
+  equipment Equipment @relation(fields: [equipmentId], references: [id])
+  center    Center?   @relation(fields: [centerId], references: [id])
 }
 
-// ---------- Bao gia (hop nhat qt*/ql* sau khi ra soat o Buoc 0) ----------
+model Customer {
+  id      String  @id @default(cuid())
+  name    String
+  email   String?
+  phone   String?
+  address String?
 
-model QuoteCatalogItem {
-  id        String @id @default(cuid())
-  code      String @unique
-  name      String
-  category  String?
-  basePrice Float
-}
-
-model QuotePersonnelRate {
-  id         String @id @default(cuid())
-  roleName   String
-  hourlyRate Float
-}
-
-model QuoteDepreciationRate {
-  id            String @id @default(cuid())
-  machineName   String
-  depRatePerHour Float
-}
-
-model QuoteVariableCost {
-  id     String @id @default(cuid())
-  name   String
-  amount Float
+  quotes Quote[]
 }
 
 model Quote {
-  id          String   @id @default(cuid())
-  code        String   @unique
+  id          String  @id @default(cuid())
   customerId  String?
-  customer    Customer? @relation(fields: [customerId], references: [id])
-  projectId   String?
-  project     Project? @relation(fields: [projectId], references: [id])
-  status      String   @default("draft")
-  totalAmount Float    @default(0)
-  createdAt   DateTime @default(now())
-  items       QuoteItem[]
+  title       String
+  status      String?
+  totalAmount Float?
+
+  customer Customer? @relation(fields: [customerId], references: [id])
+
+  catalogItems      QuoteCatalogItem[]
+  matrixItems       QuoteMatrixItem[]
+  personnelItems    QuotePersonnelItem[]
+  depreciationItems QuoteDepreciationItem[]
+  variableItems     QuoteVariableItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
-model QuoteItem {
-  id         String  @id @default(cuid())
-  quoteId    String
-  quote      Quote   @relation(fields: [quoteId], references: [id], onDelete: Cascade)
-  testCode   String?
-  name       String
-  quantity   Float   @default(1)
-  unitPrice  Float
-  total      Float
+model QuoteCatalogItem {
+  id       String @id @default(cuid())
+  quoteId  String
+  name     String
+  price    Float?
+  quantity Int?
+
+  quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
 }
 
-// ---------- Nhat ky kiem toan ----------
+model QuoteMatrixItem {
+  id      String @id @default(cuid())
+  quoteId String
+  label   String
+  value   Float?
 
-model AuditLogEntry {
-  id         String   @id @default(cuid())
-  userId     String?
-  user       User?    @relation(fields: [userId], references: [id])
-  action     String
-  entityType String
-  entityId   String?
-  detail     String?
-  createdAt  DateTime @default(now())
+  quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
 }
 
-// ---------- Ke hoach Audit ISO 17025 ----------
+model QuotePersonnelItem {
+  id      String @id @default(cuid())
+  quoteId String
+  role    String
+  rate    Float?
+  hours   Float?
+
+  quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+}
+
+model QuoteDepreciationItem {
+  id        String @id @default(cuid())
+  quoteId   String
+  assetName String
+  rate      Float?
+
+  quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+}
+
+model QuoteVariableItem {
+  id      String  @id @default(cuid())
+  quoteId String
+  key     String
+  value   String?
+
+  quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+}
 
 model AuditPlan {
-  id        String   @id @default(cuid())
-  name      String
-  standard  String   @default("ISO 17025")
-  startDate DateTime?
-  endDate   DateTime?
-  status    String   @default("planning")
-  phases    AuditPlanPhase[]
-}
-
-model AuditPlanPhase {
-  id          String   @id @default(cuid())
-  auditPlanId String
-  auditPlan   AuditPlan @relation(fields: [auditPlanId], references: [id], onDelete: Cascade)
-  name        String
-  startDate   DateTime?
-  endDate     DateTime?
-  tasks       AuditPlanTask[]
-}
-
-model AuditPlanTask {
-  id          String   @id @default(cuid())
-  phaseId     String
-  phase       AuditPlanPhase @relation(fields: [phaseId], references: [id], onDelete: Cascade)
+  id          String    @id @default(cuid())
   title       String
-  assigneeId  String?
-  status      String   @default("todo")
-  dueDate     DateTime?
+  scheduledAt DateTime?
+  status      String?
+
+  logs AuditLog[]
 }
 
-// ---------- Mua sam ----------
+model AuditLog {
+  id          String   @id @default(cuid())
+  auditPlanId String?
+  note        String?
+  createdAt   DateTime @default(now())
+
+  auditPlan AuditPlan? @relation(fields: [auditPlanId], references: [id])
+}
 
 model PurchaseItem {
-  id            String   @id @default(cuid())
-  name          String
-  team          String?
-  quantity      Float    @default(1)
-  unitPrice     Float?
-  status        String   @default("requested")
-  requestedById String?
-  requestedBy   User?    @relation(fields: [requestedById], references: [id])
-  createdAt     DateTime @default(now())
+  id       String @id @default(cuid())
+  name     String
+  quantity Int?
+  cost     Float?
 }
