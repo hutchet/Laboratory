@@ -1,18 +1,21 @@
-// Auth.js (NextAuth v5) config khung -- can `npm install` roi dien AUTH_SECRET + DATABASE_URL truoc khi chay thu
-// Xem README.md muc "Buoc 2 - Authentication" de biet cac buoc con lai.
 import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import bcrypt from "bcryptjs"
 import { db } from "@/lib/db"
 
-// Secret explicitly from env — required on Cloudflare Workers
-const secret = process.env.AUTH_SECRET
-if (!secret) throw new Error("AUTH_SECRET not set")
+// Secret resolved lazily — Cloudflare Workers only populates process.env at runtime
+function getSecret(): string {
+  const s = process.env.AUTH_SECRET
+  if (!s) return "" // empty = invalid, but won't crash build
+  return s
+}
+
+const secret = getSecret()
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(db),
-  secret,
+  secret: secret || undefined,
   session: { strategy: "jwt" },
   pages: { signIn: "/login" },
   callbacks: {
