@@ -1,40 +1,95 @@
-// Layout dung chung cho cac trang da dang nhap -- TODO: dung lai sidebar/topbar tu index.html (css/styles.css) goc
+// Layout dung chung cho cac trang da dang nhap, phuc dung theo cau truc sidebar/topbar
+// cua file index.html goc (css/styles.css): .app / .side / .brand / .nav-h / .nav / .top / .me
 import type { ReactNode } from "react"
-import Link from "next/link"
+import { auth } from "@/lib/auth"
+import NavLink from "@/components/NavLink"
+import { logoutAction } from "./logout-action"
 
-const NAV_ITEMS = [
-  { href: "/dash", label: "Dashboard" },
-  { href: "/tasks", label: "Tasks" },
-  { href: "/projects", label: "Projects" },
-  { href: "/equipment", label: "Equipment" },
-  { href: "/quote", label: "Quote" },
-  { href: "/purchase", label: "Purchase" },
-  { href: "/auditplan", label: "Audit Plan" },
-  { href: "/members", label: "Members" },
-  { href: "/customers", label: "Customers" },
-  { href: "/report", label: "Report" },
-  { href: "/settings", label: "Settings" },
+type NavGroup = { heading: string; items: Array<{ href: string; label: string; dataPage: string }> }
+
+const NAV_GROUPS: NavGroup[] = [
+  { heading: "Tong quan", items: [{ href: "/dash", label: "Dashboard", dataPage: "dash" }] },
+  {
+    heading: "Cong viec",
+    items: [
+      { href: "/tasks", label: "Cong viec", dataPage: "tasks" },
+      { href: "/projects", label: "Du an", dataPage: "projects" },
+      { href: "/centers", label: "Trung tam", dataPage: "centers" },
+      { href: "/customers", label: "Khach hang", dataPage: "customers" },
+      { href: "/samples", label: "Mau", dataPage: "samples" },
+      { href: "/plan", label: "Ke hoach thu nghiem", dataPage: "plan" },
+    ],
+  },
+  {
+    heading: "Thiet bi & Chat luong",
+    items: [
+      { href: "/equipment", label: "Thiet bi", dataPage: "equipment" },
+      { href: "/quality", label: "Chat luong", dataPage: "quality" },
+      { href: "/auditplan", label: "Ke hoach kiem toan", dataPage: "auditplan" },
+    ],
+  },
+  {
+    heading: "Bao gia & Mua sam",
+    items: [
+      { href: "/quote", label: "Bao gia", dataPage: "quote-overview" },
+      { href: "/purchase", label: "Mua sam", dataPage: "purchase" },
+    ],
+  },
+  {
+    heading: "Nhan su & Bao cao",
+    items: [
+      { href: "/members", label: "Thanh vien", dataPage: "members" },
+      { href: "/report", label: "Bao cao", dataPage: "report" },
+    ],
+  },
+  { heading: "He thong", items: [{ href: "/settings", label: "Cai dat", dataPage: "settings" }] },
 ]
 
-export default function AppLayout({ children }: { children: ReactNode }) {
+export default async function AppLayout({ children }: { children: ReactNode }) {
+  const session = await auth()
+  const name = session?.user?.name || session?.user?.email || "Nguoi dung"
+  const email = session?.user?.email || ""
+  const initials = name.slice(0, 2).toUpperCase()
+
   return (
-    <div style={{ display: "flex", minHeight: "100vh" }}>
-      <nav style={{ width: 200, borderRight: "1px solid #ddd", padding: 16, flexShrink: 0 }}>
-        <div style={{ fontWeight: 700, marginBottom: 16 }}>TaskFlow</div>
-        <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 8 }}>
-          {NAV_ITEMS.map((item) => (
-            <li key={item.href}>
-              <Link href={item.href} style={{ textDecoration: "none", color: "#333" }}>
-                {item.label}
-              </Link>
-            </li>
-          ))}
-        </ul>
-        <form action="/api/auth/signout" method="post" style={{ marginTop: 24 }}>
-          <button type="submit" style={{ padding: "6px 12px" }}>Dang xuat</button>
-        </form>
-      </nav>
-      <div style={{ flex: 1 }}>{children}</div>
+    <div className="app">
+      <aside className="side">
+        <div className="brand">
+          <span className="logo" />
+          <span>TaskFlow</span>
+        </div>
+        {NAV_GROUPS.map((group) => (
+          <div key={group.heading}>
+            <div className="nav-h">{group.heading}</div>
+            {group.items.map((item) => (
+              <NavLink key={item.href} href={item.href} label={item.label} dataPage={item.dataPage} />
+            ))}
+          </div>
+        ))}
+        <div className="upgrade">
+          <form action={logoutAction}>
+            <button type="submit">Dang xuat</button>
+          </form>
+        </div>
+      </aside>
+      <main className="main">
+        <div className="top">
+          <div className="hello">
+            <h2>Xin chao</h2>
+            <p>Chuc mot ngay lam viec hieu qua</p>
+          </div>
+          <div className="top-r">
+            <div className="me">
+              <div className="av">{initials}</div>
+              <div>
+                <div className="nm">{name}</div>
+                <div className="em">{email}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        {children}
+      </main>
     </div>
   )
 }
