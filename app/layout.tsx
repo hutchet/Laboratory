@@ -1,6 +1,8 @@
 import type { ReactNode } from "react"
 import "./globals.css"
 
+export const runtime = 'edge'
+
 export const metadata = {
   title: "TaskFlow",
   description: "VinFast - Quan ly cong viec",

@@ -1,6 +1,8 @@
 import { db } from "@/lib/db"
 import ReportClient from "./ReportClient"
 
+export const runtime = 'edge'
+
 export default async function ReportPage() {
   const reports = await db.report.findMany({ include: { project: true }, orderBy: { createdAt: "desc" } })
   const projects = await db.project.findMany({ select: { id: true, name: true } })

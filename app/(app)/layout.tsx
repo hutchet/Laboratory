@@ -6,6 +6,8 @@ import NavLink from "@/components/NavLink"
 import { logoutAction } from "./logout-action"
 import { VINFAST_LOGO } from "@/lib/vinfast-logo"
 
+export const runtime = 'edge'
+
 type NavItem = { href: string; label: string; dataPage: string; icon: ReactNode }
 type NavGroup = { heading: string; items: NavItem[] }
 

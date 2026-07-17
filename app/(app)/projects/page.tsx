@@ -1,6 +1,8 @@
 import { db } from "@/lib/db"
 import ProjectsClient from "./ProjectsClient"
 
+export const runtime = 'edge'
+
 export default async function ProjectsPage() {
   const projects = await db.project.findMany({ include: { tasks: true, customer: true, center: true }, orderBy: { createdAt: "desc" } })
   const customers = await db.customer.findMany({ select: { id: true, name: true } })

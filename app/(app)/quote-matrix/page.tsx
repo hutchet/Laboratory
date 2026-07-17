@@ -1,3 +1,4 @@
+export const runtime = 'edge'
 // Trang "quote-matrix" -- TODO: chuyen logic tu ban HTML goc: 05-quote-pricing.js (renderQuoteMatrix)
 // Nho: moi tinh toan quan trong (gia, kiem tra trung lich...) nen chay o server (Route Handler / Server Action),
 // khong de lai toan bo o client nhu ban cu.

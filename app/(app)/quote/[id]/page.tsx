@@ -5,6 +5,8 @@ import { notFound } from "next/navigation"
 import Link from "next/link"
 import { updateQuoteMeta, addQuoteItemFromCatalog, updateQuoteItemQty, removeQuoteItem } from "../actions"
 
+export const runtime = 'edge'
+
 const STATUSES = ["Nháp", "Chờ duyệt", "Đã duyệt", "Từ chối"]
 const STATUS_STYLE: Record<string, { bg: string; fg: string }> = {
   "Nháp": { bg: "#fef3c7", fg: "#92400e" },

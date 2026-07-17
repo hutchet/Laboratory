@@ -8,6 +8,8 @@ import QuotePersonnelClient from "./QuotePersonnelClient"
 import QuoteDepreciationClient from "./QuoteDepreciationClient"
 import QuoteVariableClient from "./QuoteVariableClient"
 
+export const runtime = 'edge'
+
 export default async function QuotePage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   const { tab } = await searchParams
   const view = tab || "quote-overview"

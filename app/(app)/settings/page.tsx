@@ -2,6 +2,8 @@ import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
 import SettingsClient from "./SettingsClient"
 
+export const runtime = 'edge'
+
 export default async function SettingsPage() {
   const session = await auth()
   let roleLabel = "Chưa xác định"

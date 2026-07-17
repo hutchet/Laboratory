@@ -1,6 +1,8 @@
 import { db } from "@/lib/db"
 import CustomersClient from "./CustomersClient"
 
+export const runtime = 'edge'
+
 export default async function CustomersPage() {
   const customers = await db.customer.findMany({ include: { projects: true } })
   const rows = customers.map((c) => ({

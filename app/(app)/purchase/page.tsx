@@ -3,6 +3,8 @@ import { auth } from "@/lib/auth"
 import { can } from "@/lib/rbac"
 import PurchaseClient from "./PurchaseClient"
 
+export const runtime = 'edge'
+
 export default async function PurchasePage() {
   const items = await db.purchaseItem.findMany()
   const session = await auth()

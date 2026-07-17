@@ -1,6 +1,8 @@
 import { db } from "@/lib/db"
 import AuditPlanClient from "./AuditPlanClient"
 
+export const runtime = 'edge'
+
 export default async function AuditPlanPage() {
   const plans = await db.auditPlan.findMany({ include: { phases: true, items: true } })
   const rows = plans.map((p) => ({

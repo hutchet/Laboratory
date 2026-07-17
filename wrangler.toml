@@ -1,0 +1,4 @@
+name = "taskflow"
+pages_build_output_dir = ".vercel/output/static"
+compatibility_date = "2026-07-17"
+compatibility_flags = ["nodejs_compat_v2"]

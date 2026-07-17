@@ -1,6 +1,8 @@
 import { db } from "@/lib/db"
 import QualityClient from "./QualityClient"
 
+export const runtime = 'edge'
+
 export default async function QualityPage() {
   const checklist = await db.qualityChecklistItem.findMany({ orderBy: { id: "asc" } })
   const equipment = await db.equipment.findMany()
