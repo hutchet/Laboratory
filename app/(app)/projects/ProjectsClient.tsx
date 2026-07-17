@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useMemo, useState, useTransition } from "react"
 import { saveProject, deleteProject } from "./actions"
+import { Perm } from "@/lib/rbac-client"
 
 type ProjectRow = {
   id: string
@@ -86,7 +87,7 @@ export default function ProjectsClient({ projects, customers, centers }: { proje
             <input id="psearch" placeholder="Tìm dự án..." value={q} onChange={(e) => { setQ(e.target.value); setPage(1) }} />
           </div>
           <button className="btn-line" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" /></svg> Bộ lọc</button>
-          <button className="btn-pri" id="btn-newproj" onClick={openNew}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg> Dự án mới</button>
+          <Perm minPerm="manager"><button className="btn-pri" id="btn-newproj" onClick={openNew}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg> Dự án mới</button></Perm>
         </div>
       </div>
       <div className={showForm ? "card" : "card hidden"} id="proj-form" style={{ marginBottom: 18 }}>
@@ -143,8 +144,10 @@ export default function ProjectsClient({ projects, customers, centers }: { proje
             <div className="pfoot">
               <span>{fmtVnd(p.value)}</span>
               <div className="pacts">
-                <button className="btn-line" onClick={() => openEdit(p)}>Sửa</button>
-                <button className="btn-line" onClick={() => onDelete(p.id)}>Xoá</button>
+                <Perm minPerm="manager">
+                  <button className="btn-line" onClick={() => openEdit(p)}>Sửa</button>
+                  <button className="btn-line" onClick={() => onDelete(p.id)}>Xoá</button>
+                </Perm>
               </div>
             </div>
           </div>

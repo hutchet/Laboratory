@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react"
 import { saveCustomer, deleteCustomer } from "./actions"
+import { Perm } from "@/lib/rbac-client"
 
 type CustomerRow = {
   id: string
@@ -62,7 +63,7 @@ export default function CustomersClient({ customers }: { customers: CustomerRow[
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
             <input id="cusearch" placeholder="Tìm khách hàng..." value={q} onChange={(e) => setQ(e.target.value)} />
           </div>
-          <button className="btn-pri" id="btn-newcu" onClick={openNew}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg> Khách hàng mới</button>
+          <Perm minPerm="manager"><button className="btn-pri" id="btn-newcu" onClick={openNew}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg> Khách hàng mới</button></Perm>
         </div>
       </div>
       <div className={showForm ? "card" : "card hidden"} id="cu-form" style={{ marginBottom: 18 }} data-perm="manager">
@@ -91,8 +92,10 @@ export default function CustomersClient({ customers }: { customers: CustomerRow[
             <div className="cucard-head">
               <div className="cucard-title"><h4>{c.name}</h4><div className="cu-sub">{c.contact ?? "—"}</div></div>
               <div className="cucard-acts">
-                <button className="btn-line" onClick={() => openEdit(c)}>Sửa</button>
-                <button className="btn-line" onClick={() => onDelete(c.id)}>Xoá</button>
+                <Perm minPerm="manager">
+                  <button className="btn-line" onClick={() => openEdit(c)}>Sửa</button>
+                  <button className="btn-line" onClick={() => onDelete(c.id)}>Xoá</button>
+                </Perm>
               </div>
             </div>
             <div className="cucard-info">

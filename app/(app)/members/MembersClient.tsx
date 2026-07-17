@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react"
 import { saveMember, deleteMember } from "./actions"
+import { Perm } from "@/lib/rbac-client"
 
 type MemberRow = {
   id: string
@@ -68,10 +69,12 @@ export default function MembersClient({ members }: { members: MemberRow[] }) {
               </select>
             </div>
           </div>
+          <Perm minPerm="admin">
           <div className="row" style={{ marginTop: 12 }} data-perm="admin">
             <button type="submit" className="btn-pri" id="m-submit" disabled={pending}>{editing ? "Lưu thay đổi" : "+ Thêm thành viên"}</button>
             {editing && <button type="button" className="btn-line" id="m-cancel" onClick={() => setEditing(null)}>Hủy</button>}
           </div>
+          </Perm>
         </form>
       </div>
       <div className="card" style={{ padding: 0, overflowX: "auto" }}>
@@ -88,8 +91,10 @@ export default function MembersClient({ members }: { members: MemberRow[] }) {
                 <td>{m.team ?? "—"}</td>
                 <td>{ROLE_LABEL[m.accessRole ?? "viewer"]}</td>
                 <td>
-                  <button className="btn-line" onClick={() => setEditing(m)}>Sửa</button>{" "}
-                  <button className="btn-line" onClick={() => onDelete(m.id)}>Xoá</button>
+                  <Perm minPerm="admin">
+                    <button className="btn-line" onClick={() => setEditing(m)}>Sửa</button>{" "}
+                    <button className="btn-line" onClick={() => onDelete(m.id)}>Xoá</button>
+                  </Perm>
                 </td>
               </tr>
             ))}
