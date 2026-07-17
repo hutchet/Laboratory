@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { useMemo, useState, useTransition } from "react"
 import { saveProject, deleteProject } from "./actions"
 
@@ -15,6 +16,9 @@ type ProjectRow = {
   doneCount: number
   overdueCount: number
   displayStatus: "doing" | "done" | "risk"
+  hasPlan: boolean
+  planTestCount: number
+  planStaffCount: number
 }
 
 type Option = { id: string; name: string }
@@ -114,6 +118,14 @@ export default function ProjectsClient({ projects, customers, centers }: { proje
               <div className="prow"><span>Trung tâm</span><b>{p.centerName ?? "—"}</b></div>
               <div className="prow"><span>Công việc</span><b>{p.doneCount}/{p.taskCount}</b></div>
               <div className="prow"><span>Quá hạn</span><b>{p.overdueCount}</b></div>
+              {p.hasPlan ? (
+                <Link href={`/plan?project=${p.id}`} className="pplan-link" style={{ marginTop: 8, cursor: "pointer" }}>
+                  <span>Kế hoạch thử nghiệm</span>
+                  <span className="pplan-meta"><b>{p.planTestCount} bài · {p.planStaffCount} nhân viên</b><button type="button" className="sys-arrow-control pplan-arrow" aria-label="Mở kế hoạch">›</button></span>
+                </Link>
+              ) : (
+                <div className="pplan-link is-empty" style={{ marginTop: 8 }}><span>Chưa có kế hoạch thử nghiệm</span></div>
+              )}
             </div>
             <div className="pfoot">
               <span>{fmtVnd(p.value)}</span>

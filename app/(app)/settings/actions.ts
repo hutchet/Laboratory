@@ -28,7 +28,7 @@ export async function exportAllData() {
     db.member.findMany(),
     db.equipment.findMany(),
     db.equipmentBooking.findMany(),
-    db.quote.findMany({ include: { catalogItems: true, matrixItems: true, personnelItems: true, depreciationItems: true, variableItems: true } }).catch(() => db.quote.findMany()),
+    db.quote.findMany({ include: { items: true } }).catch(() => db.quote.findMany()),
     db.sample.findMany(),
     db.testPlan.findMany({ include: { items: true } }).catch(() => db.testPlan.findMany()),
     db.auditPlan.findMany({ include: { phases: true, items: true } }).catch(() => db.auditPlan.findMany()),

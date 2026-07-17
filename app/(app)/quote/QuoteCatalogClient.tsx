@@ -69,6 +69,7 @@ export default function QuoteCatalogClient({ items, canManage = true }: { items:
       )}
 
       <div className="card" style={{ padding: 0, overflowX: "auto" }}>
+        <div className="qs-box" id="qtc-scrollbox">
         <table className="rz-table" id="qtc-table">
           <thead>
             <tr>
@@ -96,6 +97,7 @@ export default function QuoteCatalogClient({ items, canManage = true }: { items:
             ))}
           </tbody>
         </table>
+        </div>
         {filtered.length === 0 && <div className="empty" id="qtc-empty">Chưa có bài thử nghiệm nào.</div>}
       </div>
     </section>

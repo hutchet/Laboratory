@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth"
 import NavLink from "@/components/NavLink"
 import { logoutAction } from "./logout-action"
 import { VINFAST_LOGO } from "@/lib/vinfast-logo"
+import ResponsiveController from "@/components/ResponsiveController"
 
 type NavItem = { href: string; label: string; dataPage: string; icon: ReactNode }
 type NavGroup = { heading: string; items: NavItem[] }
@@ -88,6 +89,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="app">
+      <ResponsiveController />
       <aside className="side">
         <div className="brand">
           {/* eslint-disable-next-line @next/next/no-img-element */}

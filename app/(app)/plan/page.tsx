@@ -1,7 +1,8 @@
 import { db } from "@/lib/db"
 import PlanClient from "./PlanClient"
 
-export default async function PlanPage() {
+export default async function PlanPage({ searchParams }: { searchParams: Promise<{ project?: string }> }) {
+  const { project: initialProjectId } = await searchParams
   const plans = await db.testPlan.findMany({ include: { project: true, items: { include: { sample: true, equipment: true } } } })
   const projects = await db.project.findMany({ select: { id: true, name: true } })
   const samples = await db.sample.findMany({ select: { id: true, name: true } })
@@ -22,5 +23,5 @@ export default async function PlanPage() {
     })),
   }))
 
-  return <PlanClient plans={rows} projects={projects} samples={samples} equipment={equipment} />
+  return <PlanClient plans={rows} projects={projects} samples={samples} equipment={equipment} initialProjectId={initialProjectId ?? null} />
 }

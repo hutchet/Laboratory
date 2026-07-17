@@ -98,6 +98,7 @@ export default function QuotePersonnelClient({ rateConfig, routings, canManage =
       )}
 
       <div className="card" style={{ padding: 0, overflowX: "auto" }}>
+        <div className="qs-box" id="qtp-scrollbox">
         <table className="rz-table" id="qtp-table">
           <thead>
             <tr>
@@ -127,6 +128,7 @@ export default function QuotePersonnelClient({ rateConfig, routings, canManage =
             ))}
           </tbody>
         </table>
+        </div>
         {filtered.length === 0 && <div className="empty" id="qtp-empty">Chưa có định mức nhân sự nào.</div>}
       </div>
     </section>

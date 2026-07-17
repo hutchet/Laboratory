@@ -13,29 +13,55 @@ const ROLE_OPTIONS = [
 
 const ROLE_LABELS: Record<string, string> = { admin: "Quản trị", manager: "Quản lý", technician: "Kỹ thuật viên", viewer: "Người xem" }
 
+const FONT_OPTIONS = [
+  { key: "default", label: "Mặc định (Inter)", stack: "Inter, 'Segoe UI', Roboto, Arial, sans-serif" },
+  { key: "roboto", label: "Roboto", stack: "Roboto, 'Segoe UI', Arial, sans-serif" },
+  { key: "serif", label: "Serif (Georgia)", stack: "Georgia, 'Times New Roman', serif" },
+  { key: "mono", label: "Monospace", stack: "'Courier New', Courier, monospace" },
+]
+function plFontStack(key: string) {
+  return FONT_OPTIONS.find((f) => f.key === key)?.stack ?? FONT_OPTIONS[0].stack
+}
+
 export default function SettingsClient({ roleLabel }: { roleLabel: string }) {
   const [theme, setTheme] = useState("light")
-  const [font, setFont] = useState("normal")
+  const [font, setFont] = useState("default")
   const [activeRole, setActiveRole] = useState("")
   const [backupMeta, setBackupMeta] = useState<string | null>(null)
   const [dbStatus, setDbStatus] = useState("Chưa chọn thư mục database")
 
+  function applyAutoTheme() {
+    const dark = !!(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches)
+    document.documentElement.setAttribute("data-theme", dark ? "dark" : "light")
+  }
+
   useEffect(() => {
     const t = localStorage.getItem("tf-theme") || "light"
-    const f = localStorage.getItem("tf-font") || "normal"
+    const f = localStorage.getItem("tf-font") || "default"
     const r = localStorage.getItem("tf-active-role") || ""
     setTheme(t); setFont(f); setActiveRole(r)
-    document.documentElement.setAttribute("data-theme", t)
+    if (t === "auto") applyAutoTheme()
+    else document.documentElement.setAttribute("data-theme", t)
+    document.body.style.fontFamily = plFontStack(f)
+    if (!window.matchMedia) return
+    const mq = window.matchMedia("(prefers-color-scheme: dark)")
+    function onChange() {
+      if ((localStorage.getItem("tf-theme") || "light") === "auto") applyAutoTheme()
+    }
+    mq.addEventListener("change", onChange)
+    return () => mq.removeEventListener("change", onChange)
   }, [])
 
   function changeTheme(v: string) {
     setTheme(v)
     localStorage.setItem("tf-theme", v)
-    document.documentElement.setAttribute("data-theme", v)
+    if (v === "auto") applyAutoTheme()
+    else document.documentElement.setAttribute("data-theme", v)
   }
   function changeFont(v: string) {
     setFont(v)
     localStorage.setItem("tf-font", v)
+    document.body.style.fontFamily = plFontStack(v)
   }
   function changeRole(v: string) {
     setActiveRole(v)
@@ -43,7 +69,7 @@ export default function SettingsClient({ roleLabel }: { roleLabel: string }) {
   }
   function resetTheme() {
     changeTheme("light")
-    changeFont("normal")
+    changeFont("default")
   }
   async function backupData() {
     setBackupMeta("Đang xuất dữ liệu...")
@@ -105,12 +131,12 @@ export default function SettingsClient({ roleLabel }: { roleLabel: string }) {
         <div className="th-seg" id="set-th-mode">
           <button type="button" className={theme === "light" ? "btn-pri" : "btn-line"} onClick={() => changeTheme("light")}>Sáng</button>
           <button type="button" className={theme === "dark" ? "btn-pri" : "btn-line"} onClick={() => changeTheme("dark")}>Tối</button>
+          <button type="button" className={theme === "auto" ? "btn-pri" : "btn-line"} onClick={() => changeTheme("auto")}>Theo thiết bị</button>
         </div>
         <div className="th-row">
           <label>Phông chữ</label>
           <select id="set-font" value={font} onChange={(e) => changeFont(e.target.value)}>
-            <option value="normal">Vừa</option>
-            <option value="large">Lớn</option>
+            {FONT_OPTIONS.map((f) => (<option key={f.key} value={f.key}>{f.label}</option>))}
           </select>
         </div>
         <div className="note" style={{ marginTop: 12 }}>Bảng màu Material được khóa theo chế độ Sáng/Tối để bảo đảm độ tương phản. Nền thẻ luôn đặc 100%; hiệu ứng trong suốt, kính mờ và ảnh nền đã được loại bỏ.</div>

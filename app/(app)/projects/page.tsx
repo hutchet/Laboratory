@@ -2,7 +2,7 @@ import { db } from "@/lib/db"
 import ProjectsClient from "./ProjectsClient"
 
 export default async function ProjectsPage() {
-  const projects = await db.project.findMany({ include: { tasks: true, customer: true, center: true }, orderBy: { createdAt: "desc" } })
+  const projects = await db.project.findMany({ include: { tasks: true, customer: true, center: true, plans: { include: { items: true } } }, orderBy: { createdAt: "desc" } })
   const customers = await db.customer.findMany({ select: { id: true, name: true } })
   const centers = await db.center.findMany({ select: { id: true, name: true } })
   const now = new Date()
@@ -14,6 +14,9 @@ export default async function ProjectsPage() {
     let displayStatus: "doing" | "done" | "risk" = "doing"
     if (taskCount > 0 && doneCount === taskCount) displayStatus = "done"
     else if (overdueCount > 0) displayStatus = "risk"
+    const plan = p.plans[0] ?? null
+    const planTestCount = plan ? plan.items.length : 0
+    const planStaffCount = plan ? new Set(plan.items.map((i) => i.assignee).filter(Boolean)).size : 0
     return {
       id: p.id,
       name: p.name,
@@ -26,6 +29,9 @@ export default async function ProjectsPage() {
       doneCount,
       overdueCount,
       displayStatus,
+      hasPlan: !!plan,
+      planTestCount,
+      planStaffCount,
     }
   })
 

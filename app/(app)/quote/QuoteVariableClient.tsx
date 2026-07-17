@@ -58,6 +58,7 @@ export default function QuoteVariableClient({ items, canManage = true }: { items
       )}
 
       <div className="card" style={{ padding: 0, overflowX: "auto" }}>
+        <div className="qs-box" id="qtv-scrollbox">
         <table className="rz-table" id="qtv-table">
           <thead>
             <tr>
@@ -82,6 +83,7 @@ export default function QuoteVariableClient({ items, canManage = true }: { items
             ))}
           </tbody>
         </table>
+        </div>
         {items.length === 0 && <div className="empty" id="qtv-empty">Chưa có chi phí biến đổi nào.</div>}
       </div>
     </section>

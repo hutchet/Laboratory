@@ -72,6 +72,7 @@ export default function QuoteDepreciationClient({ items, canManage = true }: { i
       )}
 
       <div className="card" style={{ padding: 0, overflowX: "auto" }}>
+        <div className="qs-box" id="qtd-scrollbox">
         <table className="rz-table" id="qtd-table">
           <thead>
             <tr>
@@ -98,6 +99,7 @@ export default function QuoteDepreciationClient({ items, canManage = true }: { i
             ))}
           </tbody>
         </table>
+        </div>
         {filtered.length === 0 && <div className="empty" id="qtd-empty">Chưa có thiết bị khấu hao nào.</div>}
       </div>
     </section>

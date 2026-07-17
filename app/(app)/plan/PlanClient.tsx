@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useEffect, useState, useTransition } from "react"
 import { createPlan, deletePlan, addSample, saveItem, deleteItem } from "./actions"
 
 type Item = {
@@ -43,8 +43,14 @@ function Donut({ pass, fail, ongoing }: { pass: number; fail: number; ongoing: n
   )
 }
 
-export default function PlanClient({ plans, projects, samples, equipment }: { plans: Plan[]; projects: Option[]; samples: Option[]; equipment: Option[] }) {
+export default function PlanClient({ plans, projects, samples, equipment, initialProjectId }: { plans: Plan[]; projects: Option[]; samples: Option[]; equipment: Option[]; initialProjectId?: string | null }) {
   const [activeId, setActiveId] = useState<string | null>(null)
+  useEffect(() => {
+    if (!initialProjectId) return
+    const plan = plans.find((pl) => pl.projectId === initialProjectId)
+    if (plan) setActiveId(plan.id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialProjectId])
   const [editing, setEditing] = useState<Item | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [showCreate, setShowCreate] = useState(false)
