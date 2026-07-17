@@ -167,6 +167,11 @@ export async function deleteDepreciationAssets(ids: string[]) {
 }
 
 // ---------- Đơn giá thiết bị (quote-matrix) ----------
+export async function clearEquipmentRates(ids: string[]) {
+  await db.equipment.updateMany({ where: { id: { in: ids } }, data: { hourlyRate: null } })
+  revalidatePath("/quote")
+}
+
 export async function updateEquipmentRate(formData: FormData) {
   const id = String(formData.get("id") || "")
   const hourlyRate = formData.get("hourlyRate") ? Number(formData.get("hourlyRate")) : null

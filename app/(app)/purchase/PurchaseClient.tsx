@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo, useState, useTransition } from "react"
-import { savePurchase, deletePurchase, deleteAllPurchase } from "./actions"
+import { savePurchase, deletePurchase, deleteAllPurchase, deleteManyPurchase } from "./actions"
 
 type Item = { id: string; name: string; quantity: number | null; cost: number | null; status: string | null; note: string | null }
 
@@ -19,6 +19,26 @@ export default function PurchaseClient({ items, canManage = true }: { items: Ite
   const [editing, setEditing] = useState<Item | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [pending, startTransition] = useTransition()
+  const [editMode, setEditMode] = useState(false)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+
+  function toggleRow(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+  function toggleAll() {
+    setSelected((prev) => (prev.size === items.length ? new Set() : new Set(items.map((it) => it.id))))
+  }
+  function onBulkDelete() {
+    if (!selected.size) return
+    if (!confirm(`Xóa ${selected.size} hạng mục đã chọn?`)) return
+    const ids = Array.from(selected)
+    startTransition(async () => { await deleteManyPurchase(ids); setSelected(new Set()) })
+  }
 
   const total = items.length
   const totalValue = useMemo(() => items.reduce((sum, it) => sum + (it.cost ?? 0) * (it.quantity ?? 1), 0), [items])
