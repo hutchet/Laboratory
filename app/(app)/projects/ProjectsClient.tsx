@@ -24,6 +24,7 @@ type ProjectRow = {
 type Option = { id: string; name: string }
 
 const STATUS_LABEL: Record<string, string> = { doing: "Đang thực hiện", done: "Đã hoàn thành", risk: "Rủi ro" }
+const PAGE_SIZE = 6
 
 function fmtVnd(n: number | null) {
   if (!n) return "—"
@@ -35,8 +36,20 @@ export default function ProjectsClient({ projects, customers, centers }: { proje
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<ProjectRow | null>(null)
   const [pending, startTransition] = useTransition()
+  const [page, setPage] = useState(1)
 
   const filtered = useMemo(() => projects.filter((p) => !q || p.name.toLowerCase().includes(q.toLowerCase())), [projects, q])
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const currentPage = Math.min(Math.max(1, page), totalPages)
+  const pageStart = (currentPage - 1) * PAGE_SIZE
+  const paged = useMemo(() => filtered.slice(pageStart, pageStart + PAGE_SIZE), [filtered, pageStart])
+  const showFrom = filtered.length ? pageStart + 1 : 0
+  const showTo = Math.min(currentPage * PAGE_SIZE, filtered.length)
+
+  function goToPage(p: number) {
+    setPage(Math.min(Math.max(1, p), totalPages))
+  }
 
   const kpi = useMemo(() => {
     const active = projects.filter((p) => p.displayStatus !== "done").length
@@ -70,7 +83,7 @@ export default function ProjectsClient({ projects, customers, centers }: { proje
         <div className="tools">
           <div className="search" style={{ maxWidth: 260 }}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
-            <input id="psearch" placeholder="Tìm dự án..." value={q} onChange={(e) => setQ(e.target.value)} />
+            <input id="psearch" placeholder="Tìm dự án..." value={q} onChange={(e) => { setQ(e.target.value); setPage(1) }} />
           </div>
           <button className="btn-line" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" /></svg> Bộ lọc</button>
           <button className="btn-pri" id="btn-newproj" onClick={openNew}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg> Dự án mới</button>
@@ -107,7 +120,7 @@ export default function ProjectsClient({ projects, customers, centers }: { proje
         </form>
       </div>
       <div className="proj-grid" id="proj-grid">
-        {filtered.map((p) => (
+        {paged.map((p) => (
           <div className="pcard" key={p.id}>
             <div className="pt">
               <h4>{p.name}</h4>
@@ -138,6 +151,18 @@ export default function ProjectsClient({ projects, customers, centers }: { proje
         ))}
       </div>
       {filtered.length === 0 && <div className="empty" id="proj-empty">Chưa có dự án nào.</div>}
+      {filtered.length > 0 && (
+        <div className="pager" id="proj-pager">
+          <div className="info">Hiển thị {showFrom}-{showTo} / {filtered.length} dự án</div>
+          <div className="pages">
+            <button type="button" className="pg" data-pg="prev" disabled={currentPage === 1} onClick={() => goToPage(currentPage - 1)}>‹</button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
+              <button key={n} type="button" className={`pg ${n === currentPage ? "active" : ""}`} data-pg={n} onClick={() => goToPage(n)}>{n}</button>
+            ))}
+            <button type="button" className="pg" data-pg="next" disabled={currentPage === totalPages} onClick={() => goToPage(currentPage + 1)}>›</button>
+          </div>
+        </div>
+      )}
     </section>
   )
 }
