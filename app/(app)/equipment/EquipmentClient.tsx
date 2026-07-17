@@ -34,6 +34,12 @@ export default function EquipmentClient({ equipment, centers, canManage = true }
     return map
   }, [equipment])
 
+  const categories = useMemo(() => {
+    const set = new Set<string>()
+    for (const e of equipment) { if (e.category) set.add(e.category) }
+    return Array.from(set).sort()
+  }, [equipment])
+
   const shown = activeCenter === "all" ? equipment : (byCenter[activeCenter] ?? [])
 
   function onSubmit(formData: FormData) {
@@ -83,52 +89,71 @@ export default function EquipmentClient({ equipment, centers, canManage = true }
       </div>
 
       {showForm && (
-        <div className="card">
-          <form action={onSubmit}>
-            <div className="row">
-              <div className="field"><label>Ten thiet bi</label><input name="name" defaultValue={editing?.name ?? ""} required /></div>
-              <div className="field"><label>Ma thiet bi</label><input name="code" defaultValue={editing?.code ?? ""} /></div>
-              <div className="field"><label>Loai</label><input name="category" defaultValue={editing?.category ?? ""} /></div>
+        <div
+          className="modal-overlay"
+          id="eq-popup-layer"
+          onMouseDown={(ev) => { if (ev.target === ev.currentTarget) { setShowForm(false); setEditing(null) } }}
+        >
+          <div className="modal" id="eq-form-card">
+            <div className="modal-h eq-popup-head">
+              <h3 id="eq-form-title">{editing ? "Sua thiet bi" : "Them thiet bi"}</h3>
+              <button type="button" className="modal-x eq-popup-close" id="eq-popup-close" aria-label="Dong" onClick={() => { setShowForm(false); setEditing(null) }}>✕</button>
             </div>
-            <div className="row">
-              <div className="field"><label>Hang san xuat</label><input name="manufacturer" defaultValue={editing?.manufacturer ?? ""} /></div>
-              <div className="field"><label>Model</label><input name="model" defaultValue={editing?.model ?? ""} /></div>
-              <div className="field"><label>So luong</label><input type="number" name="qty" defaultValue={editing?.qty ?? ""} /></div>
+            <div className="modal-body">
+              <form action={onSubmit}>
+                <div className="row">
+                  <div className="field">
+                    <label>Ten thiet bi</label>
+                    <input name="name" defaultValue={editing?.name ?? ""} required />
+                  </div>
+                  <div className="field"><label>Ma thiet bi</label><input name="code" defaultValue={editing?.code ?? ""} /></div>
+                  <div className="field">
+                    <label>Loai</label>
+                    <input name="category" list="eq-cat-list" defaultValue={editing?.category ?? ""} />
+                    <datalist id="eq-cat-list">{categories.map((c) => (<option key={c} value={c} />))}</datalist>
+                  </div>
+                </div>
+                <div className="row">
+                  <div className="field"><label>Hang san xuat</label><input name="manufacturer" defaultValue={editing?.manufacturer ?? ""} /></div>
+                  <div className="field"><label>Model</label><input name="model" defaultValue={editing?.model ?? ""} /></div>
+                  <div className="field"><label>So luong</label><input type="number" name="qty" defaultValue={editing?.qty ?? ""} /></div>
+                </div>
+                <div className="row">
+                  <div className="field">
+                    <label>Trang thai</label>
+                    <select name="status" defaultValue={editing?.status ?? "ready"}>
+                      <option value="ready">San sang</option>
+                      <option value="in_use">Dang dung</option>
+                      <option value="maintenance">Bao tri</option>
+                    </select>
+                  </div>
+                  <div className="field">
+                    <label>Trung tam *</label>
+                    <select name="centerId" defaultValue={editing?.centerId ?? ""}>
+                      <option value="">-- Khong --</option>
+                      {centers.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
+                    </select>
+                  </div>
+                  <div className="field"><label>Phong</label><input name="room" defaultValue={editing?.room ?? ""} /></div>
+                </div>
+                <div className="row">
+                  <div className="field"><label>Dien tich (m2)</label><input type="number" name="area" defaultValue={editing?.area ?? ""} /></div>
+                  <div className="field"><label>Cong suat (kW)</label><input type="number" name="power" defaultValue={editing?.power ?? ""} /></div>
+                  <div className="field"><label>Thong so</label><input name="spec" defaultValue={editing?.spec ?? ""} /></div>
+                </div>
+                <div className="row">
+                  <div className="field"><label>Hieu chuan lan cuoi</label><input type="date" name="calLast" defaultValue={editing?.calLast ? editing.calLast.slice(0, 10) : ""} /></div>
+                  <div className="field"><label>Chu ky (thang)</label><input type="number" name="calInterval" defaultValue={editing?.calInterval ?? ""} /></div>
+                  <div className="field"><label>So chung nhan</label><input name="calCert" defaultValue={editing?.calCert ?? ""} /></div>
+                  <div className="field"><label>Don vi hieu chuan</label><input name="calVendor" defaultValue={editing?.calVendor ?? ""} /></div>
+                </div>
+                <div className="row">
+                  {canManage && <button className="btn-pri" type="submit" disabled={pending}>Luu</button>}
+                  <button className="btn-line" type="button" onClick={() => { setShowForm(false); setEditing(null) }}>Huy</button>
+                </div>
+              </form>
             </div>
-            <div className="row">
-              <div className="field">
-                <label>Trang thai</label>
-                <select name="status" defaultValue={editing?.status ?? "ready"}>
-                  <option value="ready">San sang</option>
-                  <option value="in_use">Dang dung</option>
-                  <option value="maintenance">Bao tri</option>
-                </select>
-              </div>
-              <div className="field">
-                <label>Trung tam</label>
-                <select name="centerId" defaultValue={editing?.centerId ?? ""}>
-                  <option value="">-- Khong --</option>
-                  {centers.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
-                </select>
-              </div>
-              <div className="field"><label>Phong</label><input name="room" defaultValue={editing?.room ?? ""} /></div>
-            </div>
-            <div className="row">
-              <div className="field"><label>Dien tich (m2)</label><input type="number" name="area" defaultValue={editing?.area ?? ""} /></div>
-              <div className="field"><label>Cong suat (kW)</label><input type="number" name="power" defaultValue={editing?.power ?? ""} /></div>
-              <div className="field"><label>Thong so</label><input name="spec" defaultValue={editing?.spec ?? ""} /></div>
-            </div>
-            <div className="row">
-              <div className="field"><label>Hieu chuan lan cuoi</label><input type="date" name="calLast" defaultValue={editing?.calLast ? editing.calLast.slice(0, 10) : ""} /></div>
-              <div className="field"><label>Chu ky (thang)</label><input type="number" name="calInterval" defaultValue={editing?.calInterval ?? ""} /></div>
-              <div className="field"><label>So chung nhan</label><input name="calCert" defaultValue={editing?.calCert ?? ""} /></div>
-              <div className="field"><label>Don vi hieu chuan</label><input name="calVendor" defaultValue={editing?.calVendor ?? ""} /></div>
-            </div>
-            <div className="row">
-              {canManage && <button className="btn-pri" type="submit" disabled={pending}>Luu</button>}
-              <button className="btn-line" type="button" onClick={() => setShowForm(false)}>Huy</button>
-            </div>
-          </form>
+          </div>
         </div>
       )}
 
