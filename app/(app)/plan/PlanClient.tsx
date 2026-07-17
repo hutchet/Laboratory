@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useTransition } from "react"
+import { Fragment, useEffect, useState, useTransition } from "react"
 import { createPlan, deletePlan, addSample, saveItem, deleteItem } from "./actions"
 
 type Item = {
@@ -15,6 +15,68 @@ type Option = { id: string; name: string }
 
 const RESULT_LABEL: Record<string, string> = { pending: "Đang chạy", pass: "Đạt", fail: "Không đạt" }
 const PRIORITY_LABEL: Record<string, string> = { high: "Cao", med: "Trung bình", low: "Thấp" }
+
+type ZoomLevel = "day" | "week" | "month"
+
+function isoDate(d: Date) {
+  return d.toISOString().slice(0, 10)
+}
+function addDays(iso: string, delta: number) {
+  const d = new Date(iso + "T00:00:00")
+  d.setDate(d.getDate() + delta)
+  return isoDate(d)
+}
+function startOfWeek(iso: string) {
+  const d = new Date(iso + "T00:00:00")
+  const day = d.getDay()
+  const diff = day === 0 ? -6 : 1 - day
+  d.setDate(d.getDate() + diff)
+  return isoDate(d)
+}
+function buildColumns(zoom: ZoomLevel, focusDate: string): Array<{ key: string; label: string }> {
+  if (zoom === "day") {
+    return Array.from({ length: 14 }, (_, i) => { const d = addDays(focusDate, i); return { key: d, label: d.slice(5).replace("-", "/") } })
+  }
+  if (zoom === "week") {
+    const start = startOfWeek(focusDate)
+    return Array.from({ length: 8 }, (_, i) => { const d = addDays(start, i * 7); return { key: d, label: "Tuần " + d.slice(5).replace("-", "/") } })
+  }
+  const year = focusDate.slice(0, 4)
+  return Array.from({ length: 12 }, (_, i) => ({ key: `${year}-${String(i + 1).padStart(2, "0")}-01`, label: `Tháng ${i + 1}` }))
+}
+function colIndexForDate(cols: Array<{ key: string }>, zoom: ZoomLevel, dateIso: string | null): number {
+  if (!dateIso) return -1
+  const dOnly = dateIso.slice(0, 10)
+  if (zoom === "month") {
+    const ym = dOnly.slice(0, 7)
+    return cols.findIndex((c) => c.key.slice(0, 7) === ym)
+  }
+  const bucketDays = zoom === "week" ? 7 : 1
+  const dMs = new Date(dOnly + "T00:00:00").getTime()
+  for (let i = 0; i < cols.length; i++) {
+    const startMs = new Date(cols[i].key + "T00:00:00").getTime()
+    if (dMs >= startMs && dMs < startMs + bucketDays * 86400000) return i
+  }
+  return -1
+}
+function barRange(cols: Array<{ key: string }>, zoom: ZoomLevel, startIso: string | null, endIso: string | null): { start: number; span: number } | null {
+  if (!startIso || cols.length === 0) return null
+  const endEff = endIso || startIso
+  const first = cols[0].key
+  const last = cols[cols.length - 1].key
+  const bucketDaysLast = zoom === "month" ? 31 : zoom === "week" ? 7 : 1
+  const lastEndMs = new Date(last + "T00:00:00").getTime() + bucketDaysLast * 86400000
+  const firstMs = new Date(first + "T00:00:00").getTime()
+  const sMs = new Date(startIso.slice(0, 10) + "T00:00:00").getTime()
+  const eMs = new Date(endEff.slice(0, 10) + "T00:00:00").getTime()
+  if (eMs < firstMs || sMs >= lastEndMs) return null
+  let sIdx = colIndexForDate(cols, zoom, startIso)
+  let eIdx = colIndexForDate(cols, zoom, endEff)
+  if (sIdx === -1) sIdx = 0
+  if (eIdx === -1) eIdx = cols.length - 1
+  if (eIdx < sIdx) eIdx = sIdx
+  return { start: sIdx, span: eIdx - sIdx + 1 }
+}
 
 function daysBetween(a: string | null, b: string | null) {
   if (!a || !b) return null
@@ -56,6 +118,19 @@ export default function PlanClient({ plans, projects, samples, equipment, initia
   const [showCreate, setShowCreate] = useState(false)
   const [showAddSample, setShowAddSample] = useState(false)
   const [pending, startTransition] = useTransition()
+  const [zoom, setZoom] = useState<ZoomLevel>("day")
+  const [focusDate, setFocusDate] = useState<string>(() => isoDate(new Date()))
+  const [showQuickAdd, setShowQuickAdd] = useState(false)
+
+  function shiftFocus(delta: number) {
+    setFocusDate((prev) => {
+      if (zoom === "day") return addDays(prev, delta * 7)
+      if (zoom === "week") return addDays(prev, delta * 56)
+      const d = new Date(prev + "T00:00:00")
+      d.setFullYear(d.getFullYear() + delta)
+      return isoDate(d)
+    })
+  }
 
   const active = plans.find((p) => p.id === activeId) ?? null
 
@@ -88,6 +163,15 @@ export default function PlanClient({ plans, projects, samples, equipment, initia
   function onDeleteItem(id: string) {
     if (!confirm("Xóa bài thử này?")) return
     startTransition(async () => { await deleteItem(id) })
+  }
+
+  function onQuickAdd(formData: FormData) {
+    if (!active) return
+    formData.set("testPlanId", active.id)
+    startTransition(async () => {
+      await saveItem(formData)
+      setShowQuickAdd(false)
+    })
   }
 
   if (!active) {
@@ -167,6 +251,16 @@ export default function PlanClient({ plans, projects, samples, equipment, initia
     packMap[pack] = (packMap[pack] || 0) + 1
   }
 
+  const cols = buildColumns(zoom, focusDate)
+  const colWidth = zoom === "day" ? 46 : zoom === "week" ? 90 : 70
+  const suggestion = overdue > 0
+    ? `⚠ Có ${overdue} bài thử đã quá hạn kế hoạch nhưng chưa hoàn thành — nên xem lại lịch hoặc phân bổ lại nhân sự phụ trách.`
+    : total === 0
+    ? "Kế hoạch chưa có bài thử nào — bấm \"+ Thêm bài thử\" hoặc dùng khung \"+ Thêm nhanh\" trên sơ đồ Gantt để bắt đầu."
+    : active.items.every((i) => !i.planStart)
+    ? "Chưa có bài thử nào được gán ngày kế hoạch — nên đặt Bắt đầu KH/Kết thúc KH để theo dõi tiến độ trên sơ đồ Gantt."
+    : null
+
   return (
     <section id="page-plan">
       <div className="ch">
@@ -226,23 +320,77 @@ export default function PlanClient({ plans, projects, samples, equipment, initia
                 </div>
               </div>
             </div>
+            {suggestion && (
+              <div id="plan-suggestion" className="pl-warn" style={{ background: "var(--blue-soft)", border: "1px solid var(--blue)", borderRadius: 8, padding: "10px 12px", color: "var(--blue)", marginTop: 12 }}>
+                {suggestion}
+              </div>
+            )}
           </div>
 
           <div className="card" style={{ marginBottom: 18 }}>
             <div className="pl-toolbar">
               <div>
                 <h3 style={{ fontSize: 16, fontWeight: 600 }}>Sơ đồ Gantt kế hoạch thử nghiệm</h3>
-                <span style={{ fontSize: 12, color: "var(--muted)" }}>Mỏi mẫu chạy một chuỗi bài thử tuần tự riêng</span>
+                <span style={{ fontSize: 12, color: "var(--muted)" }}>Mỗi mẫu chạy một chuỗi bài thử tuần tự riêng</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                <button type="button" className="btn-line" id="plan-quickadd-btn" onClick={() => setShowQuickAdd((v) => !v)}>+ Thêm nhanh</button>
+                <div className="pl-daynav" id="plan-daynav">
+                  <button type="button" className="icon-act" id="plan-day-prev" onClick={() => shiftFocus(-1)}>‹</button>
+                  <span id="plan-daynav-label" style={{ fontSize: 12.5, fontWeight: 600, padding: "0 4px" }}>
+                    {zoom === "month" ? focusDate.slice(0, 4) : `${cols[0]?.key} → ${cols[cols.length - 1]?.key}`}
+                  </span>
+                  <button type="button" className="icon-act" id="plan-day-next" onClick={() => shiftFocus(1)}>›</button>
+                </div>
+                <div className="pl-zoom" id="plan-zoom">
+                  {(["day", "week", "month"] as ZoomLevel[]).map((z) => (
+                    <button type="button" key={z} className={zoom === z ? "active" : ""} onClick={() => setZoom(z)}>
+                      {z === "day" ? "Ngày" : z === "week" ? "Tuần" : "Năm"}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
-            <div className="pl-gantt-wrap" id="plan-gantt-wrap">
-              {active.items.filter((i) => i.planStart && i.planEnd).map((i) => (
-                <div className="row" key={i.id}><span>{i.name}</span><span>{i.planStart!.slice(0, 10)} &rarr; {i.planEnd!.slice(0, 10)}</span></div>
-              ))}
-              {active.items.filter((i) => i.planStart && i.planEnd).length === 0 && <div style={{ color: "var(--muted)", fontSize: 13, padding: 14 }}>Chưa có dữ liệu mốc thời gian để vẽ Gantt.</div>}
+            {showQuickAdd && (
+              <form action={onQuickAdd} className="row" style={{ padding: "10px 14px", background: "var(--surface-2)", borderRadius: 8, marginBottom: 10, flexWrap: "wrap" }}>
+                <div className="field"><label>Tên bài thử *</label><input name="name" required /></div>
+                <div className="field"><label>Bắt đầu KH</label><input type="date" name="planStart" defaultValue={focusDate} /></div>
+                <div className="field"><label>Kết thúc KH</label><input type="date" name="planEnd" defaultValue={focusDate} /></div>
+                <button className="btn-pri" type="submit" disabled={pending}>Lưu nhanh</button>
+                <button className="btn-line" type="button" onClick={() => setShowQuickAdd(false)}>Hủy</button>
+              </form>
+            )}
+            <div className="pl-gantt-wrap" id="plan-gantt-wrap" style={{ overflowX: "auto" }}>
+              <div style={{ display: "grid", gridTemplateColumns: `170px repeat(${Math.max(cols.length, 1)}, ${colWidth}px)`, gridTemplateRows: `26px repeat(${Math.max(active.items.length, 1)}, 32px)`, minWidth: 170 + Math.max(cols.length, 1) * colWidth }}>
+                <div style={{ gridColumn: 1, gridRow: 1, background: "var(--surface-2)" }} />
+                {cols.map((c, ci) => (
+                  <div key={c.key} style={{ gridColumn: ci + 2, gridRow: 1, textAlign: "center", fontSize: 11, fontWeight: 600, padding: "4px 2px", background: "var(--surface-2)", borderLeft: "1px solid var(--line)" }}>{c.label}</div>
+                ))}
+                {cols.length === 0 && <div style={{ gridColumn: 2, gridRow: 1, color: "var(--muted)" }}>—</div>}
+                {active.items.length === 0 && <div style={{ gridColumn: 1, gridRow: 2, padding: 8, color: "var(--muted)", fontSize: 13 }}>Chưa có bài thử nào để vẽ Gantt.</div>}
+                {active.items.map((item, ri) => {
+                  const row = ri + 2
+                  const range = barRange(cols, zoom, item.planStart, item.planEnd)
+                  const color = item.result === "pass" ? "var(--green)" : item.result === "fail" ? "var(--red)" : "var(--pri)"
+                  return (
+                    <Fragment key={item.id}>
+                      <div style={{ gridColumn: 1, gridRow: row, padding: "4px 8px", fontSize: 12.5, borderTop: "1px solid var(--line)" }}>{item.name}</div>
+                      {cols.map((c, ci) => (
+                        <div key={c.key} style={{ gridColumn: ci + 2, gridRow: row, borderTop: "1px solid var(--line)", borderLeft: "1px solid var(--line)" }} />
+                      ))}
+                      {range && (
+                        <div
+                          title={`${item.name}: ${item.planStart?.slice(0, 10)} → ${(item.planEnd || item.planStart)?.slice(0, 10)}`}
+                          style={{ gridColumn: `${range.start + 2} / span ${range.span}`, gridRow: row, margin: "6px 3px", background: color, borderRadius: 4, cursor: "pointer" }}
+                          onClick={() => { setEditing(item); setShowForm(true) }}
+                        />
+                      )}
+                    </Fragment>
+                  )
+                })}
+              </div>
             </div>
           </div>
-
           <div className="card" style={{ marginBottom: 18 }}>
             <div className="ch"><h3>Mẫu thử nghiệm và bài thử</h3><span id="plan-pack-count">{Object.keys(packMap).length} mẫu</span></div>
             <div style={{ marginBottom: 12, display: "flex", gap: 8 }}>
