@@ -1,8 +1,6 @@
 import { db } from "@/lib/db"
 import PlanClient from "./PlanClient"
 
-export const runtime = 'edge'
-
 export default async function PlanPage() {
   const plans = await db.testPlan.findMany({ include: { project: true, items: { include: { sample: true, equipment: true } } } })
   const projects = await db.project.findMany({ select: { id: true, name: true } })

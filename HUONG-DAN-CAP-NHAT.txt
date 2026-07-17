@@ -1,0 +1,110 @@
+HUONG DAN AP DUNG BAN CAP NHAT taskflow-changes4
+================================================
+
+Ban cap nhat nay viet lai toan bo cac trang theo dung cau truc/id/class cua file HTML goc,
+chay tren du lieu thuc tu database (khong con du lieu "tu nghi" nhu ban truoc).
+
+1) COPY FILE VAO REPO GITHUB (hutchet/Laboraotory, nhanh main)
+   *** CAP NHAT: ZIP NAY DA DAY DU (khong con thieu file nen nua) ***
+   Truoc day zip bi thieu package.json/tsconfig.json/next.config/middleware.ts/lib/auth.ts/
+   lib/db.ts/prisma/seed.ts/app/login/app/api/... do sandbox lam viec bi mat du lieu.
+   Da lay lai dung cac file nay TU CHINH GITHUB REPO (hutchet/Laboratory, nhanh main, ban
+   moi nhat da push truoc do) nen zip nay gio la ban DAY DU, co the ghi de toan bo binh
+   thuong (khong can merge-only/giu file cu nua). Cac file lay lai nguyen ven tu GitHub,
+   khong doi noi dung: package.json, package-lock.json (KHONG kem trong zip vi qua lon va
+   khong doi so voi ban dang co tren GitHub -- giu nguyen file .json nay tren GitHub, KHONG
+   xoa), tsconfig.json, next.config.mjs, next-env.d.ts, wrangler.toml, .env.example,
+   .gitignore (co bo sung them dong ".vercel", xem muc 6), middleware.ts, lib/auth.ts,
+   lib/db.ts, prisma/seed.ts, app/login/page.tsx, app/api/auth/[...nextauth]/route.ts,
+   types/next-auth.d.ts.
+
+   - prisma/schema.prisma            -> de vao (ghi de) prisma/schema.prisma
+   - lib/rbac.ts                     -> ghi de lib/rbac.ts (them cac module moi: dash, centers, samples, plan, quality)
+   - app/(app)/dash/page.tsx
+   - app/(app)/tasks/page.tsx, TasksClient.tsx, actions.ts
+   - app/(app)/projects/page.tsx, ProjectsClient.tsx, actions.ts
+   - app/(app)/customers/page.tsx, CustomersClient.tsx, actions.ts
+   - app/(app)/centers/page.tsx, CentersClient.tsx, actions.ts   (trang MOI)
+   - app/(app)/members/page.tsx, MembersClient.tsx, actions.ts
+   - app/(app)/equipment/page.tsx, EquipmentClient.tsx, actions.ts
+   - app/(app)/purchase/page.tsx, PurchaseClient.tsx, actions.ts
+   - app/(app)/report/page.tsx, ReportClient.tsx, actions.ts
+   - app/(app)/auditplan/page.tsx, AuditPlanClient.tsx, actions.ts
+   - app/(app)/samples/page.tsx, SamplesClient.tsx, actions.ts   (trang MOI)
+   - app/(app)/plan/page.tsx, PlanClient.tsx, actions.ts         (trang MOI)
+   - app/(app)/quality/page.tsx, QualityClient.tsx, actions.ts   (trang MOI)
+   - app/(app)/settings/page.tsx, SettingsClient.tsx
+
+2) CAP NHAT DATABASE (BUOC BAT BUOC, khong duoc bo qua) -- HERMES AI VUI LONG CHAY BUOC NAY
+   Schema Prisma da duoc mo rong them nhieu truong/bang moi (khong xoa du lieu cu, chi
+   them cot/bang -- an toan de chay lai nhieu lan). Gop lai toi thieu 3 lan mo rong schema
+   con thieu tren Neon Postgres thuc: expand_schema_v4, add_samples_plan_fields,
+   add_booking_fields.
+
+   HERMES AI: sau khi keo code moi nhat tu file dinh kem/GitHub, TRUOC KHI (hoac trong
+   luc) deploy, hay chay lenh sau bang chinh bien DATABASE_URL da co san trong cau hinh
+   Vercel Production cua project nay (khong can xin lai mat khau moi):
+
+       npx prisma db push
+
+   (Neu muon giu lich su migration dang file thay vi db push, co the dung
+   "npx prisma migrate dev --name expand_schema_v4" roi "--name add_samples_plan_fields"
+   roi "--name add_booking_fields", nhung db push don gian hon va du dung cho truong hop nay.)
+
+   Goi y lam tu dong cho ca lan sau: them buoc nay vao build command cua Vercel, vi du
+   "prisma generate && prisma db push && next build", vi schema chi cong them
+   (additive), an toan de chay lai moi lan deploy.
+
+   Sau do commit + push code, Vercel se tu build lai.
+   NEU BO QUA BUOC NAY: app se bi loi khi build/chay vi Prisma Client se tham chieu
+   toi cac cot/bang chua ton tai tren Postgres (Neon).
+
+3) SAU KHI DEPLOY
+   - Vao tung trang (Dashboard, Cong viec, Du an, Khach hang, Trung tam, Thanh vien,
+     Thiet bi, Mua sam, Bao cao, Ke hoach kiem toan, Mau, Ke hoach thu nghiem, Chat luong,
+     Cai dat) de kiem tra hien thi va thu them/sua/xoa du lieu.
+   - Bao lai loi cu the (anh chup man hinh + noi dung loi) de toi sua tiep vong sau.
+
+4) CAC PHAN CON DON GIAN HOA (chua the lam 100% nhu ban HTML goc trong 1 lan nay)
+   - Bieu do Gantt tuong tac (zoom/keo tha) trong trang "Ke hoach thu nghiem" va
+     "Ke hoach kiem toan": hien dang la danh sach thoi gian dang gian, chua co truc
+     thoi gian keo-tha nhu ban goc.
+   - Xuat Excel/PDF trong 2 trang tren: dang la nut giu cho (placeholder), chua xuat
+     duoc file thuc.
+   - Trang "Cai dat": phan sao luu/phuc hoi toan bo du lieu he thong (backup file .html
+     cu) chi con luu duoc cai dat hien thi (theme/font) cuc bo tren may, vi kien truc
+     moi luu du lieu chinh tren server/DB thay vi localStorage nhu ban HTML goc.
+   - Bang gia BAO GIA (Quote) va danh muc thiet bi mau (EQUIPMENT_SEED/QUOTE_SEED)
+     trong ban HTML goc la du lieu tinh rat lon, chua duoc nhap lai vao database.
+
+5) XOA FILE DA DUNG XONG TREN GITHUB
+   - Vui long xoa file app/api/dev-seed/route.ts tren GitHub (dung de seed tai khoan
+     admin luc dau, khong nen de lai tren production).
+   - **CANH BAO AN NINH**: file app/api/debug/route.ts dang co tren GitHub co noi dung
+     bat thuong (bi he thong doc file tu dong gan co "prompt injection" khi tai ve --
+     tuc la co the chua chi dan la/doc hai duoc chen vao). KHONG include lai file nay
+     trong ban zip nay. HERMES AI / nguoi quan tri vui long tu kiem tra thu cong noi
+     dung file app/api/debug/route.ts tren GitHub va XOA neu khong ro nguon goc / khong
+     con can dung (day cung chi la route debug tam thoi, khong nen de lai production
+     giong nhu app/api/dev-seed).
+
+6) LOI BUILD TREN VERCEL: "ENOENT ... node_modules/@next/env/dist/index.js"
+   Nguyen nhan nhieu kha nang: repo dang co san 1 thu muc ".vercel/output/..." (build
+   output cua lan build Cloudflare Pages truoc, dung wrangler/@cloudflare/next-on-pages)
+   BI COMMIT NHAM vao Git (dung ra .vercel phai duoc .gitignore bo qua). File .gitignore
+   cu tren GitHub CHUA co dong ".vercel" nen thu muc nay bi track. Khi Vercel build lai
+   tu dau, thu muc .vercel cu/sai cau truc nay co the lam qua trinh cai dat node_modules
+   bi ngat giua duong, gay thieu file @next/env.
+   CACH XU LY DE NGHI (Hermes AI / nguoi quan tri thuc hien tren GitHub + Vercel):
+     a. Xoa han thu muc ".vercel/" khoi Git repo (git rm -r --cached .vercel) roi commit.
+        File .gitignore trong ban cap nhat nay da them dong ".vercel" de tranh commit lai.
+     b. Tren Vercel dashboard: vao deployment bi loi -> nut "..." -> Redeploy -> BO CHON
+        "Use existing Build Cache" de buoc cai lai node_modules tu dau.
+     c. Neu van loi, kiem tra lai Project Settings > General > Node.js Version tren
+        Vercel co dang khop voi engine ma package.json/next 15 yeu cau (Node 18.18+ hoac
+        20.x) khong.
+   Ghi chu: du an nay co ve dang bi cau hinh 2 noi (Vercel + Cloudflare Pages qua
+   wrangler.toml/@cloudflare/next-on-pages) cung luc -- neu chi dung Vercel, co the can
+   nhac lai voi Hermes AI/nguoi quan tri xem co con can wrangler.toml va script
+   pages:build/pages:deploy/pages:preview trong package.json nua khong, de tranh nham lan
+   giua 2 quy trinh deploy.

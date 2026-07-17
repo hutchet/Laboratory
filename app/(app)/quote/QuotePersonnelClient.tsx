@@ -56,7 +56,7 @@ export default function QuotePersonnelClient({ rateConfig, routings, canManage =
           </div>
           <div className="row" style={{ marginTop: 12 }}>
             <button type="submit" className="btn-pri" disabled={pending}>Lưu đơn giá</button>
-            <button type="button" className="btn-line" id="qtp-reset" onClick={onReset}>Khôi phục mặc định</button>
+            <button type="button" className="btn-line" id="qtp-reset" onClick={onReset}>↻ Đặt lại theo file gốc</button>
           </div>
         </form>
       </div>

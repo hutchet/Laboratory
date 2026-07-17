@@ -4,8 +4,6 @@ import { can } from "@/lib/rbac"
 import EquipmentClient from "./EquipmentClient"
 import AnalyticsClient from "./AnalyticsClient"
 
-export const runtime = 'edge'
-
 export default async function EquipmentPage({
   searchParams,
 }: {

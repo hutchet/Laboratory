@@ -1,8 +1,6 @@
 import { db } from "@/lib/db"
 import { notFound } from "next/navigation"
 
-export const runtime = 'edge'
-
 export default async function QuotePrintPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const quote = await db.quote.findUnique({ where: { id }, include: { catalogItems: true, customer: true, project: true } })

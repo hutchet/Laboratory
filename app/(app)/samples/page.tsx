@@ -1,8 +1,6 @@
 import { db } from "@/lib/db"
 import SamplesClient from "./SamplesClient"
 
-export const runtime = 'edge'
-
 export default async function SamplesPage() {
   const samples = await db.sample.findMany({
     include: { customer: true, project: { include: { customer: true } }, testItems: { select: { result: true, actualStart: true } } },

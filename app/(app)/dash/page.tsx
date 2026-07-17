@@ -1,7 +1,5 @@
 import { db } from "@/lib/db"
 
-export const runtime = 'edge'
-
 function fmtVnd(n: number) {
   return new Intl.NumberFormat("vi-VN").format(Math.round(n)) + "đ"
 }

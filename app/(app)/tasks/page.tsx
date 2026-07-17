@@ -1,8 +1,6 @@
 import { db } from "@/lib/db"
 import TasksClient from "./TasksClient"
 
-export const runtime = 'edge'
-
 export default async function TasksPage() {
   const tasks = await db.task.findMany({ include: { project: true }, orderBy: { createdAt: "desc" } })
   const projects = await db.project.findMany({ select: { id: true, name: true } })

@@ -21,6 +21,7 @@ export default function AnalyticsClient({ equipment, bookings }: { equipment: Eq
   const [cat, setCat] = useState("all")
   const [pending, startTransition] = useTransition()
   const [slotPick, setSlotPick] = useState<{ equipmentId: string; hour: number } | null>(null)
+  const [viewMode, setViewMode] = useState<"day" | "month" | "year">("day")
 
   const cats = useMemo(() => Array.from(new Set(equipment.map((e) => e.category).filter(Boolean))) as string[], [equipment])
   const equipShown = cat === "all" ? equipment : equipment.filter((e) => e.category === cat)
@@ -42,8 +43,33 @@ export default function AnalyticsClient({ equipment, bookings }: { equipment: Eq
   }
 
   function shiftDate(deltaDays: number) {
-    const d = new Date(date); d.setDate(d.getDate() + deltaDays); setDate(fmtDate(d))
+    const d = new Date(date)
+    if (viewMode === "day") d.setDate(d.getDate() + deltaDays)
+    else if (viewMode === "month") d.setMonth(d.getMonth() + deltaDays)
+    else d.setFullYear(d.getFullYear() + deltaDays)
+    setDate(fmtDate(d))
   }
+
+  const bookingCountByDay = useMemo(() => {
+    const map: Record<string, number> = {}
+    bookings.forEach((b) => { const k = b.startTime.slice(0, 10); map[k] = (map[k] ?? 0) + 1 })
+    return map
+  }, [bookings])
+
+  function monthMatrix(baseDate: Date) {
+    const y = baseDate.getFullYear(); const m = baseDate.getMonth()
+    const first = new Date(y, m, 1)
+    const startOffset = (first.getDay() + 6) % 7 // Monday-first grid
+    const daysInMonth = new Date(y, m + 1, 0).getDate()
+    const cells: Array<{ dateStr: string | null; day: number | null }> = []
+    for (let i = 0; i < startOffset; i++) cells.push({ dateStr: null, day: null })
+    for (let d = 1; d <= daysInMonth; d++) cells.push({ dateStr: fmtDate(new Date(y, m, d)), day: d })
+    while (cells.length % 7 !== 0) cells.push({ dateStr: null, day: null })
+    return cells
+  }
+
+  function jumpToDay(d: string) { setDate(d); setViewMode("day") }
+  function jumpToMonth(d: string) { setDate(d); setViewMode("month") }
 
   function onCreate(formData: FormData) {
     formData.set("date", date)
@@ -68,10 +94,23 @@ export default function AnalyticsClient({ equipment, bookings }: { equipment: Eq
         <div className="eqdatenav">
           <button className="btn-line" id="eq-date-prev" onClick={() => shiftDate(-1)}>‹</button>
           <span className="eqdatenav-pick">
-            <input id="eq-date-input" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            {viewMode === "day" && (
+              <input id="eq-date-input" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            )}
+            {viewMode === "month" && (
+              <input id="eq-month-input" type="month" value={date.slice(0, 7)} onChange={(e) => e.target.value && setDate(`${e.target.value}-01`)} />
+            )}
+            {viewMode === "year" && (
+              <input id="eq-year-input" type="text" readOnly aria-label="Năm đang xem" value={date.slice(0, 4)} />
+            )}
           </span>
           <button className="btn-line" id="eq-date-next" onClick={() => shiftDate(1)}>›</button>
-          <button className="btn-line" id="eq-date-today" onClick={() => setDate(fmtDate(new Date()))}>Hôm nay</button>
+          <button className="btn-line" id="eq-date-today" onClick={() => { setDate(fmtDate(new Date())); setViewMode("day") }}>Hôm nay</button>
+          <div className="pl-zoom" id="eq-view-zoom">
+            {([["day", "Ngày"], ["month", "Tháng"], ["year", "Năm"]] as const).map(([v, label]) => (
+              <button key={v} className={viewMode === v ? "active" : ""} onClick={() => setViewMode(v)}>{label}</button>
+            ))}
+          </div>
         </div>
 
         <div className="chips" id="eq-cat-chips" style={{ margin: "10px 0" }}>
@@ -86,6 +125,7 @@ export default function AnalyticsClient({ equipment, bookings }: { equipment: Eq
         </div>
 
         <div className="eqgrid-wrap" id="eq-grid-wrap">
+          {viewMode === "day" && (
           <table className="eqgrid">
             <thead>
               <tr><th>Thiết bị</th>{HOURS.map((h) => (<th key={h}>{h}:00</th>))}</tr>
@@ -112,6 +152,42 @@ export default function AnalyticsClient({ equipment, bookings }: { equipment: Eq
               ))}
             </tbody>
           </table>
+          )}
+
+          {viewMode === "month" && (
+            <div id="eq-grid-month">
+              <div className="pl-cal-head">
+                {["T2", "T3", "T4", "T5", "T6", "T7", "CN"].map((d) => (<div key={d} className="pl-cal-h">{d}</div>))}
+              </div>
+              <div className="pl-cal-grid">
+                {monthMatrix(new Date(date)).map((c, i) => {
+                  const count = c.dateStr ? (bookingCountByDay[c.dateStr] ?? 0) : 0
+                  const isToday = c.dateStr === fmtDate(new Date())
+                  return (
+                    <div key={i} className={`pl-cal-cell${c.dateStr ? "" : " empty"}${isToday ? " today" : ""}`} onClick={() => c.dateStr && jumpToDay(c.dateStr)} data-jump-day={c.dateStr ?? undefined}>
+                      {c.day && (<><div className="pl-cal-day">{c.day}</div>{count > 0 && <div className="pl-cal-count">{count} lịch</div>}</>)}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {viewMode === "year" && (
+            <div id="eq-grid-year" className="pl-cal-year-grid">
+              {Array.from({ length: 12 }, (_, m) => m).map((m) => {
+                const y = new Date(date).getFullYear()
+                const monthStr = `${y}-${String(m + 1).padStart(2, "0")}-01`
+                const count = bookings.filter((b) => b.startTime.slice(0, 7) === `${y}-${String(m + 1).padStart(2, "0")}`).length
+                return (
+                  <div key={m} className="pl-cal-month-cell" onClick={() => jumpToMonth(monthStr)} data-jump-month={monthStr}>
+                    <div className="pl-cal-month-name">Tháng {m + 1}</div>
+                    {count > 0 && <div className="pl-cal-count">{count} lịch</div>}
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
       </div>
 

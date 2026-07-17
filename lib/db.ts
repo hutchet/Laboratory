@@ -51,4 +51,3 @@ export const db = new Proxy({} as PrismaClient, {
     return createModelProxy(prop as string)
   }
 })
-

@@ -1,8 +1,6 @@
 import { db } from "@/lib/db"
 import CentersClient from "./CentersClient"
 
-export const runtime = 'edge'
-
 export default async function CentersPage() {
   const centers = await db.center.findMany({ include: { projects: { include: { customer: true } } } })
   const rows = centers.map((c) => {
