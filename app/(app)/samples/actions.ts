@@ -8,7 +8,11 @@ export async function saveSample(formData: FormData) {
   const data = {
     code: String(formData.get("code") || "") || null,
     name: String(formData.get("name") || ""),
+    serialNumber: String(formData.get("serialNumber") || "") || null,
     customerId: String(formData.get("customerId") || "") || null,
+    projectId: String(formData.get("projectId") || "") || null,
+    sampleGrade: String(formData.get("sampleGrade") || "") || null,
+    group: String(formData.get("group") || "") || null,
     status: String(formData.get("status") || "received"),
     receivedAt: formData.get("receivedAt") ? new Date(String(formData.get("receivedAt"))) : null,
   }

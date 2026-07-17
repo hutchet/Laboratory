@@ -20,6 +20,8 @@ export async function saveItem(formData: FormData) {
   const data = {
     testPlanId: String(formData.get("testPlanId") || ""),
     sampleId: String(formData.get("sampleId") || "") || null,
+    reportCode: String(formData.get("reportCode") || "") || null,
+    equipmentId: String(formData.get("equipmentId") || "") || null,
     name: String(formData.get("name") || ""),
     priority: String(formData.get("priority") || "med"),
     standard: String(formData.get("standard") || "") || null,
