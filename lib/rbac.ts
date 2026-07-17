@@ -11,12 +11,12 @@ export type ActionName = "view" | "create" | "edit" | "delete" | "approve"
 export async function getUserPermissions(userId: string): Promise<Set<string>> {
   const roles = await db.userRole.findMany({
     where: { userId },
-    include: { role: { include: { permissions: { include: { permission: true } } } } },
+    include: { role: { include: { permissions: true } } },
   })
   const perms = new Set<string>()
   for (const ur of roles) {
-    for (const rp of ur.role.permissions) {
-      perms.add(`${rp.permission.module}:${rp.permission.action}`)
+    for (const p of ur.role.permissions) {
+      perms.add(`${p.module}:${p.action}`)
     }
   }
   return perms
@@ -24,5 +24,5 @@ export async function getUserPermissions(userId: string): Promise<Set<string>> {
 
 export async function can(userId: string, module: ModuleName, action: ActionName): Promise<boolean> {
   const perms = await getUserPermissions(userId)
-  return perms.has(`${module}:${action}`)
+  return perms.has(`${module}:${action}`) || perms.has(`*:${action}`)
 }
