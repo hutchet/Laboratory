@@ -3,8 +3,6 @@
 import { useState, type FormEvent } from "react"
 import { signIn } from "next-auth/react"
 
-export const runtime = 'edge'
-
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
