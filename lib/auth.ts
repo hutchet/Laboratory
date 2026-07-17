@@ -4,18 +4,13 @@ import { PrismaAdapter } from "@auth/prisma-adapter"
 import bcrypt from "bcryptjs"
 import { db } from "@/lib/db"
 
-// Secret resolved lazily — Cloudflare Workers only populates process.env at runtime
-function getSecret(): string {
-  const s = process.env.AUTH_SECRET
-  if (!s) return "" // empty = invalid, but won't crash build
-  return s
-}
-
-const secret = getSecret()
+// Secret: prefer AUTH_SECRET env var, fallback to static for Cloudflare Workers compatibility
+// On Cloudflare Pages, process.env.AUTH_SECRET may not be accessible via nodejs_compat_v2
+const AUTH_SECRET = process.env.AUTH_SECRET || "taskflow-secret-key-2026-lab-only"
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(db),
-  secret: secret || undefined,
+  secret: AUTH_SECRET,
   session: { strategy: "jwt" },
   pages: { signIn: "/login" },
   callbacks: {
