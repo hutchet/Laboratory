@@ -1,11 +1,12 @@
-// Trang "samples" -- TODO: chuyen logic tu ban HTML goc: 11-members.js (phan Samples, can tach rieng)
-// Nho: moi tinh toan quan trong (gia, kiem tra trung lich...) nen chay o server (Route Handler / Server Action),
-// khong de lai toan bo o client nhu ban cu.
-export default function SamplesPage() {
-  return (
-    <main style={{ padding: 24 }}>
-      <h1>samples</h1>
-      <p>Stub trang "samples" -- chua co du lieu thuc, dang cho migrate logic + ket noi Postgres.</p>
-    </main>
-  )
+import { db } from "@/lib/db"
+import SamplesClient from "./SamplesClient"
+
+export default async function SamplesPage() {
+  const samples = await db.sample.findMany({ include: { customer: true }, orderBy: { createdAt: "desc" } })
+  const customers = await db.customer.findMany({ select: { id: true, name: true } })
+  const rows = samples.map((s) => ({
+    id: s.id, code: s.code, name: s.name, customerId: s.customerId, customerName: s.customer?.name ?? null,
+    status: s.status, receivedAt: s.receivedAt ? s.receivedAt.toISOString() : null,
+  }))
+  return <SamplesClient samples={rows} customers={customers} />
 }

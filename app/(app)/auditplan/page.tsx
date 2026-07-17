@@ -12,7 +12,10 @@ export default async function AuditPlanPage() {
       id: i.id, name: i.name, phaseId: i.phaseId, assignee: i.assignee,
       planStart: i.planStart ? i.planStart.toISOString() : null,
       planEnd: i.planEnd ? i.planEnd.toISOString() : null,
+      actualStart: i.actualStart ? i.actualStart.toISOString() : null,
+      actualEnd: i.actualEnd ? i.actualEnd.toISOString() : null,
       status: i.status,
+      note: i.note,
     })),
   }))
   return <AuditPlanClient plans={rows} />

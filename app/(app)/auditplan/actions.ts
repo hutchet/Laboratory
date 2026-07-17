@@ -27,6 +27,7 @@ export async function saveItem(formData: FormData) {
     planStart: formData.get("planStart") ? new Date(String(formData.get("planStart"))) : null,
     planEnd: formData.get("planEnd") ? new Date(String(formData.get("planEnd"))) : null,
     status: String(formData.get("status") || "todo"),
+    note: String(formData.get("note") || "") || null,
   }
   if (id) {
     await db.auditItem.update({ where: { id }, data })

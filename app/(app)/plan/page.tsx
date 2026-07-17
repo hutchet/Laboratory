@@ -14,6 +14,7 @@ export default async function PlanPage() {
     items: p.items.map((i) => ({
       id: i.id, sampleId: i.sampleId, sampleName: i.sample?.name ?? null, name: i.name, priority: i.priority, standard: i.standard,
       assignee: i.assignee, planStart: i.planStart ? i.planStart.toISOString() : null, planEnd: i.planEnd ? i.planEnd.toISOString() : null,
+      actualStart: i.actualStart ? i.actualStart.toISOString() : null, actualEnd: i.actualEnd ? i.actualEnd.toISOString() : null,
       result: i.result, progress: i.progress, note: i.note,
     })),
   }))
