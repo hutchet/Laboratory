@@ -1,5 +1,4 @@
-<style>
-  :root{
+:root{
     --bg:#f4f4fe;--card:#fff;--ink:#1f2533;--muted:#8b93a7;--line:#eef0f5;
     --info:#0891b2;--info-soft:#e5f6fa;
     --blue:#4f6cf7;--blue-soft:#eef0ff;--purple:#8b5cf6;--purple-soft:#f1ebfb;
@@ -1462,7 +1461,7 @@ html[data-theme="dark"] body.material-3 .chip.active,html[data-theme="dark"] bod
 
 
 /* =========================================================
-   v82 — DASHBOARD, BOOKING, COUNT TAG, SEARCH AND LANGUAGE
+   v82 �� DASHBOARD, BOOKING, COUNT TAG, SEARCH AND LANGUAGE
    ========================================================= */
 /* Dashboard: reserve enough height for all KPI text */
 .material-3 #dash-top-grid{grid-template-rows:152px minmax(270px,1fr)!important}
@@ -3075,5 +3074,3 @@ html body .center-detail-card > .qs-box, html body .center-detail-card #pm-detai
 @media(max-width:820px){html body .center-detail-card{max-height:calc(100vh - 180px) !important}}
 /* end v119.3.6 */
 /* end v119.3 --- */
-
-</style>
