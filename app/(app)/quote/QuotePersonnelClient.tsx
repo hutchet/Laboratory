@@ -8,7 +8,7 @@ type Row = { id: string; testCode: string | null; testName: string; prepHours: s
 
 function fmtVnd(n: number) { return n.toLocaleString("vi-VN") }
 
-export default function QuotePersonnelClient({ rateConfig, routings }: { rateConfig: RateConfig; routings: Row[] }) {
+export default function QuotePersonnelClient({ rateConfig, routings, canManage = true }: { rateConfig: RateConfig; routings: Row[]; canManage?: boolean }) {
   const [q, setQ] = useState("")
   const [editMode, setEditMode] = useState(false)
   const [selected, setSelected] = useState<string[]>([])
@@ -29,8 +29,12 @@ export default function QuotePersonnelClient({ rateConfig, routings }: { rateCon
     startTransition(async () => { await savePersonnelRateConfig(formData) })
   }
   function onReset(e: { currentTarget: HTMLElement }) {
-    const form = e.currentTarget.closest("form")
-    if (form) (form as HTMLFormElement).reset()
+    const form = e.currentTarget.closest("form") as HTMLFormElement | null
+    if (!form) return
+    for (const name of ["techRate", "engRate", "leadRate", "mgrRate", "overheadPct"]) {
+      const el = form.elements.namedItem(name) as HTMLInputElement | null
+      if (el) el.value = "0"
+    }
   }
   function bulkDelete() {
     if (selected.length === 0) return
@@ -40,7 +44,7 @@ export default function QuotePersonnelClient({ rateConfig, routings }: { rateCon
 
   return (
     <section id="page-quote-personnel">
-      <div className="card" style={{ marginBottom: 18 }}>
+      <div className="card" data-perm="manager" style={{ marginBottom: 18, display: canManage ? undefined : "none" }}>
         <div className="section-head"><h3>Cấu hình đơn giá nhân sự (VNĐ/giờ)</h3></div>
         <form action={onSubmitRate}>
           <div className="row">
@@ -52,7 +56,7 @@ export default function QuotePersonnelClient({ rateConfig, routings }: { rateCon
           </div>
           <div className="row" style={{ marginTop: 12 }}>
             <button type="submit" className="btn-pri" disabled={pending}>Lưu đơn giá</button>
-            <button type="reset" className="btn-line" id="qtp-reset" onClick={onReset}>Khôi phục mặc định</button>
+            <button type="button" className="btn-line" id="qtp-reset" onClick={onReset}>Khôi phục mặc định</button>
           </div>
         </form>
       </div>
@@ -63,11 +67,11 @@ export default function QuotePersonnelClient({ rateConfig, routings }: { rateCon
           <div className="search" style={{ maxWidth: 260 }}>
             <input id="qtp-search" placeholder="Tìm bài thử..." value={q} onChange={(e) => setQ(e.target.value)} />
           </div>
-          <button className="btn-line" id="qtp-edit-toggle" onClick={() => { setEditMode((v) => !v); setSelected([]) }}>{editMode ? "Xong" : "Chọn nhiều"}</button>
-          {editMode && (
-            <button className="btn-danger" id="qtp-bulk-del" disabled={selected.length === 0 || pending} onClick={bulkDelete}>Xoá (<span id="qtp-bulk-count">{selected.length}</span>)</button>
+          {canManage && <button className="btn-line" id="qtp-edit-toggle" onClick={() => { setEditMode((v) => !v); setSelected([]) }}>{editMode ? "Xong" : "Chỉnh sửa"}</button>}
+          {canManage && editMode && (
+            <button className="btn-danger" id="qtp-bulk-del" disabled={selected.length === 0 || pending} onClick={bulkDelete}>Xoá đã chọn (<span id="qtp-bulk-count">{selected.length}</span>)</button>
           )}
-          <button className="btn-pri" id="qtp-add" onClick={openNew}>+ Bài thử mới</button>
+          {canManage && <button className="btn-pri" id="qtp-add" onClick={openNew}>+ Thêm nhân công</button>}
         </div>
       </div>
 
@@ -97,7 +101,11 @@ export default function QuotePersonnelClient({ rateConfig, routings }: { rateCon
         <table className="rz-table" id="qtp-table">
           <thead>
             <tr>
-              {editMode && <th style={{ width: 32 }}></th>}
+              {editMode && (
+                <th style={{ width: 32 }}>
+                  <input type="checkbox" className="selall-chk" checked={filtered.length > 0 && filtered.every((r) => selected.includes(r.id))} onChange={(e) => setSelected(e.target.checked ? filtered.map((r) => r.id) : [])} />
+                </th>
+              )}
               <th>Số thứ tự</th><th>Mã bài</th><th>Tên bài thử</th><th>CB mẫu (T/E/L)</th><th>Set up (T/E/L)</th><th>Thử nghiệm (T/E/L)</th><th>Xử lý&BC (T/E/L)</th><th>Tổng (T/E/L)</th><th>CP nhân sự (VNĐ)</th><th>Thao tác</th>
             </tr>
           </thead>

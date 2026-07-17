@@ -66,8 +66,10 @@ export async function updateQuoteItemQty(formData: FormData) {
   const itemId = String(formData.get("itemId") || "")
   const quoteId = String(formData.get("quoteId") || "")
   const quantity = Number(formData.get("quantity") || 1) || 1
+  const priceRaw = formData.get("price")
+  const price = priceRaw !== null && String(priceRaw) !== "" ? Number(priceRaw) : undefined
   if (!itemId) return
-  await db.quoteCatalogItem.update({ where: { id: itemId }, data: { quantity } })
+  await db.quoteCatalogItem.update({ where: { id: itemId }, data: { quantity, ...(price !== undefined ? { price } : {}) } })
   await recalcTotal(quoteId)
   revalidatePath(`/quote/${quoteId}`)
 }

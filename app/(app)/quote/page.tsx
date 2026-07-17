@@ -15,15 +15,16 @@ export default async function QuotePage({ searchParams }: { searchParams: Promis
   const userId = session?.user?.id
   const canCreate = userId ? await can(userId, "quote", "create") : false
   const canDelete = userId ? await can(userId, "quote", "delete") : false
+  const canManage = userId ? await can(userId, "quote", "edit") : false
 
   if (view === "quote-catalog") {
     const items = await db.testCatalogItem.findMany({ orderBy: { name: "asc" } })
-    return <QuoteCatalogClient items={items} />
+    return <QuoteCatalogClient items={items} canManage={canManage} />
   }
 
   if (view === "quote-matrix") {
     const centers = await db.center.findMany({ orderBy: { name: "asc" }, include: { equipment: { orderBy: { name: "asc" } } } })
-    return <QuoteMatrixClient centers={centers.map((c) => ({ id: c.id, name: c.name, equipment: c.equipment.map((e) => ({ id: e.id, name: e.name, code: e.code, category: e.category, hourlyRate: e.hourlyRate })) }))} />
+    return <QuoteMatrixClient centers={centers.map((c) => ({ id: c.id, name: c.name, equipment: c.equipment.map((e) => ({ id: e.id, name: e.name, code: e.code, category: e.category, hourlyRate: e.hourlyRate })) }))} canManage={canManage} />
   }
 
   if (view === "quote-personnel") {
@@ -31,17 +32,17 @@ export default async function QuotePage({ searchParams }: { searchParams: Promis
       db.personnelRateConfig.upsert({ where: { id: "singleton" }, create: { id: "singleton" }, update: {} }),
       db.personnelRouting.findMany({ orderBy: { testName: "asc" } }),
     ])
-    return <QuotePersonnelClient rateConfig={rateConfig} routings={routings} />
+    return <QuotePersonnelClient rateConfig={rateConfig} routings={routings} canManage={canManage} />
   }
 
   if (view === "quote-depreciation") {
     const items = await db.depreciationAsset.findMany({ orderBy: { assetName: "asc" } })
-    return <QuoteDepreciationClient items={items} />
+    return <QuoteDepreciationClient items={items} canManage={canManage} />
   }
 
   if (view === "quote-variable") {
     const items = await db.variableCost.findMany({ orderBy: { costType: "asc" } })
-    return <QuoteVariableClient items={items} />
+    return <QuoteVariableClient items={items} canManage={canManage} />
   }
 
   const [quotes, customers] = await Promise.all([

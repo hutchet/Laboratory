@@ -7,7 +7,7 @@ type Row = { id: string; code: string | null; name: string; standard: string | n
 
 function fmtVnd(n: number) { return n.toLocaleString("vi-VN") }
 
-export default function QuoteCatalogClient({ items }: { items: Row[] }) {
+export default function QuoteCatalogClient({ items, canManage = true }: { items: Row[]; canManage?: boolean }) {
   const [q, setQ] = useState("")
   const [editMode, setEditMode] = useState(false)
   const [selected, setSelected] = useState<string[]>([])
@@ -38,11 +38,11 @@ export default function QuoteCatalogClient({ items }: { items: Row[] }) {
           <div className="search" style={{ maxWidth: 260 }}>
             <input id="qtc-search" placeholder="Tìm bài thử..." value={q} onChange={(e) => setQ(e.target.value)} />
           </div>
-          <button className="btn-line" id="qtc-edit-toggle" onClick={() => { setEditMode((v) => !v); setSelected([]) }}>{editMode ? "Xong" : "Chọn nhiều"}</button>
-          {editMode && (
-            <button className="btn-danger" id="qtc-bulk-del" disabled={selected.length === 0 || pending} onClick={bulkDelete}>Xoá (<span id="qtc-bulk-count">{selected.length}</span>)</button>
+          {canManage && <button className="btn-line" id="qtc-edit-toggle" onClick={() => { setEditMode((v) => !v); setSelected([]) }}>{editMode ? "Xong" : "Chỉnh sửa"}</button>}
+          {canManage && editMode && (
+            <button className="btn-danger" id="qtc-bulk-del" disabled={selected.length === 0 || pending} onClick={bulkDelete}>Xoá đã chọn (<span id="qtc-bulk-count">{selected.length}</span>)</button>
           )}
-          <button className="btn-pri" id="qtc-add" onClick={openNew}>+ Bài thử mới</button>
+          {canManage && <button className="btn-pri" id="qtc-add" onClick={openNew}>+ Thêm bài thử</button>}
         </div>
       </div>
 
@@ -72,7 +72,11 @@ export default function QuoteCatalogClient({ items }: { items: Row[] }) {
         <table className="rz-table" id="qtc-table">
           <thead>
             <tr>
-              {editMode && <th style={{ width: 32 }}></th>}
+              {editMode && (
+                <th style={{ width: 32 }}>
+                  <input type="checkbox" className="selall-chk" checked={filtered.length > 0 && filtered.every((r) => selected.includes(r.id))} onChange={(e) => setSelected(e.target.checked ? filtered.map((r) => r.id) : [])} />
+                </th>
+              )}
               <th>Số thứ tự</th><th>Mã</th><th>Tên bài thử nghiệm</th><th>Tiêu chuẩn</th><th>Cấp mẫu</th><th>Thời gian xử lý</th><th>Đơn giá đã duyệt (VNĐ)</th><th>Thao tác</th>
             </tr>
           </thead>

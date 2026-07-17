@@ -8,7 +8,7 @@ type CenterGroup = { id: string; name: string; equipment: Eq[] }
 
 function fmtVnd(n: number) { return n.toLocaleString("vi-VN") }
 
-export default function QuoteMatrixClient({ centers }: { centers: CenterGroup[] }) {
+export default function QuoteMatrixClient({ centers, canManage = true }: { centers: CenterGroup[]; canManage?: boolean }) {
   const [openCenter, setOpenCenter] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
@@ -59,11 +59,15 @@ export default function QuoteMatrixClient({ centers }: { centers: CenterGroup[] 
                   <td>{e.category ?? "—"}</td>
                   <td>{fmtVnd(e.hourlyRate ?? 0)}</td>
                   <td>
-                    <form action={onSaveRate} style={{ display: "flex", gap: 6 }}>
-                      <input type="hidden" name="id" defaultValue={e.id} />
-                      <input type="number" name="hourlyRate" defaultValue={e.hourlyRate ?? ""} style={{ width: 110 }} />
-                      <button type="submit" className="btn-line" disabled={pending}>Lưu</button>
-                    </form>
+                    {canManage ? (
+                      <form action={onSaveRate} style={{ display: "flex", gap: 6 }}>
+                        <input type="hidden" name="id" defaultValue={e.id} />
+                        <input type="number" name="hourlyRate" defaultValue={e.hourlyRate ?? ""} style={{ width: 110 }} />
+                        <button type="submit" className="btn-line" disabled={pending}>Lưu</button>
+                      </form>
+                    ) : (
+                      <span>—</span>
+                    )}
                   </td>
                 </tr>
               ))}

@@ -112,12 +112,22 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
                   <td>{idx + 1}</td>
                   <td>{it.name}</td>
                   <td>{it.standard ?? "—"}</td>
-                  <td style={{ textAlign: "right" }}>{(it.price ?? 0).toLocaleString("vi-VN")}</td>
+                  <td style={{ textAlign: "right" }}>
+                    {canEdit ? (
+                      <form action={updateQuoteItemQty} style={{ display: "inline" }}>
+                        <input type="hidden" name="itemId" defaultValue={it.id} />
+                        <input type="hidden" name="quoteId" defaultValue={quote.id} />
+                        <input type="hidden" name="quantity" defaultValue={it.quantity ?? 1} />
+                        <input type="number" name="price" defaultValue={it.price ?? 0} style={{ width: 90, textAlign: "right" }} onBlur={(e) => e.currentTarget.form?.requestSubmit()} />
+                      </form>
+                    ) : (it.price ?? 0).toLocaleString("vi-VN")}
+                  </td>
                   <td style={{ textAlign: "center" }}>
                     {canEdit ? (
                       <form action={updateQuoteItemQty} style={{ display: "inline" }}>
                         <input type="hidden" name="itemId" defaultValue={it.id} />
                         <input type="hidden" name="quoteId" defaultValue={quote.id} />
+                        <input type="hidden" name="price" defaultValue={it.price ?? 0} />
                         <input type="number" name="quantity" defaultValue={it.quantity ?? 1} min={1} style={{ width: 60 }} onBlur={(e) => e.currentTarget.form?.requestSubmit()} />
                       </form>
                     ) : (it.quantity ?? 1)}
