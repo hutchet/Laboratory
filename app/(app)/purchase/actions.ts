@@ -11,6 +11,16 @@ export async function savePurchase(formData: FormData) {
     cost: formData.get("cost") ? Number(formData.get("cost")) : null,
     status: String(formData.get("status") || "ongoing"),
     note: String(formData.get("note") || "") || null,
+    lab: String(formData.get("lab") || "") || null,
+    supplier: String(formData.get("supplier") || "") || null,
+    task: String(formData.get("task") || "") || null,
+    jira: String(formData.get("jira") || "") || null,
+    pr: String(formData.get("pr") || "") || null,
+    po: String(formData.get("po") || "") || null,
+    migo: String(formData.get("migo") || "") || null,
+    tinhtrang: String(formData.get("tinhtrang") || "") || null,
+    pic: String(formData.get("pic") || "") || null,
+    tfslink: String(formData.get("tfslink") || "") || null,
   }
   if (id) {
     await db.purchaseItem.update({ where: { id }, data })

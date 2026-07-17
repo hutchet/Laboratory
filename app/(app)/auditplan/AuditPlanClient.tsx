@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState, useTransition } from "react"
+import { Fragment, useMemo, useState, useTransition } from "react"
 import { createPlan, addPhase, saveItem, deleteItem, deletePlan } from "./actions"
 
 type ItemRow = {
@@ -37,6 +37,67 @@ function Donut({ done, doing, overdue, todo }: { done: number; doing: number; ov
       <circle cx="21" cy="21" r={r} fill="transparent" stroke="var(--pri)" strokeWidth="5" strokeDasharray={`${todoLen} ${circ - todoLen}`} strokeDashoffset={25 - doneLen - doingLen - overdueLen} transform="rotate(-90 21 21)" />
     </svg>
   )
+}
+
+type ApZoomLevel = "day" | "week" | "month"
+
+function apIsoDate(d: Date) {
+  return d.toISOString().slice(0, 10)
+}
+function apAddDays(iso: string, delta: number) {
+  const d = new Date(iso + "T00:00:00")
+  d.setDate(d.getDate() + delta)
+  return apIsoDate(d)
+}
+function apBuildColumns(zoom: ApZoomLevel, focusDate: string): { iso: string; label: string }[] {
+  if (zoom === "day") {
+    const start = apAddDays(focusDate, -6)
+    return Array.from({ length: 14 }, (_, i) => {
+      const iso = apAddDays(start, i)
+      const d = new Date(iso + "T00:00:00")
+      return { iso, label: `${d.getDate()}/${d.getMonth() + 1}` }
+    })
+  }
+  if (zoom === "week") {
+    const base = new Date(focusDate.slice(0, 7) + "-01T00:00:00")
+    base.setMonth(base.getMonth() - 2)
+    return Array.from({ length: 6 }, (_, i) => {
+      const d = new Date(base)
+      d.setMonth(d.getMonth() + i)
+      return { iso: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`, label: `Th.${d.getMonth() + 1}/${d.getFullYear()}` }
+    })
+  }
+  const year = Number(focusDate.slice(0, 4))
+  return Array.from({ length: 5 }, (_, i) => {
+    const y = year - 2 + i
+    return { iso: `${y}-01-01`, label: String(y) }
+  })
+}
+function apColIndexForDate(cols: { iso: string }[], zoom: ApZoomLevel, dateIso: string) {
+  if (zoom === "day") return cols.findIndex((c) => c.iso === dateIso)
+  if (zoom === "week") return cols.findIndex((c) => c.iso.slice(0, 7) === dateIso.slice(0, 7))
+  return cols.findIndex((c) => c.iso.slice(0, 4) === dateIso.slice(0, 4))
+}
+function apBarRange(cols: { iso: string }[], zoom: ApZoomLevel, startIso: string, endIso: string) {
+  const sIdxRaw = apColIndexForDate(cols, zoom, startIso)
+  const eIdxRaw = apColIndexForDate(cols, zoom, endIso || startIso)
+  if (sIdxRaw === -1 && eIdxRaw === -1) return null
+  const start = sIdxRaw === -1 ? 0 : sIdxRaw
+  const end = eIdxRaw === -1 ? cols.length - 1 : eIdxRaw
+  return { start, span: Math.max(1, end - start + 1) }
+}
+function apStatusColor(status: string | null) {
+  if (status === "done") return "var(--green)"
+  if (status === "doing") return "var(--amber)"
+  if (status === "overdue") return "var(--red)"
+  return "var(--pri)"
+}
+function apEffectiveStatus(it: ItemRow): "done" | "doing" | "overdue" | "todo" {
+  const now = new Date()
+  if (it.actualEnd) return "done"
+  if (it.planEnd && new Date(it.planEnd) < now) return "overdue"
+  if (it.planStart && new Date(it.planStart) <= now) return "doing"
+  return "todo"
 }
 
 export default function AuditPlanClient({ plans }: { plans: Plan[] }) {
@@ -98,6 +159,63 @@ export default function AuditPlanClient({ plans }: { plans: Plan[] }) {
     startTransition(async () => { await deletePlan(id); setActiveId(null) })
   }
 
+  const [zoom, setZoom] = useState<ApZoomLevel>("day")
+  const [focusDate, setFocusDate] = useState(() => apIsoDate(new Date()))
+  const [showOverview, setShowOverview] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true
+    return localStorage.getItem("tf_auditplan_ovhidden_v1") !== "1"
+  })
+  const [ovTitleOverride, setOvTitleOverride] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null
+    return localStorage.getItem("tf_auditplan_ovtitle_v1")
+  })
+  const [showOvTitleForm, setShowOvTitleForm] = useState(false)
+
+  const cols = useMemo(() => apBuildColumns(zoom, focusDate), [zoom, focusDate])
+
+  function shiftFocus(delta: number) {
+    setFocusDate((d) => {
+      if (zoom === "day") return apAddDays(d, delta)
+      const dt = new Date(d + "T00:00:00")
+      if (zoom === "week") dt.setMonth(dt.getMonth() + delta)
+      else dt.setFullYear(dt.getFullYear() + delta)
+      return apIsoDate(dt)
+    })
+  }
+  function onSaveOvTitle(formData: FormData) {
+    const v = String(formData.get("ovTitle") || "").trim()
+    if (v) {
+      setOvTitleOverride(v)
+      try { localStorage.setItem("tf_auditplan_ovtitle_v1", v) } catch {}
+    }
+    setShowOvTitleForm(false)
+  }
+  function onHideOverview() {
+    setShowOverview(false)
+    try { localStorage.setItem("tf_auditplan_ovhidden_v1", "1") } catch {}
+  }
+  function onRestoreOverview() {
+    setShowOverview(true)
+    try { localStorage.setItem("tf_auditplan_ovhidden_v1", "0") } catch {}
+  }
+  function exportCsv() {
+    if (!active) return
+    const head = ["No", "Đầu việc", "Người phụ trách", "Bắt đầu KH", "Kết thúc KH", "Bắt đầu TT", "Kết thúc TT", "Thời lượng (ngày)", "Trạng thái", "Ghi chú"]
+    const rows = active.items.map((it, idx) => [
+      idx + 1, it.name, it.assignee || "", it.planStart ? it.planStart.slice(0, 10) : "", it.planEnd ? it.planEnd.slice(0, 10) : "",
+      it.actualStart ? it.actualStart.slice(0, 10) : "", it.actualEnd ? it.actualEnd.slice(0, 10) : "",
+      daysBetween(it.planStart, it.planEnd) ?? "", statusLabel(apEffectiveStatus(it)), it.note || "",
+    ])
+    const csv = [head, ...rows].map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\r\n")
+    const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = "ke-hoach-audit-iso17025.csv"
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   if (!active) {
     return (
       <section id="page-auditplan">
@@ -143,6 +261,7 @@ export default function AuditPlanClient({ plans }: { plans: Plan[] }) {
       <div id="ap-plan-detail-shell">
         <div className="section-head">
           <button className="btn-line" onClick={() => setActiveId(null)}>← Danh sách kế hoạch</button>
+          <button className="txt-act del" onClick={() => onDeletePlan(active.id)}>Xóa kế hoạch audit</button>
         </div>
         <div className="grid kpis" style={{ marginBottom: 18 }}>
           <div className="kcard kb"><div className="v" id="ap-k-total">{stats.total}</div><div className="l">Tổng đầu việc</div><div className="s">Trong kế hoạch audit</div></div>
@@ -150,11 +269,29 @@ export default function AuditPlanClient({ plans }: { plans: Plan[] }) {
           <div className="kcard kp"><div className="v" id="ap-k-doing">{stats.doing}</div><div className="l">Đang triển khai</div><div className="s">Trong khung thời gian kế hoạch</div></div>
           <div className="kcard kr"><div className="v" id="ap-k-overdue">{stats.overdue}</div><div className="l">Quá hạn</div><div className="s">Trễ ngày kết thúc kế hoạch</div></div>
         </div>
+        {!showOverview && (
+          <div style={{ marginBottom: 18 }} id="ap-overview-restore-row">
+            <button className="btn-line" id="ap-ov-restore-btn" onClick={onRestoreOverview}>+ Hiện lại phần tổng quan</button>
+          </div>
+        )}
+        {showOverview && (
         <div className="card" style={{ marginBottom: 18 }} id="ap-overview-card">
           <div className="ch">
-            <div><h3 id="ap-ov-title">{active.title}</h3><span>Toàn bộ kế hoạch audit theo file Excel</span></div>
+            <div>
+              {showOvTitleForm ? (
+                <form action={onSaveOvTitle} style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <input name="ovTitle" defaultValue={ovTitleOverride ?? active.title} autoFocus />
+                  <button type="submit" className="btn-pri" style={{ padding: "4px 10px", fontSize: 12 }}>Lưu</button>
+                  <button type="button" className="btn-line" style={{ padding: "4px 10px", fontSize: 12 }} onClick={() => setShowOvTitleForm(false)}>Hủy</button>
+                </form>
+              ) : (
+                <h3 id="ap-ov-title">{ovTitleOverride ?? active.title}</h3>
+              )}
+              <span>Toàn bộ kế hoạch audit theo file Excel</span>
+            </div>
             <div style={{ display: "flex", gap: 8 }}>
-              <button className="txt-act del" id="ap-ov-del-btn" onClick={() => onDeletePlan(active.id)}>Xóa</button>
+              <button className="txt-act" id="ap-ov-edit-btn" onClick={() => setShowOvTitleForm(true)}>Sửa</button>
+              <button className="txt-act del" id="ap-ov-del-btn" onClick={onHideOverview}>Xóa</button>
             </div>
           </div>
           <div className="pl-donut-wrap">
@@ -185,12 +322,27 @@ export default function AuditPlanClient({ plans }: { plans: Plan[] }) {
             </div>
           </div>
         </div>
+        )}
 
         <div className="card" style={{ marginBottom: 18 }}>
           <div className="pl-toolbar">
             <div>
               <h3 style={{ fontSize: 16, fontWeight: 600 }}>Sơ đồ tiến độ (Gantt) kế hoạch audit ISO 17025</h3>
               <span style={{ fontSize: 12, color: "var(--muted)" }}>Theo mốc thời gian kế hoạch (Planning Start → End) của từng đầu việc, nhóm theo hạng mục</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div className="pl-daynav" id="ap-daynav">
+                <button type="button" className="icon-act" onClick={() => shiftFocus(-1)}>‹</button>
+                <span style={{ fontSize: 12.5, fontWeight: 600 }}>
+                  {zoom === "day" ? new Date(focusDate + "T00:00:00").toLocaleDateString("vi-VN") : zoom === "week" ? `Tháng ${Number(focusDate.slice(5, 7))}/${focusDate.slice(0, 4)}` : focusDate.slice(0, 4)}
+                </span>
+                <button type="button" className="icon-act" onClick={() => shiftFocus(1)}>›</button>
+              </div>
+              <div className="pl-zoom" id="ap-zoom">
+                <button type="button" className={zoom === "day" ? "active" : ""} onClick={() => setZoom("day")}>Ngày</button>
+                <button type="button" className={zoom === "week" ? "active" : ""} onClick={() => setZoom("week")}>Tháng</button>
+                <button type="button" className={zoom === "month" ? "active" : ""} onClick={() => setZoom("month")}>Năm</button>
+              </div>
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 14, fontSize: 12, color: "var(--muted)", flexWrap: "wrap", marginBottom: 10 }}>
@@ -199,13 +351,35 @@ export default function AuditPlanClient({ plans }: { plans: Plan[] }) {
             <span><span className="ap-legend-dot" style={{ background: "var(--red)" }} />Quá hạn</span>
             <span><span className="ap-legend-dot" style={{ background: "var(--pri)" }} />Chưa bắt đầu</span>
           </div>
-          <div className="pl-gantt-wrap" id="ap-gantt-wrap">
-            {active.items.filter((i) => i.planStart && i.planEnd).map((i) => (
-              <div key={i.id} style={{ padding: "6px 12px", borderBottom: "1px solid var(--line)", fontSize: 12.5 }}>
-                {i.name}: {new Date(i.planStart as string).toLocaleDateString("vi-VN")} → {new Date(i.planEnd as string).toLocaleDateString("vi-VN")}
+          <div className="pl-gantt-wrap" id="ap-gantt-wrap" style={{ overflowX: "auto" }}>
+            {active.items.filter((i) => i.planStart).length === 0 ? (
+              <div className="empty" style={{ padding: 20 }}>Chưa có mốc thời gian kế hoạch để vẽ Gantt.</div>
+            ) : (
+              <div style={{ display: "grid", gridTemplateColumns: `190px repeat(${cols.length}, 1fr)`, minWidth: 190 + cols.length * 60 }}>
+                <div style={{ gridColumn: 1, gridRow: 1, fontSize: 11, fontWeight: 700, color: "var(--muted)", padding: "4px 8px" }}>Đầu việc</div>
+                {cols.map((c, ci) => (
+                  <div key={c.iso} style={{ gridColumn: ci + 2, gridRow: 1, fontSize: 11, fontWeight: 700, color: "var(--muted)", textAlign: "center", borderBottom: "1px solid var(--line)", padding: "4px 2px" }}>{c.label}</div>
+                ))}
+                {active.items.filter((i) => i.planStart).map((it, ri) => {
+                  const range = apBarRange(cols, zoom, it.planStart as string, it.planEnd || (it.planStart as string))
+                  return (
+                    <Fragment key={it.id}>
+                      <div style={{ gridColumn: 1, gridRow: ri + 2, fontSize: 12, padding: "6px 8px", borderBottom: "1px solid var(--line)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{it.name}</div>
+                      {cols.map((c) => (
+                        <div key={c.iso} style={{ gridRow: ri + 2, borderBottom: "1px solid var(--line)" }} />
+                      ))}
+                      {range && (
+                        <div
+                          onClick={() => { setEditing(it); setShowItemForm(true) }}
+                          style={{ gridColumn: `${range.start + 2} / span ${range.span}`, gridRow: ri + 2, background: apStatusColor(apEffectiveStatus(it)), borderRadius: 4, margin: "6px 2px", cursor: "pointer", minHeight: 14 }}
+                          title={it.name}
+                        />
+                      )}
+                    </Fragment>
+                  )
+                })}
               </div>
-            ))}
-            {active.items.filter((i) => i.planStart && i.planEnd).length === 0 && <div className="empty" style={{ padding: 20 }}>Chưa có mốc thời gian kế hoạch để vẽ Gantt.</div>}
+            )}
           </div>
         </div>
 
@@ -235,7 +409,7 @@ export default function AuditPlanClient({ plans }: { plans: Plan[] }) {
           <div className="ch" style={{ padding: 0 }}>
             <div><h3>Chi tiết đầu việc kế hoạch audit ISO 17025</h3><span id="ap-detail-count">{active.items.length} đầu việc</span></div>
             <div style={{ display: "flex", gap: 8 }}>
-              <button type="button" className="btn-line" onClick={() => alert("Xuất Excel sẽ được bổ sung ở bản sau.")}>⤓ Xuất Excel</button>
+              <button type="button" className="btn-line" onClick={exportCsv}>⤓ Xuất Excel</button>
               <button type="button" className="btn-pri" onClick={() => { setEditing(null); setShowItemForm(true) }}>+ Thêm đầu việc</button>
             </div>
           </div>

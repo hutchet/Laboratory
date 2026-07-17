@@ -407,12 +407,23 @@ model AuditItem {
 }
 
 model PurchaseItem {
-  id       String  @id @default(cuid())
-  name     String
-  quantity Int?
-  cost     Float?
-  status   String?
-  note     String?
+  id        String  @id @default(cuid())
+  name      String
+  quantity  Int?
+  cost      Float?
+  status    String?
+  note      String?
+  // Additive columns (rà soát lần 11) — khớp dữ liệu mua hàng thật + phục vụ drill-down theo nhóm
+  lab       String? // Trung tâm / nhóm — dùng để gom nhóm ở khối xem chi tiết
+  supplier  String?
+  task      String?
+  jira      String?
+  pr        String?
+  po        String?
+  migo      String?
+  tinhtrang String?
+  pic       String?
+  tfslink   String?
 }
 
 // ================== SAMPLES (LIMS) ==================
