@@ -1,68 +1,75 @@
-// Du lieu khoi tao RBAC: 5 vai tro + quyen theo module, dung `npm run prisma:seed` sau khi da `prisma migrate dev`
 import { PrismaClient } from "@prisma/client"
 
 const prisma = new PrismaClient()
 
-const MODULES = ["tasks", "projects", "equipment", "quote", "purchase", "auditplan", "settings", "members", "customers", "report"]
-const ACTIONS = ["view", "create", "edit", "delete", "approve"]
-
-// Ma tran quyen theo vai tro -- chinh sua truc tiep tai day khi nhu cau thay doi
-const ROLE_PERMISSIONS: Record<string, Array<{ module: string; actions: string[] }>> = {
-  admin: MODULES.map((m) => ({ module: m, actions: ACTIONS })),
+const ROLE_PERMISSIONS: Record<string, Array<{ module: string; action: string }>> = {
+  admin: [
+    { module: "*", action: "view" },
+    { module: "*", action: "create" },
+    { module: "*", action: "edit" },
+    { module: "*", action: "delete" },
+    { module: "*", action: "approve" },
+  ],
   manager: [
-    { module: "tasks", actions: ["view", "create", "edit"] },
-    { module: "projects", actions: ["view", "create", "edit"] },
-    { module: "equipment", actions: ["view"] },
-    { module: "quote", actions: ["view", "create", "edit", "approve"] },
-    { module: "purchase", actions: ["view", "approve"] },
-    { module: "report", actions: ["view"] },
-    { module: "customers", actions: ["view", "create", "edit"] },
+    { module: "tasks", action: "view" },
+    { module: "tasks", action: "create" },
+    { module: "tasks", action: "edit" },
+    { module: "projects", action: "view" },
+    { module: "projects", action: "edit" },
+    { module: "equipment", action: "view" },
+    { module: "equipment", action: "edit" },
+    { module: "quote", action: "view" },
+    { module: "quote", action: "approve" },
   ],
   technician: [
-    { module: "tasks", actions: ["view", "edit"] },
-    { module: "equipment", actions: ["view", "create", "edit"] },
-    { module: "auditplan", actions: ["view", "edit"] },
+    { module: "tasks", action: "view" },
+    { module: "tasks", action: "edit" },
+    { module: "equipment", action: "view" },
   ],
   quote_staff: [
-    { module: "quote", actions: ["view", "create", "edit"] },
-    { module: "purchase", actions: ["view", "create"] },
+    { module: "quote", action: "view" },
+    { module: "quote", action: "create" },
+    { module: "quote", action: "edit" },
+    { module: "customers", action: "view" },
   ],
-  viewer: MODULES.map((m) => ({ module: m, actions: ["view"] })),
+  viewer: [
+    { module: "tasks", action: "view" },
+    { module: "projects", action: "view" },
+    { module: "quote", action: "view" },
+  ],
 }
 
 async function main() {
-  for (const module of MODULES) {
-    for (const action of ACTIONS) {
-      await prisma.permission.upsert({
-        where: { module_action: { module, action } },
-        update: {},
-        create: { module, action },
-      })
-    }
-  }
-
-  for (const [roleName, grants] of Object.entries(ROLE_PERMISSIONS)) {
+  for (const [roleName, perms] of Object.entries(ROLE_PERMISSIONS)) {
     const role = await prisma.role.upsert({
       where: { name: roleName },
       update: {},
       create: { name: roleName },
     })
-    for (const grant of grants) {
-      for (const action of grant.actions) {
-        const permission = await prisma.permission.findUnique({
-          where: { module_action: { module: grant.module, action } },
-        })
-        if (!permission) continue
-        await prisma.rolePermission.upsert({
-          where: { roleId_permissionId: { roleId: role.id, permissionId: permission.id } },
-          update: {},
-          create: { roleId: role.id, permissionId: permission.id },
-        })
-      }
+
+    for (const perm of perms) {
+      await prisma.permission.upsert({
+        where: {
+          roleId_module_action: {
+            roleId: role.id,
+            module: perm.module,
+            action: perm.action,
+          },
+        },
+        update: {},
+        create: { roleId: role.id, module: perm.module, action: perm.action },
+      })
     }
   }
 
-  console.log("Seed RBAC hoan tat: 5 vai tro (admin, manager, technician, quote_staff, viewer)")
+  console.log("Seed RBAC hoan tat: 5 vai tro da duoc tao.")
 }
 
-main().finally(() => prisma.$disconnect())
+main()
+  .catch((e) => {
+    console.error(e)
+    process.exit(1)
+  })
+  .finally(async () => {
+    await prisma.$disconnect()
+  })
