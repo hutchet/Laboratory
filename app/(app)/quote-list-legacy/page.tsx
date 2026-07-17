@@ -1,4 +1,3 @@
-export const runtime = 'edge'
 // Trang "quote-list-legacy" -- TODO: chuyen logic tu ban HTML goc: 22-quote-list-legacy.js (RA SOAT truoc: co the la code cu, xem README goc)
 // Nho: moi tinh toan quan trong (gia, kiem tra trung lich...) nen chay o server (Route Handler / Server Action),
 // khong de lai toan bo o client nhu ban cu.
