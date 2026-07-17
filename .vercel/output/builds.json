@@ -3,13 +3,13 @@
   "target": "preview",
   "argv": [
     "/root/.hermes/node/bin/node",
-    "/tmp/Laboratory/node_modules/.bin/vercel",
+    "/tmp/taskflow/node_modules/.bin/vercel",
     "build"
   ],
   "builds": [
     {
       "require": "@vercel/next",
-      "requirePath": "/tmp/Laboratory/node_modules/@vercel/next/dist/index",
+      "requirePath": "/tmp/taskflow/node_modules/@vercel/next/dist/index",
       "apiVersion": 2,
       "src": "package.json",
       "use": "@vercel/next",
