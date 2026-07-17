@@ -11,7 +11,7 @@ export async function saveMember(formData: FormData) {
     email: String(formData.get("email") || "") || null,
     gender: String(formData.get("gender") || "") || null,
     team: String(formData.get("team") || "") || null,
-    accessRole: formData.get("admin") ? "admin" : "member",
+    accessRole: String(formData.get("accessRole") || "viewer"),
   }
   if (id) {
     await db.member.update({ where: { id }, data })

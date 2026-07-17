@@ -3,115 +3,129 @@
 import { useMemo, useState, useTransition } from "react"
 import { saveProject, deleteProject } from "./actions"
 
-type Row = {
+type ProjectRow = {
   id: string
   name: string
-  status: string | null
   value: number | null
   customerId: string | null
   centerId: string | null
+  customerName: string | null
+  centerName: string | null
   taskCount: number
   doneCount: number
   overdueCount: number
+  displayStatus: "doing" | "done" | "risk"
 }
 
 type Option = { id: string; name: string }
 
-const STATUS_LABEL: Record<string, string> = { doing: "Dang lam", done: "Hoan thanh", risk: "Rui ro" }
+const STATUS_LABEL: Record<string, string> = { doing: "Đang thực hiện", done: "Đã hoàn thành", risk: "Rủi ro" }
 
-export default function ProjectsClient({ projects, customers, centers }: { projects: Row[]; customers: Option[]; centers: Option[] }) {
+function fmtVnd(n: number | null) {
+  if (!n) return "—"
+  return n.toLocaleString("vi-VN") + " đ"
+}
+
+export default function ProjectsClient({ projects, customers, centers }: { projects: ProjectRow[]; customers: Option[]; centers: Option[] }) {
   const [q, setQ] = useState("")
-  const [editing, setEditing] = useState<Row | null>(null)
   const [showForm, setShowForm] = useState(false)
+  const [editing, setEditing] = useState<ProjectRow | null>(null)
   const [pending, startTransition] = useTransition()
-
-  const active = projects.filter((p) => p.status !== "done").length
-  const inProg = projects.filter((p) => p.status === "doing").length
-  const done = projects.filter((p) => p.status === "done").length
-  const risk = projects.filter((p) => p.overdueCount > 0).length
 
   const filtered = useMemo(() => projects.filter((p) => !q || p.name.toLowerCase().includes(q.toLowerCase())), [projects, q])
 
+  const kpi = useMemo(() => {
+    const active = projects.filter((p) => p.displayStatus !== "done").length
+    const prog = projects.filter((p) => p.displayStatus === "doing").length
+    const done = projects.filter((p) => p.displayStatus === "done").length
+    const risk = projects.filter((p) => p.displayStatus === "risk").length
+    return { active, prog, done, risk }
+  }, [projects])
+
+  function openNew() { setEditing(null); setShowForm(true) }
+  function openEdit(p: ProjectRow) { setEditing(p); setShowForm(true) }
   function onSubmit(formData: FormData) {
     if (editing) formData.set("id", editing.id)
-    startTransition(async () => {
-      await saveProject(formData)
-      setShowForm(false)
-      setEditing(null)
-    })
+    startTransition(async () => { await saveProject(formData); setShowForm(false); setEditing(null) })
   }
-
   function onDelete(id: string) {
-    if (!confirm("Xoa du an nay?")) return
+    if (!confirm("Xoá dự án này?")) return
     startTransition(async () => { await deleteProject(id) })
   }
 
   return (
     <section id="page-projects">
-      <div className="grid kpis">
-        <div className="kcard"><div className="l">Dang hoat dong</div><div className="v" id="pk-active">{active}</div></div>
-        <div className="kcard"><div className="l">Dang thuc hien</div><div className="v" id="pk-prog">{inProg}</div></div>
-        <div className="kcard"><div className="l">Hoan thanh</div><div className="v" id="pk-done">{done}</div></div>
-        <div className="kcard"><div className="l">Rui ro</div><div className="v" id="pk-risk">{risk}</div></div>
+      <div className="grid kpis" style={{ marginBottom: 20 }}>
+        <div className="kcard kb clickable" data-detail="pk-active"><div className="v" id="pk-active">{kpi.active}</div><div className="l">Dự án đang hoạt động</div></div>
+        <div className="kcard kp clickable" data-detail="pk-prog"><div className="v" id="pk-prog">{kpi.prog}</div><div className="l">Đang thực hiện</div></div>
+        <div className="kcard kg clickable" data-detail="pk-done"><div className="v" id="pk-done">{kpi.done}</div><div className="l">Đã hoàn thành</div></div>
+        <div className="kcard kr clickable" data-detail="pk-risk"><div className="v" id="pk-risk">{kpi.risk}</div><div className="l">Dự án rủi ro</div></div>
       </div>
-
       <div className="section-head">
-        <input className="search" id="psearch" placeholder="Tim du an..." value={q} onChange={(e) => setQ(e.target.value)} />
-        <button className="btn-pri" id="btn-newproj" onClick={() => { setEditing(null); setShowForm(true) }}>+ Du an moi</button>
-      </div>
-
-      {showForm && (
-        <div className="card">
-          <form action={onSubmit}>
-            <div className="row">
-              <div className="field"><label>Ten du an</label><input name="name" defaultValue={editing?.name ?? ""} required /></div>
-              <div className="field">
-                <label>Khach hang</label>
-                <select name="customerId" defaultValue={editing?.customerId ?? ""}>
-                  <option value="">-- Khong --</option>
-                  {customers.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
-                </select>
-              </div>
-              <div className="field">
-                <label>Trung tam</label>
-                <select name="centerId" defaultValue={editing?.centerId ?? ""}>
-                  <option value="">-- Khong --</option>
-                  {centers.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
-                </select>
-              </div>
-            </div>
-            <div className="row">
-              <div className="field">
-                <label>Trang thai</label>
-                <select name="status" defaultValue={editing?.status ?? "doing"}>
-                  <option value="doing">Dang lam</option>
-                  <option value="done">Hoan thanh</option>
-                </select>
-              </div>
-              <div className="field"><label>Gia tri (VND)</label><input type="number" name="value" defaultValue={editing?.value ?? ""} /></div>
-            </div>
-            <div className="row">
-              <button className="btn-pri" type="submit" disabled={pending}>Luu</button>
-              <button className="btn-line" type="button" onClick={() => setShowForm(false)}>Huy</button>
-            </div>
-          </form>
+        <h3>Tất cả dự án</h3>
+        <div className="tools">
+          <div className="search" style={{ maxWidth: 260 }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+            <input id="psearch" placeholder="Tìm dự án..." value={q} onChange={(e) => setQ(e.target.value)} />
+          </div>
+          <button className="btn-line" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" /></svg> Bộ lọc</button>
+          <button className="btn-pri" id="btn-newproj" onClick={openNew}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg> Dự án mới</button>
         </div>
-      )}
-
-      <div className="proj-grid">
+      </div>
+      <div className={showForm ? "card" : "card hidden"} id="proj-form" style={{ marginBottom: 18 }}>
+        <form action={onSubmit}>
+          <input type="hidden" id="pf-id" name="id" defaultValue={editing?.id ?? ""} />
+          <div className="row">
+            <div className="field" style={{ flex: 2, minWidth: 240 }}>
+              <label>Tên dự án *</label>
+              <input id="pf-name" name="name" placeholder="VD: VinFast" defaultValue={editing?.name ?? ""} key={`n-${editing?.id ?? "new"}`} required />
+            </div>
+            <div className="field" style={{ flex: 1, minWidth: 200 }}>
+              <label>Khách hàng</label>
+              <select id="pf-customer" name="customerId" defaultValue={editing?.customerId ?? ""} key={`c-${editing?.id ?? "new"}`}>
+                <option value="">—</option>
+                {customers.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
+              </select>
+            </div>
+            <div className="field" style={{ flex: 1, minWidth: 200 }}>
+              <label>Trung tâm thử nghiệm</label>
+              <select id="pf-center" name="centerId" defaultValue={editing?.centerId ?? ""} key={`ce-${editing?.id ?? "new"}`}>
+                <option value="">—</option>
+                {centers.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
+              </select>
+            </div>
+          </div>
+          <p style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 10 }}>Trạng thái, ưu tiên, tiến độ và deadline được tự động tổng hợp từ các công việc có cùng tên dự án này.</p>
+          <div className="row" style={{ marginTop: 12 }}>
+            <button type="submit" className="btn-pri" id="pf-submit" disabled={pending}>{editing ? "Lưu thay đổi" : "+ Thêm dự án"}</button>
+            <button type="button" className="btn-line" id="pf-cancel" onClick={() => { setShowForm(false); setEditing(null) }}>Hủy</button>
+          </div>
+        </form>
+      </div>
+      <div className="proj-grid" id="proj-grid">
         {filtered.map((p) => (
-          <div className="card" key={p.id}>
-            <div className="ch"><h3>{p.name}</h3><span>{STATUS_LABEL[p.status ?? "doing"]}</span></div>
-            <div className="row"><span>Cong viec</span><span>{p.doneCount}/{p.taskCount}</span></div>
-            {p.overdueCount > 0 && <div className="row"><span>Qua han</span><span>{p.overdueCount}</span></div>}
-            <div className="row">
-              <button className="btn-line" onClick={() => { setEditing(p); setShowForm(true) }}>Sua</button>
-              <button className="btn-line" onClick={() => onDelete(p.id)}>Xoa</button>
+          <div className="pcard" key={p.id}>
+            <div className="pt">
+              <h4>{p.name}</h4>
+              <div className="tags"><span className={`tag2 st-${p.displayStatus}`}>{STATUS_LABEL[p.displayStatus]}</span></div>
+            </div>
+            <div className="pbox">
+              <div className="prow"><span>Khách hàng</span><b>{p.customerName ?? "—"}</b></div>
+              <div className="prow"><span>Trung tâm</span><b>{p.centerName ?? "—"}</b></div>
+              <div className="prow"><span>Công việc</span><b>{p.doneCount}/{p.taskCount}</b></div>
+              <div className="prow"><span>Quá hạn</span><b>{p.overdueCount}</b></div>
+            </div>
+            <div className="pfoot">
+              <span>{fmtVnd(p.value)}</span>
+              <div className="pacts">
+                <button className="btn-line" onClick={() => openEdit(p)}>Sửa</button>
+                <button className="btn-line" onClick={() => onDelete(p.id)}>Xoá</button>
+              </div>
             </div>
           </div>
         ))}
       </div>
-      {filtered.length === 0 && <div className="empty" id="proj-empty">Chua co du an nao.</div>}
+      {filtered.length === 0 && <div className="empty" id="proj-empty">Chưa có dự án nào.</div>}
     </section>
   )
 }
