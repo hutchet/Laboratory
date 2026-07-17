@@ -38,6 +38,13 @@ export async function deleteEquipment(id: string) {
   revalidatePath("/dash")
 }
 
+export async function deleteManyEquipment(ids: string[]) {
+  if (!ids.length) return
+  await db.equipment.deleteMany({ where: { id: { in: ids } } })
+  revalidatePath("/equipment")
+  revalidatePath("/dash")
+}
+
 export async function createBooking(formData: FormData) {
   const equipmentId = String(formData.get("equipmentId") || "")
   const date = String(formData.get("date") || "")

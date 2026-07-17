@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo, useState, useTransition } from "react"
-import { saveEquipment, deleteEquipment } from "./actions"
+import { saveEquipment, deleteEquipment, deleteManyEquipment } from "./actions"
 
 type Row = {
   id: string; name: string; code: string | null; category: string | null; manufacturer: string | null; model: string | null
@@ -11,11 +11,13 @@ type Row = {
 }
 type Option = { id: string; name: string }
 
-export default function EquipmentClient({ equipment, centers }: { equipment: Row[]; centers: Option[] }) {
+export default function EquipmentClient({ equipment, centers, canManage = true }: { equipment: Row[]; centers: Option[]; canManage?: boolean }) {
   const [activeCenter, setActiveCenter] = useState<string>("all")
   const [editing, setEditing] = useState<Row | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [pending, startTransition] = useTransition()
+  const [editMode, setEditMode] = useState(false)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
 
   const total = equipment.length
   const ready = equipment.filter((e) => e.status === "ready").length
@@ -47,6 +49,21 @@ export default function EquipmentClient({ equipment, centers }: { equipment: Row
     if (!confirm("Xoa thiet bi nay?")) return
     startTransition(async () => { await deleteEquipment(id) })
   }
+  function toggleRow(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      return next
+    })
+  }
+  function toggleAll() {
+    setSelected((prev) => (prev.size === shown.length ? new Set() : new Set(shown.map((e) => e.id))))
+  }
+  function onBulkDelete() {
+    if (!selected.size) return
+    if (!confirm(`Xoa ${selected.size} thiet bi da chon?`)) return
+    startTransition(async () => { await deleteManyEquipment(Array.from(selected)); setSelected(new Set()) })
+  }
 
   return (
     <section id="page-equipment">
@@ -57,8 +74,12 @@ export default function EquipmentClient({ equipment, centers }: { equipment: Row
         <div className="kcard"><div className="l">Qua han kiem dinh</div><div className="v">{overdue}</div></div>
       </div>
 
-      <div className="section-head">
+      <div className="section-head" style={{ display: "flex", gap: 8 }}>
         <button className="btn-pri" id="eq-add-global" onClick={() => { setEditing(null); setShowForm(true) }}>+ Them thiet bi</button>
+        {canManage && <button className={editMode ? "btn-success" : "btn-line"} id="eq-edit-toggle" onClick={() => { setEditMode((v) => !v); setSelected(new Set()) }}>{editMode ? "Xong" : "Chinh sua"}</button>}
+        {canManage && editMode && (
+          <button className="btn-danger" id="eq-bulk-del" disabled={!selected.size} onClick={onBulkDelete}>Xoa da chon (<span id="eq-bulk-count">{selected.size}</span>)</button>
+        )}
       </div>
 
       {showForm && (
@@ -104,7 +125,7 @@ export default function EquipmentClient({ equipment, centers }: { equipment: Row
               <div className="field"><label>Don vi hieu chuan</label><input name="calVendor" defaultValue={editing?.calVendor ?? ""} /></div>
             </div>
             <div className="row">
-              <button className="btn-pri" type="submit" disabled={pending}>Luu</button>
+              {canManage && <button className="btn-pri" type="submit" disabled={pending}>Luu</button>}
               <button className="btn-line" type="button" onClick={() => setShowForm(false)}>Huy</button>
             </div>
           </form>
@@ -122,11 +143,12 @@ export default function EquipmentClient({ equipment, centers }: { equipment: Row
 
       <table id="eq-mgmt-table">
         <thead>
-          <tr><th>Ten</th><th>Ma</th><th>Loai</th><th>Trung tam</th><th>Trang thai</th><th>Han hieu chuan</th><th>Thao tac</th></tr>
+          <tr>{editMode && <th><input type="checkbox" className="selall-chk" data-tbl="eq" checked={selected.size === shown.length && shown.length > 0} onChange={toggleAll} aria-label="Chon tat ca" /></th>}<th>Ten</th><th>Ma</th><th>Loai</th><th>Trung tam</th><th>Trang thai</th><th>Han hieu chuan</th><th>Thao tac</th></tr>
         </thead>
         <tbody id="eq-mgmt-body">
           {shown.map((e) => (
             <tr key={e.id}>
+              {editMode && <td><input type="checkbox" className="row-chk" data-tbl="eq" data-key={e.id} checked={selected.has(e.id)} onChange={() => toggleRow(e.id)} /></td>}
               <td>{e.name}</td>
               <td>{e.code ?? "-"}</td>
               <td>{e.category ?? "-"}</td>

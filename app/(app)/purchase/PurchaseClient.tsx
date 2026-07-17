@@ -15,7 +15,7 @@ function statusLabel(s: string | null) {
   return "Chưa bắt đầu"
 }
 
-export default function PurchaseClient({ items }: { items: Item[] }) {
+export default function PurchaseClient({ items, canManage = true }: { items: Item[]; canManage?: boolean }) {
   const [editing, setEditing] = useState<Item | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [pending, startTransition] = useTransition()
@@ -50,8 +50,12 @@ export default function PurchaseClient({ items }: { items: Item[] }) {
       <div id="pm-overview-wrap">
         <div className="card" style={{ marginBottom: 14 }}>
           <div id="pm-toolbar" style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginBottom: 12 }}>
-            <button className="btn-pri" id="pm-add-btn" onClick={() => { setEditing(null); setShowForm(true) }}>+ Thêm hạng mục</button>
-            <button className="btn-line" id="pm-delall-btn" style={{ color: "var(--red)" }} onClick={onDeleteAll}>Xóa toàn bộ</button>
+            {canManage && <button className="btn-pri" id="pm-add-btn" onClick={() => { setEditing(null); setShowForm(true) }}>+ Thêm hạng mục</button>}
+            {canManage && <button className={editMode ? "btn-success" : "btn-line"} id="pm-edit-toggle" onClick={() => { setEditMode((v) => !v); setSelected(new Set()) }}>{editMode ? "Xong" : "Chỉnh sửa"}</button>}
+            {canManage && editMode && (
+              <button className="btn-danger" id="pm-bulk-del" disabled={!selected.size} onClick={onBulkDelete}>Xóa đã chọn (<span id="pm-bulk-count">{selected.size}</span>)</button>
+            )}
+            {canManage && <button className="btn-line" id="pm-delall-btn" style={{ color: "var(--red)" }} onClick={onDeleteAll}>Xóa toàn bộ</button>}
           </div>
 
           {showForm && (
@@ -83,10 +87,11 @@ export default function PurchaseClient({ items }: { items: Item[] }) {
 
           <div id="pm-overview-grid">
             <table>
-              <thead><tr><th>Tên hạng mục</th><th>Số lượng</th><th>Chi phí (đ)</th><th>Thành tiền (đ)</th><th>Trạng thái</th><th>Ghi chú</th><th>Thao tác</th></tr></thead>
+              <thead><tr>{editMode && <th><input type="checkbox" className="selall-chk" data-tbl="pm" checked={selected.size === items.length && items.length > 0} onChange={toggleAll} aria-label="Chọn tất cả" /></th>}<th>Tên hạng mục</th><th>Số lượng</th><th>Chi phí (đ)</th><th>Thành tiền (đ)</th><th>Trạng thái</th><th>Ghi chú</th><th>Thao tác</th></tr></thead>
               <tbody>
                 {items.map((it) => (
                   <tr key={it.id}>
+                    {editMode && <td><input type="checkbox" className="row-chk" data-tbl="pm" data-key={it.id} checked={selected.has(it.id)} onChange={() => toggleRow(it.id)} /></td>}
                     <td>{it.name}</td>
                     <td>{it.quantity ?? "-"}</td>
                     <td>{it.cost != null ? fmtVnd(it.cost) : "-"}</td>

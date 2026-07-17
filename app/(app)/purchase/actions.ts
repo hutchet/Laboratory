@@ -29,3 +29,9 @@ export async function deleteAllPurchase() {
   await db.purchaseItem.deleteMany({})
   revalidatePath("/purchase")
 }
+
+export async function deleteManyPurchase(ids: string[]) {
+  if (!ids.length) return
+  await db.purchaseItem.deleteMany({ where: { id: { in: ids } } })
+  revalidatePath("/purchase")
+}

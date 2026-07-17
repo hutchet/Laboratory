@@ -1,4 +1,6 @@
 import { db } from "@/lib/db"
+import { auth } from "@/lib/auth"
+import { can } from "@/lib/rbac"
 import EquipmentClient from "./EquipmentClient"
 import AnalyticsClient from "./AnalyticsClient"
 
@@ -9,6 +11,9 @@ export default async function EquipmentPage({
 }) {
   const { tab } = await searchParams
   const activeTab = tab || "equipment"
+  const session = await auth()
+  const userId = session?.user?.id
+  const canManage = userId ? await can(userId, "equipment", "edit") : false
 
   const equipment = await db.equipment.findMany({ include: { center: true } })
   const centers = await db.center.findMany({ select: { id: true, name: true } })
@@ -47,5 +52,5 @@ export default async function EquipmentPage({
     return <AnalyticsClient equipment={rows} bookings={bookingRows} />
   }
 
-  return <EquipmentClient equipment={rows} centers={centers} />
+  return <EquipmentClient equipment={rows} centers={centers} canManage={canManage} />
 }
