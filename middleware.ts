@@ -9,9 +9,11 @@ export default function middleware(req: NextRequest) {
   const isPublic = PUBLIC_PATHS.some((p) => req.nextUrl.pathname.startsWith(p))
   if (isPublic) return NextResponse.next()
 
-  // next-auth session token = "__Secure-next-auth.session-token" (https) or "next-auth.session-token"
-  const token = req.cookies.get("__Secure-next-auth.session-token")?.value
+  // next-auth session token — hỗ trợ cả authjs (v5 beta) và next-auth cookie names
+  const token = req.cookies.get("__Secure-authjs.session-token")?.value
+              || req.cookies.get("__Secure-next-auth.session-token")?.value
               || req.cookies.get("next-auth.session-token")?.value
+              || req.cookies.get("authjs.session-token")?.value
   if (token) return NextResponse.next()
 
   const loginUrl = new URL("/login", req.nextUrl.origin)
