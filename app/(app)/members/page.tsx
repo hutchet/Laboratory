@@ -24,8 +24,9 @@ export default async function MembersPage() {
     const name = String(formData.get("name") ?? "").trim()
     if (!name) return
     const email = String(formData.get("email") ?? "") || null
-    const position = String(formData.get("position") ?? "") || null
-    await db.member.create({ data: { name, email, position } })
+    const role = String(formData.get("role") ?? "") || null
+    const phone = String(formData.get("phone") ?? "") || null
+    await db.member.create({ data: { name, email, role, phone } })
     revalidatePath("/members")
   }
 
@@ -49,7 +50,8 @@ export default async function MembersPage() {
             <div className="row">
               <div className="field" style={{ flex: 2, minWidth: 200 }}><label>Ho ten *</label><input name="name" required placeholder="Ho ten" /></div>
               <div className="field" style={{ flex: 2, minWidth: 200 }}><label>Email</label><input name="email" type="email" placeholder="Email" /></div>
-              <div className="field"><label>Chuc vu</label><input name="position" placeholder="Chuc vu" /></div>
+              <div className="field"><label>Vai tro / Chuc vu</label><input name="role" placeholder="VD: Ky su" /></div>
+              <div className="field"><label>Dien thoai</label><input name="phone" placeholder="Dien thoai" /></div>
             </div>
             <div className="row" style={{ marginTop: 12 }}><button type="submit" className="btn-pri">+ Them thanh vien</button></div>
           </form>
@@ -60,13 +62,14 @@ export default async function MembersPage() {
 
       <div className="card" style={{ padding: 0, overflowX: "auto" }}>
         <table>
-          <thead><tr><th>Ho ten</th><th>Email</th><th>Chuc vu</th>{canDelete && <th>Thao tac</th>}</tr></thead>
+          <thead><tr><th>Ho ten</th><th>Email</th><th>Vai tro</th><th>Dien thoai</th>{canDelete && <th>Thao tac</th>}</tr></thead>
           <tbody>
             {members.map((m) => (
               <tr key={m.id}>
                 <td>{m.name}</td>
                 <td>{m.email ?? "-"}</td>
-                <td>{m.position ?? "-"}</td>
+                <td>{m.role ?? "-"}</td>
+                <td>{m.phone ?? "-"}</td>
                 {canDelete && (
                   <td>
                     <form action={deleteMember}>
@@ -82,12 +85,12 @@ export default async function MembersPage() {
         {members.length === 0 && <div className="empty">Chua co thanh vien nao.</div>}
       </div>
 
-      <div className="section-head"><h3>Vai tro he thong</h3></div>
+      <div className="section-head"><h3>Vai tro he thong (phan quyen)</h3></div>
       <div className="card">
         <ul style={{ margin: 0, paddingLeft: 20 }}>
           {roles.map((r) => (<li key={r.id}>{r.name}</li>))}
         </ul>
-        <p className="muted" style={{ marginTop: 8 }}>{canEdit ? "Ban co quyen chinh sua vai tro nguoi dung tai trang Cai dat." : ""}</p>
+        <p className="muted" style={{ marginTop: 8 }}>{canEdit ? "Ban co the gan vai tro he thong cho nguoi dung tai trang Cai dat." : ""}</p>
       </div>
     </section>
   )

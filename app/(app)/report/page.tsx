@@ -10,10 +10,7 @@ export default async function ReportPage() {
   const canCreate = userId ? await can(userId, "report", "create") : false
   const canDelete = userId ? await can(userId, "report", "delete") : false
 
-  const [reports, projects] = await Promise.all([
-    db.report.findMany({ orderBy: { createdAt: "desc" }, include: { project: true } }),
-    db.project.findMany({ orderBy: { name: "asc" } }),
-  ])
+  const reports = await db.report.findMany({ orderBy: { createdAt: "desc" } })
 
   async function createReport(formData: FormData) {
     "use server"
@@ -22,9 +19,8 @@ export default async function ReportPage() {
     if (!(await can(session.user.id, "report", "create"))) return
     const title = String(formData.get("title") ?? "").trim()
     if (!title) return
-    const projectId = String(formData.get("projectId") ?? "") || null
     const content = String(formData.get("content") ?? "") || null
-    await db.report.create({ data: { title, projectId, content } })
+    await db.report.create({ data: { title, content } })
     revalidatePath("/report")
   }
 
@@ -47,12 +43,6 @@ export default async function ReportPage() {
           <form action={createReport}>
             <div className="row">
               <div className="field" style={{ flex: 2, minWidth: 200 }}><label>Ten bao cao *</label><input name="title" required placeholder="Ten bao cao" /></div>
-              <div className="field"><label>Du an</label>
-                <select name="projectId">
-                  <option value="">-- Du an --</option>
-                  {projects.map((p) => (<option key={p.id} value={p.id}>{p.name}</option>))}
-                </select>
-              </div>
             </div>
             <div className="row"><div className="field" style={{ width: "100%" }}><label>Noi dung</label><textarea name="content" rows={4} placeholder="Noi dung bao cao" /></div></div>
             <div className="row" style={{ marginTop: 12 }}><button type="submit" className="btn-pri">+ Tao bao cao</button></div>
@@ -64,12 +54,12 @@ export default async function ReportPage() {
 
       <div className="card" style={{ padding: 0, overflowX: "auto" }}>
         <table>
-          <thead><tr><th>Ten bao cao</th><th>Du an</th><th>Ngay tao</th>{canDelete && <th>Thao tac</th>}</tr></thead>
+          <thead><tr><th>Ten bao cao</th><th>Noi dung</th><th>Ngay tao</th>{canDelete && <th>Thao tac</th>}</tr></thead>
           <tbody>
             {reports.map((r) => (
               <tr key={r.id}>
                 <td>{r.title}</td>
-                <td>{r.project?.name ?? "-"}</td>
+                <td>{r.content ?? "-"}</td>
                 <td>{new Date(r.createdAt).toLocaleDateString("vi-VN")}</td>
                 {canDelete && (
                   <td>

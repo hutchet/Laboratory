@@ -19,9 +19,10 @@ export default async function CustomersPage() {
     if (!(await can(session.user.id, "customers", "create"))) return
     const name = String(formData.get("name") ?? "").trim()
     if (!name) return
-    const contact = String(formData.get("contact") ?? "") || null
+    const email = String(formData.get("email") ?? "") || null
     const phone = String(formData.get("phone") ?? "") || null
-    await db.customer.create({ data: { name, contact, phone } })
+    const address = String(formData.get("address") ?? "") || null
+    await db.customer.create({ data: { name, email, phone, address } })
     revalidatePath("/customers")
   }
 
@@ -44,8 +45,9 @@ export default async function CustomersPage() {
           <form action={createCustomer}>
             <div className="row">
               <div className="field" style={{ flex: 2, minWidth: 200 }}><label>Ten khach hang *</label><input name="name" required placeholder="Ten khach hang" /></div>
-              <div className="field" style={{ flex: 2, minWidth: 200 }}><label>Nguoi lien he</label><input name="contact" placeholder="Nguoi lien he" /></div>
+              <div className="field" style={{ flex: 2, minWidth: 200 }}><label>Email</label><input name="email" type="email" placeholder="Email" /></div>
               <div className="field"><label>Dien thoai</label><input name="phone" placeholder="Dien thoai" /></div>
+              <div className="field" style={{ flex: 2, minWidth: 200 }}><label>Dia chi</label><input name="address" placeholder="Dia chi" /></div>
             </div>
             <div className="row" style={{ marginTop: 12 }}><button type="submit" className="btn-pri">+ Them khach hang</button></div>
           </form>
@@ -56,13 +58,14 @@ export default async function CustomersPage() {
 
       <div className="card" style={{ padding: 0, overflowX: "auto" }}>
         <table>
-          <thead><tr><th>Ten</th><th>Lien he</th><th>Dien thoai</th><th>So bao gia</th>{canDelete && <th>Thao tac</th>}</tr></thead>
+          <thead><tr><th>Ten</th><th>Email</th><th>Dien thoai</th><th>Dia chi</th><th>So bao gia</th>{canDelete && <th>Thao tac</th>}</tr></thead>
           <tbody>
             {customers.map((c) => (
               <tr key={c.id}>
                 <td>{c.name}</td>
-                <td>{c.contact ?? "-"}</td>
+                <td>{c.email ?? "-"}</td>
                 <td>{c.phone ?? "-"}</td>
+                <td>{c.address ?? "-"}</td>
                 <td>{c.quotes.length}</td>
                 {canDelete && (
                   <td>
