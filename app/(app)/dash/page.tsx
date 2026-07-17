@@ -46,6 +46,8 @@ export default async function DashPage() {
   const equipment = await db.equipment.findMany()
   const samples = await db.sample.findMany()
   const testItems = await db.testItem.findMany()
+  const members = await db.member.findMany()
+  const memberName = (id: string | null) => members.find((m) => m.id === id)?.name ?? "Chưa gán"
 
   const now = new Date()
   const totalTasks = tasks.length
@@ -77,7 +79,7 @@ export default async function DashPage() {
 
   const workloadMap: Record<string, number> = {}
   for (const t of activeTasks) {
-    const key = t.assigneeId || "Chưa gán"
+    const key = memberName(t.assigneeId)
     workloadMap[key] = (workloadMap[key] || 0) + 1
   }
   const workload = Object.entries(workloadMap).sort((a, b) => b[1] - a[1]).slice(0, 6)
@@ -440,7 +442,7 @@ export default async function DashPage() {
               <tr key={t.id}>
                 <td>{t.title}</td>
                 <td>{t.project ? t.project.name : "-"}</td>
-                <td>{t.assigneeId ?? "-"}</td>
+                <td>{memberName(t.assigneeId)}</td>
                 <td>{t.dueDate ? t.dueDate.toLocaleDateString("vi-VN") : "-"}</td>
                 <td>{Math.ceil((now.getTime() - t.dueDate!.getTime()) / 86400000)}</td>
               </tr>

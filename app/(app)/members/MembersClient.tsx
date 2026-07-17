@@ -13,7 +13,7 @@ type MemberRow = {
   accessRole: string | null
 }
 
-const ROLE_LABEL: Record<string, string> = { viewer: "NgưỞi xem", technician: "Kỹ thuật viên", manager: "Quản lý", admin: "Quản trị" }
+const ROLE_LABEL: Record<string, string> = { viewer: "Người xem", technician: "Kỹ thuật viên", manager: "Quản lý", admin: "Quản trị" }
 const TEAM_OPTIONS = ["Sản phẩm", "Thiết kế", "Kỹ thuật", "Vận hành", "Kiểm định chất lượng", "Marketing", "Chiến lược"]
 
 function initials(name: string) {
@@ -61,7 +61,7 @@ export default function MembersClient({ members }: { members: MemberRow[] }) {
             <div className="field">
               <label>Vai trò truy cập</label>
               <select id="m-admin" name="accessRole" defaultValue={editing?.accessRole ?? "viewer"} key={`r-${editing?.id ?? "new"}`}>
-                <option value="viewer">NgưỞi xem</option>
+                <option value="viewer">Người xem</option>
                 <option value="technician">Kỹ thuật viên</option>
                 <option value="manager">Quản lý</option>
                 <option value="admin">Quản trị</option>

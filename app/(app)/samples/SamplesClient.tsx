@@ -1,53 +1,103 @@
 "use client"
 
 import { useMemo, useState, useTransition } from "react"
-import { saveSample, deleteSample } from "./actions"
+import { addSampleForProject, updateSampleTracking, deleteSample } from "./actions"
 
 type Row = {
-  id: string; code: string | null; name: string; serialNumber: string | null
+  id: string; code: string | null; serialNumber: string | null; qty: number
+  storageLocation: string | null
   customerId: string | null; customerName: string | null; projectId: string | null; projectName: string | null
-  sampleGrade: string | null; group: string | null; status: string | null; receivedAt: string | null
+  status: string | null; receivedAt: string | null
+  testTotal: number; testDone: number; testClosed: number; testStarted: number
 }
 type Option = { id: string; name: string }
 
-const STATUS_LABEL: Record<string, string> = { received: "Mới nhận", testing: "Đang thử nghiệm", done: "Hoàn thành" }
+const SAMPLE_STATUS = ["received", "testing", "completed", "returned"]
+const STATUS_LABEL: Record<string, string> = { received: "Mới nhận", testing: "Đang thử nghiệm", completed: "Hoàn thành", returned: "Đã trả/hủy" }
+const STATUS_COLOR: Record<string, string> = { received: "#9aa1ab", testing: "#4f6cf7", completed: "#27ae84", returned: "#c7cbd3" }
+
+function autoStatus(s: Row): string {
+  if (s.status) return s.status
+  if (s.testTotal === 0) return "received"
+  if (s.testClosed === s.testTotal) return "completed"
+  return s.testStarted > 0 ? "testing" : "received"
+}
+
+function todayStr() {
+  return new Date().toISOString().slice(0, 10)
+}
 
 export default function SamplesClient({ samples, customers, projects }: { samples: Row[]; customers: Option[]; projects: Option[] }) {
-  const [status, setStatus] = useState("all")
+  const [statusFilter, setStatusFilter] = useState("all")
   const [customerId, setCustomerId] = useState("")
   const [q, setQ] = useState("")
+  const [addingProjectId, setAddingProjectId] = useState<string | null>(null)
   const [editing, setEditing] = useState<Row | null>(null)
-  const [showForm, setShowForm] = useState(false)
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
   const [pending, startTransition] = useTransition()
 
-  const total = samples.length
-  const testing = samples.filter((s) => s.status === "testing").length
-  const done = samples.filter((s) => s.status === "done").length
-  const received = samples.filter((s) => s.status === "received").length
+  const withStatus = useMemo(() => samples.map((s) => ({ s, status: autoStatus(s) })), [samples])
 
-  const filtered = useMemo(() => samples.filter((s) => {
-    if (status !== "all" && s.status !== status) return false
+  const total = withStatus.length
+  const testing = withStatus.filter((x) => x.status === "testing").length
+  const done = withStatus.filter((x) => x.status === "completed" || x.status === "returned").length
+  const received = withStatus.filter((x) => x.status === "received").length
+
+  const filtered = useMemo(() => withStatus.filter(({ s, status }) => {
+    if (statusFilter !== "all" && status !== statusFilter) return false
     if (customerId && s.customerId !== customerId) return false
     if (q) {
       const needle = q.toLowerCase()
-      const haystack = [s.code, s.serialNumber, s.name, s.projectName].filter(Boolean).join(" ").toLowerCase()
+      const haystack = [s.code, s.serialNumber, s.projectName].filter(Boolean).join(" ").toLowerCase()
       if (!haystack.includes(needle)) return false
     }
     return true
-  }), [samples, status, customerId, q])
+  }), [withStatus, statusFilter, customerId, q])
 
-  function onSubmit(formData: FormData) {
+  const groups = useMemo(() => {
+    const map = new Map<string, { projectId: string | null; projectName: string; customerName: string | null; items: Array<{ s: Row; status: string }> }>()
+    filtered.forEach((x) => {
+      const key = x.s.projectId ?? "__none__"
+      if (!map.has(key)) {
+        map.set(key, {
+          projectId: x.s.projectId,
+          projectName: x.s.projectName ?? "Không thuộc dự án nào",
+          customerName: x.s.customerName,
+          items: [],
+        })
+      }
+      map.get(key)!.items.push(x)
+    })
+    return Array.from(map.values()).sort((a, b) => a.projectName.localeCompare(b.projectName))
+  }, [filtered])
+
+  function onAddSubmit(formData: FormData) {
+    startTransition(async () => {
+      await addSampleForProject(formData)
+      setAddingProjectId(null)
+    })
+  }
+
+  function onEditSubmit(formData: FormData) {
     if (editing) formData.set("id", editing.id)
     startTransition(async () => {
-      await saveSample(formData)
-      setShowForm(false)
+      await updateSampleTracking(formData)
       setEditing(null)
     })
   }
 
-  function onDelete(id: string) {
-    if (!confirm("Xóa mẫu này?")) return
-    startTransition(async () => { await deleteSample(id) })
+  function onDelete(s: Row) {
+    const msg = s.testTotal ? `Mẫu này có ${s.testTotal} bài test liên quan. Xóa sẽ xóa luôn các bài test đó. Tiếp tục?` : "Xóa mẫu này?"
+    if (!confirm(msg)) return
+    startTransition(async () => { await deleteSample(s.id) })
+  }
+
+  function toggleGroup(key: string) {
+    setCollapsed((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key); else next.add(key)
+      return next
+    })
   }
 
   return (
@@ -61,8 +111,8 @@ export default function SamplesClient({ samples, customers, projects }: { sample
 
       <div className="toolbar">
         <div className="chips" id="sm-status-chips">
-          {["all", "received", "testing", "done"].map((c) => (
-            <button key={c} className={status === c ? "chip active" : "chip"} onClick={() => setStatus(c)}>
+          {["all", ...SAMPLE_STATUS].map((c) => (
+            <button key={c} className={statusFilter === c ? "chip active" : "chip"} onClick={() => setStatusFilter(c)}>
               {c === "all" ? "Tất cả" : STATUS_LABEL[c]}
             </button>
           ))}
@@ -76,82 +126,102 @@ export default function SamplesClient({ samples, customers, projects }: { sample
         </div>
       </div>
 
-      <div className="row" style={{ margin: "10px 0" }}>
-        <button className="btn-pri" onClick={() => { setEditing(null); setShowForm(true) }}>+ Mẫu mới</button>
-      </div>
-
-      {showForm && (
-        <div className="card" style={{ marginBottom: 16 }}>
-          <form action={onSubmit}>
-            <div className="row">
-              <div className="field"><label>Mã mẫu</label><input name="code" defaultValue={editing?.code ?? ""} /></div>
-              <div className="field"><label>Số S/N</label><input name="serialNumber" defaultValue={editing?.serialNumber ?? ""} /></div>
-              <div className="field"><label>Tên mẫu</label><input name="name" defaultValue={editing?.name ?? ""} required /></div>
-            </div>
-            <div className="row">
-              <div className="field">
-                <label>Khách hàng</label>
-                <select name="customerId" defaultValue={editing?.customerId ?? ""}>
-                  <option value="">-- Không --</option>
-                  {customers.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
-                </select>
-              </div>
-              <div className="field">
-                <label>Dự án</label>
-                <select name="projectId" defaultValue={editing?.projectId ?? ""}>
-                  <option value="">-- Không --</option>
-                  {projects.map((p) => (<option key={p.id} value={p.id}>{p.name}</option>))}
-                </select>
-              </div>
-            </div>
-            <div className="row">
-              <div className="field"><label>Cấp độ mẫu</label><input name="sampleGrade" defaultValue={editing?.sampleGrade ?? ""} /></div>
-              <div className="field"><label>Nhóm mẫu</label><input name="group" defaultValue={editing?.group ?? ""} /></div>
-              <div className="field">
-                <label>Trạng thái</label>
-                <select name="status" defaultValue={editing?.status ?? "received"}>
-                  <option value="received">Mới nhận</option>
-                  <option value="testing">Đang thử nghiệm</option>
-                  <option value="done">Hoàn thành</option>
-                </select>
-              </div>
-            </div>
-            <div className="row">
-              <div className="field"><label>Ngày nhận</label><input type="date" name="receivedAt" defaultValue={editing?.receivedAt ? editing.receivedAt.slice(0, 10) : ""} /></div>
-            </div>
-            <div className="row">
-              <button className="btn-pri" type="submit" disabled={pending}>Lưu</button>
-              <button className="btn-line" type="button" onClick={() => setShowForm(false)}>Hủy</button>
-            </div>
-          </form>
-        </div>
-      )}
-
       <div id="sm-body">
-        <table>
-          <thead><tr><th>Mã mẫu</th><th>S/N</th><th>Tên mẫu</th><th>Khách hàng</th><th>Dự án</th><th>Cấp độ</th><th>Nhóm</th><th>Trạng thái</th><th>Ngày nhận</th><th>Thao tác</th></tr></thead>
-          <tbody>
-            {filtered.map((s) => (
-              <tr key={s.id}>
-                <td>{s.code ?? "-"}</td>
-                <td>{s.serialNumber ?? "-"}</td>
-                <td>{s.name}</td>
-                <td>{s.customerName ?? "-"}</td>
-                <td>{s.projectName ?? "-"}</td>
-                <td>{s.sampleGrade ?? "-"}</td>
-                <td>{s.group ?? "-"}</td>
-                <td>{STATUS_LABEL[s.status ?? "received"]}</td>
-                <td>{s.receivedAt ? s.receivedAt.slice(0, 10) : "-"}</td>
-                <td>
-                  <button className="btn-line" onClick={() => { setEditing(s); setShowForm(true) }}>Sửa</button>
-                  <button className="btn-line" onClick={() => onDelete(s.id)}>Xóa</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        {groups.map((g, gi) => {
+          const key = g.projectId ?? "__none__"
+          const gid = `smg-${gi}`
+          const isCollapsed = collapsed.has(key)
+          const totalItems = g.items.reduce((s, x) => s + x.s.testTotal, 0)
+          const totalDone = g.items.reduce((s, x) => s + x.s.testDone, 0)
+          const pct = totalItems ? Math.round((totalDone / totalItems) * 100) : 0
+          return (
+            <div className="card" style={{ padding: 0, overflow: "hidden", marginBottom: 16 }} key={key}>
+              <div className="ch sm-card-head" style={{ padding: "14px 18px", cursor: "pointer", alignItems: "center" }} onClick={(e) => { if ((e.target as HTMLElement).closest("button")) return; toggleGroup(key) }}>
+                <div>
+                  <h3 style={{ fontSize: 15 }}>{g.projectName}</h3>
+                  <span>{g.customerName ? `Khách hàng: ${g.customerName} · ` : ""}{g.items.length} mẫu</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                  <div style={{ textAlign: "right" }}><div style={{ fontSize: 12, color: "var(--muted)" }}>Tiến độ</div><div style={{ fontWeight: 600, fontSize: 16 }}>{pct}%</div></div>
+                  <div className="pbar" style={{ width: 90 }}><i style={{ width: `${pct}%` }} /></div>
+                  {g.projectId && (
+                    <button type="button" className="btn-line" data-sm-add-proj={g.projectId} style={{ padding: "6px 10px", fontSize: 12 }} onClick={() => setAddingProjectId(g.projectId)}>+ Thêm mẫu</button>
+                  )}
+                  <span className="sm-chevron" style={{ transition: "transform .15s", transform: isCollapsed ? "rotate(-90deg)" : undefined }}>▾</span>
+                </div>
+              </div>
+              {g.projectId && addingProjectId === g.projectId && (
+                <div className="card" style={{ margin: "0 18px 14px" }}>
+                  <form action={onAddSubmit}>
+                    <input type="hidden" name="projectId" value={g.projectId} />
+                    <div className="row">
+                      <div className="field"><label>Mã mẫu *</label><input name="code" required /></div>
+                      <div className="field"><label>Số seri (S/N)</label><input name="serialNumber" /></div>
+                      <div className="field"><label>Số lượng</label><input name="qty" type="number" min={1} defaultValue={1} /></div>
+                    </div>
+                    <div className="row">
+                      <div className="field"><label>Ngày nhận mẫu</label><input type="date" name="receivedAt" defaultValue={todayStr()} /></div>
+                      <div className="field"><label>Vị trí lưu trữ</label><input name="storageLocation" placeholder="VĐ: Tủ A - Kệ 2" /></div>
+                    </div>
+                    <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4 }}>Mẫu mới chưa có bài test sẽ hiển thị trạng thái “Mới nhận” cho đến khi lập kế hoạch thử nghiệm.</div>
+                    <div className="row" style={{ justifyContent: "flex-end", marginTop: 10 }}>
+                      <button type="button" className="btn-line" onClick={() => setAddingProjectId(null)}>Hủy</button>
+                      <button type="submit" className="btn-pri" disabled={pending}>Lưu mẫu</button>
+                    </div>
+                  </form>
+                </div>
+              )}
+              {!isCollapsed && (
+                <div className="sm-card-body" id={gid} style={{ overflowX: "auto" }}>
+                  <table style={{ marginTop: 0 }}>
+                    <thead><tr><th>Mã mẫu</th><th>Số seri</th><th>Số lượng</th><th>Ngày nhận</th><th>Vị trí lưu trữ</th><th>Tiến độ</th><th>Trạng thái mẫu</th><th>Thao tác</th></tr></thead>
+                    <tbody>
+                      {g.items.map(({ s, status }) => (
+                        editing?.id === s.id ? (
+                          <tr key={s.id}>
+                            <td colSpan={8}>
+                              <form action={onEditSubmit} style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", padding: "6px 0" }}>
+                                <div className="field" style={{ margin: 0 }}><label>Ngày nhận mẫu</label><input type="date" name="receivedAt" defaultValue={s.receivedAt ? s.receivedAt.slice(0, 10) : ""} /></div>
+                                <div className="field" style={{ margin: 0 }}><label>Vị trí lưu trữ</label><input name="storageLocation" defaultValue={s.storageLocation ?? ""} placeholder="VĐ: Tủ A - Kệ 2" /></div>
+                                <div className="field" style={{ margin: 0 }}>
+                                  <label>Trạng thái mẫu</label>
+                                  <select name="status" defaultValue={s.status ?? ""}>
+                                    <option value="">— Tự động —</option>
+                                    {SAMPLE_STATUS.map((st) => (<option key={st} value={st}>{STATUS_LABEL[st]}</option>))}
+                                  </select>
+                                </div>
+                                <button type="button" className="btn-line" onClick={() => setEditing(null)}>Hủy</button>
+                                <button type="submit" className="btn-pri" disabled={pending}>Lưu</button>
+                              </form>
+                            </td>
+                          </tr>
+                        ) : (
+                          <tr key={s.id}>
+                            <td><b>{s.code ?? "-"}</b></td>
+                            <td>{s.serialNumber ?? "—"}</td>
+                            <td>{s.qty || 1}</td>
+                            <td>{s.receivedAt ? s.receivedAt.slice(0, 10) : "—"}</td>
+                            <td>{s.storageLocation ?? "—"}</td>
+                            <td>{s.testDone}/{s.testTotal} đạt</td>
+                            <td><span className="pill" style={{ color: "#fff", background: STATUS_COLOR[status] }}>{STATUS_LABEL[status]}</span></td>
+                            <td>
+                              <div className="acts">
+                                <button className="txt-act pri" onClick={() => setEditing(s)}>Sửa</button>
+                                <button className="txt-act del" onClick={() => onDelete(s)}>Xóa</button>
+                              </div>
+                            </td>
+                          </tr>
+                        )
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )
+        })}
       </div>
-      {filtered.length === 0 && <div className="empty" id="sm-empty">Chưa có mẫu nào được đăng ký.</div>}
+      {groups.length === 0 && <div className="empty" id="sm-empty">Chưa có mẫu nào được đăng ký.</div>}
     </section>
   )
 }

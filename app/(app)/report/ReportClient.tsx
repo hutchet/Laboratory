@@ -37,7 +37,7 @@ export default function ReportClient({ reports, projects }: { reports: ReportRow
           <button className="btn-pri" id="btn-newrproj" onClick={openNew}>+ Thêm dự án</button>
         </div>
       </div>
-      <p style={{ color: "var(--muted)", fontSize: 13, margin: "-4px 0 16px" }}>Danh sách dự án được liên kết từ trang Projects. Bạn có thể thêm / sửa / xoá tại đây, rồi nhấn vào dự án để nhậ bảng dữ liệu báo cáo.</p>
+      <p style={{ color: "var(--muted)", fontSize: 13, margin: "-4px 0 16px" }}>Danh sách dự án được liên kết từ trang Projects. Bạn có thể thêm / sửa / xoá tại đây, rồi nhấn vào dự án để nhập bảng dữ liệu báo cáo.</p>
       <div className={showForm ? "card" : "card hidden"} id="report-form" style={{ marginBottom: 18 }}>
         <form action={onSubmit}>
           <input type="hidden" id="rf-id" name="id" defaultValue={editing?.id ?? ""} />

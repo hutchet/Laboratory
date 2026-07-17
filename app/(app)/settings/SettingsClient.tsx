@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { exportAllData } from "./actions"
 
 const ROLE_OPTIONS = [
   { value: "", label: "Theo Quản trị viên mặc định" },
@@ -17,7 +18,7 @@ export default function SettingsClient({ roleLabel }: { roleLabel: string }) {
   const [font, setFont] = useState("normal")
   const [activeRole, setActiveRole] = useState("")
   const [backupMeta, setBackupMeta] = useState<string | null>(null)
-  const [dbStatus, setDbStatus] = useState("Chạa chọn thư mục database")
+  const [dbStatus, setDbStatus] = useState("Chưa chọn thư mục database")
 
   useEffect(() => {
     const t = localStorage.getItem("tf-theme") || "light"
@@ -44,16 +45,21 @@ export default function SettingsClient({ roleLabel }: { roleLabel: string }) {
     changeTheme("light")
     changeFont("normal")
   }
-  function backupData() {
-    const snapshot = { note: "Bản xuất đầy đủ cần endpoint export server — đây là bản ghi tạm thời.", exportedAt: new Date().toISOString() }
-    const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: "application/json" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = "taskflow-backup.json"
-    a.click()
-    URL.revokeObjectURL(url)
-    setBackupMeta(`Đã sao lưu lúc ${new Date().toLocaleString("vi-VN")}`)
+  async function backupData() {
+    setBackupMeta("Đang xuất dữ liệu...")
+    try {
+      const snapshot = await exportAllData()
+      const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: "application/json" })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `taskflow-backup-${new Date().toISOString().slice(0, 10)}.json`
+      a.click()
+      URL.revokeObjectURL(url)
+      setBackupMeta(`Đã sao lưu lúc ${new Date().toLocaleString("vi-VN")}`)
+    } catch {
+      setBackupMeta("Sao lưu thất bại, vui lòng thử lại.")
+    }
   }
   function clearLocal() {
     if (!confirm("Xóa toàn bộ cài đặt hiển thị lưu trên máy này?")) return
@@ -101,7 +107,7 @@ export default function SettingsClient({ roleLabel }: { roleLabel: string }) {
           <button type="button" className={theme === "dark" ? "btn-pri" : "btn-line"} onClick={() => changeTheme("dark")}>Tối</button>
         </div>
         <div className="th-row">
-          <label>Phông chứ</label>
+          <label>Phông chữ</label>
           <select id="set-font" value={font} onChange={(e) => changeFont(e.target.value)}>
             <option value="normal">Vừa</option>
             <option value="large">Lớn</option>
@@ -115,7 +121,7 @@ export default function SettingsClient({ roleLabel }: { roleLabel: string }) {
         <div className="ch"><h3>Sao lưu & khôi phục dữ liệu</h3><span>Toàn bộ dữ liệu ứng dụng</span></div>
         <div className="eqinfo-note">
           <span>ℹ️</span>
-          <div>Dữ liệu chính (task, dự án, thành viên, báo cáo, thiết bị, lịch đặt, kế hoạch thử nghiệm) đã được lưu trong cơ sở dữ liệu chung (PostgreSQL/Neon) — không còn phụ thuệc vào localStorage trình duyệt như bản gốc. Nút bên dưới xuất một bản sao JSON tham khảo nhanh.</div>
+          <div>Dữ liệu chính (task, dự án, thành viên, báo cáo, thiết bị, lịch đặt, kế hoạch thử nghiệm) đã được lưu trong cơ sở dữ liệu chung (PostgreSQL/Neon) — không còn phụ thuộc vào localStorage trình duyệt như bản gốc. Nút bên dưới xuất toàn bộ dữ liệu nghiệp vụ hiện có thành 1 file JSON.</div>
         </div>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
           <button className="btn-pri" id="set-backup-btn" onClick={backupData}>⬇ Sao lưu toàn bộ dữ liệu</button>
@@ -130,7 +136,7 @@ export default function SettingsClient({ roleLabel }: { roleLabel: string }) {
         <div className="ch"><h3>Thư mục Database (offline)</h3><span>Lưu dữ liệu ra một thư mục trên máy, không chỉ trong trình duyệt</span></div>
         <div className="eqinfo-note">
           <span>ℹ️</span>
-          <div>Trong bản Next.js này, dữ liệu đã được lưu tập trung trên Postgres (Neon) thông qua server, nên không cần thư mục database cục bộ như bản HTML đờn gốc. Giự lại nút này để tham khảo giao diện gốc; chức năng thực tế sẽ không cần thiết nựa.</div>
+          <div>Trong bản Next.js này, dữ liệu đã được lưu tập trung trên Postgres (Neon) thông qua server, nên không cần thư mục database cục bộ như bản HTML đơn gốc. Giữ lại nút này để tham khảo giao diện gốc; chức năng thực tế sẽ không cần thiết nữa.</div>
         </div>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginTop: 10 }}>
           <button className="btn-pri" type="button" id="tf-db-choose-btn" onClick={chooseDbFolder}>📁 Chọn thư mục database</button>

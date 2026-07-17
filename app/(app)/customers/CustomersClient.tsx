@@ -53,7 +53,7 @@ export default function CustomersClient({ customers }: { customers: CustomerRow[
         <div className="kcard kb"><div className="v" id="ck-total">{kpi.total}</div><div className="l">Tổng khách hàng</div></div>
         <div className="kcard kp"><div className="v" id="ck-active">{kpi.active}</div><div className="l">Đang có dự án</div></div>
         <div className="kcard kg"><div className="v" id="ck-projs">{kpi.projs}</div><div className="l">Tổng dự án liên quan</div></div>
-        <div className="kcard kr"><div className="v" id="ck-value">{fmtVnd(kpi.value)}</div><div className="l">Tổng giá trị hợp đổng</div></div>
+        <div className="kcard kr"><div className="v" id="ck-value">{fmtVnd(kpi.value)}</div><div className="l">Tổng giá trị hợp đồng</div></div>
       </div>
       <div className="section-head">
         <h3>Tất cả khách hàng</h3>

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useTransition } from "react"
-import { createPlan, deletePlan, saveItem, deleteItem } from "./actions"
+import { createPlan, deletePlan, addSample, saveItem, deleteItem } from "./actions"
 
 type Item = {
   id: string; sampleId: string | null; sampleName: string | null; reportCode: string | null
@@ -48,12 +48,19 @@ export default function PlanClient({ plans, projects, samples, equipment }: { pl
   const [editing, setEditing] = useState<Item | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [showCreate, setShowCreate] = useState(false)
+  const [showAddSample, setShowAddSample] = useState(false)
   const [pending, startTransition] = useTransition()
 
   const active = plans.find((p) => p.id === activeId) ?? null
 
   function onCreate(formData: FormData) {
     startTransition(async () => { await createPlan(formData); setShowCreate(false) })
+  }
+
+  function onAddSample(formData: FormData) {
+    if (!active) return
+    formData.set("projectId", active.projectId)
+    startTransition(async () => { await addSample(formData); setShowAddSample(false) })
   }
 
   function onDeletePlan(id: string) {
@@ -232,9 +239,25 @@ export default function PlanClient({ plans, projects, samples, equipment }: { pl
 
           <div className="card" style={{ marginBottom: 18 }}>
             <div className="ch"><h3>Mẫu thử nghiệm và bài thử</h3><span id="plan-pack-count">{Object.keys(packMap).length} mẫu</span></div>
-            <div style={{ marginBottom: 12 }}>
-              <button className="btn-pri" id="plan-add-pack-btn" onClick={() => { setEditing(null); setShowForm(true) }}>+ Thêm bài thử</button>
+            <div style={{ marginBottom: 12, display: "flex", gap: 8 }}>
+              <button className="btn-pri" id="plan-add-pack-btn" onClick={() => { setShowAddSample(true); setShowForm(false) }}>+ Thêm mẫu</button>
+              <button className="btn-line" id="plan-add-item-btn" onClick={() => { setEditing(null); setShowForm(true); setShowAddSample(false) }}>+ Thêm bài thử</button>
             </div>
+            {showAddSample && (
+              <div className="card" style={{ marginBottom: 12 }}>
+                <form action={onAddSample}>
+                  <div className="row">
+                    <div className="field"><label>Mã mẫu *</label><input name="code" required /></div>
+                    <div className="field"><label>Số seri (S/N)</label><input name="serialNumber" /></div>
+                    <div className="field"><label>Số lượng</label><input name="qty" type="number" min={1} defaultValue={1} /></div>
+                  </div>
+                  <div className="row" style={{ justifyContent: "flex-end" }}>
+                    <button type="button" className="btn-line" onClick={() => setShowAddSample(false)}>Hủy</button>
+                    <button type="submit" className="btn-pri" disabled={pending}>Lưu mẫu</button>
+                  </div>
+                </form>
+              </div>
+            )}
             <div id="plan-pack-list">
               {showForm && (
                 <div className="card">

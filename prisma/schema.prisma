@@ -418,16 +418,18 @@ model PurchaseItem {
 // ================== SAMPLES (LIMS) ==================
 
 model Sample {
-  id           String    @id @default(cuid())
-  code         String?
-  name         String
-  serialNumber String?
-  customerId   String?
-  projectId    String?
-  sampleGrade  String?
-  group        String?
-  status       String? // received | testing | done
-  receivedAt   DateTime?
+  id              String    @id @default(cuid())
+  code            String?
+  name            String
+  serialNumber    String?
+  qty             Int?      @default(1)
+  storageLocation String?
+  customerId      String?
+  projectId       String?
+  sampleGrade     String?
+  group           String?
+  status          String? // received | testing | completed | returned (empty = auto)
+  receivedAt      DateTime?
 
   customer  Customer?   @relation(fields: [customerId], references: [id])
   project   Project?    @relation(fields: [projectId], references: [id])

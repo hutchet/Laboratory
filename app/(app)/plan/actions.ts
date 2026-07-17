@@ -15,6 +15,29 @@ export async function deletePlan(id: string) {
   revalidatePath("/plan")
 }
 
+// Creates a new sample ("pack") scoped to a project — mirrors the original
+// openPackForm(planId) flow triggered by the "+ Thêm mẫu" button, distinct
+// from adding a bài thử (TestItem) below.
+export async function addSample(formData: FormData) {
+  const projectId = String(formData.get("projectId") || "")
+  const code = String(formData.get("code") || "").trim()
+  if (!projectId || !code) return
+  await db.sample.create({
+    data: {
+      projectId,
+      code,
+      name: code,
+      serialNumber: String(formData.get("serialNumber") || "") || null,
+      qty: Math.max(1, parseInt(String(formData.get("qty") || "1"), 10) || 1),
+      receivedAt: new Date(),
+      status: "received",
+    },
+  })
+  revalidatePath("/plan")
+  revalidatePath("/samples")
+  revalidatePath("/dash")
+}
+
 export async function saveItem(formData: FormData) {
   const id = String(formData.get("id") || "")
   const data = {

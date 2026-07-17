@@ -80,9 +80,9 @@ export default function AnalyticsClient({ equipment, bookings }: { equipment: Eq
         </div>
 
         <div className="eqlegend">
-          <span><i className="sw sw-free" /> Còn trống</span>
-          <span><i className="sw sw-booked" /> Đã đặt</span>
-          <span><i className="sw sw-maint" /> Đang bảo trì</span>
+          <div className="li"><span className="sw" style={{ background: "transparent" }} />Còn trống</div>
+          <div className="li"><span className="sw" style={{ background: "var(--amber-soft)", borderLeft: "3px solid var(--amber)" }} />Đã đặt</div>
+          <div className="li"><span className="sw eqcol-maint" />Đang bảo trì</div>
         </div>
 
         <div className="eqgrid-wrap" id="eq-grid-wrap">
@@ -97,9 +97,13 @@ export default function AnalyticsClient({ equipment, bookings }: { equipment: Eq
                   {HOURS.map((h) => {
                     const b = bookingFor(e.id, h)
                     if (e.status === "maintenance") return <td key={h} className="eqcol-maint" title="Đang bảo trì" />
-                    if (b) return <td key={h} className="eqcol-booked" title={`${b.bookedBy ?? ""} - ${b.purpose ?? ""}`} />
+                    if (b) return (
+                      <td key={h} style={{ background: "var(--amber-soft)", borderLeft: "3px solid var(--amber)", padding: "4px 6px" }} title={`${b.bookedBy ?? ""} - ${b.purpose ?? ""}`}>
+                        <b style={{ fontSize: 11.5 }}>{b.bookedBy ?? ""}</b>
+                      </td>
+                    )
                     return (
-                      <td key={h} className="eqcol-free" onClick={() => setSlotPick({ equipmentId: e.id, hour: h })}>
+                      <td key={h} className="eqslot-empty" onClick={() => setSlotPick({ equipmentId: e.id, hour: h })}>
                         {slotPick && slotPick.equipmentId === e.id && slotPick.hour === h ? "✎" : ""}
                       </td>
                     )
