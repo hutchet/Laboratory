@@ -1,7 +1,8 @@
 "use client"
 
-import { useMemo, useState, useTransition } from "react"
+import { useMemo, useRef, useState, useTransition } from "react"
 import { savePersonnelRateConfig, savePersonnelRouting, deletePersonnelRoutings } from "./actions"
+import { useColResize } from "./useColResize"
 
 type RateConfig = { techRate: number; engRate: number; leadRate: number; mgrRate: number; overheadPct: number }
 type Row = { id: string; testCode: string | null; testName: string; prepHours: string | null; setupHours: string | null; testHours: string | null; reportHours: string | null }
@@ -15,6 +16,8 @@ export default function QuotePersonnelClient({ rateConfig, routings, canManage =
   const [editing, setEditing] = useState<Row | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [pending, startTransition] = useTransition()
+  const tableRef = useRef<HTMLTableElement | null>(null)
+  useColResize(tableRef, 10 + (editMode ? 1 : 0))
 
   const filtered = useMemo(() => routings.filter((r) => !q || r.testName.toLowerCase().includes(q.toLowerCase())), [routings, q])
 
@@ -99,7 +102,7 @@ export default function QuotePersonnelClient({ rateConfig, routings, canManage =
 
       <div className="card" style={{ padding: 0, overflowX: "auto" }}>
         <div className="qs-box" id="qtp-scrollbox">
-        <table className="rz-table" id="qtp-table">
+        <table className="rz-table" id="qtp-table" ref={tableRef}>
           <thead>
             <tr>
               {editMode && (

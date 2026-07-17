@@ -1,7 +1,8 @@
 "use client"
 
-import { useMemo, useState, useTransition } from "react"
+import { useMemo, useRef, useState, useTransition } from "react"
 import { saveDepreciationAsset, deleteDepreciationAssets } from "./actions"
+import { useColResize } from "./useColResize"
 
 type Row = { id: string; assetName: string; assetGroup: string | null; totalValue: number | null; years: number | null }
 
@@ -19,6 +20,8 @@ export default function QuoteDepreciationClient({ items, canManage = true }: { i
   const [editing, setEditing] = useState<Row | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [pending, startTransition] = useTransition()
+  const tableRef = useRef<HTMLTableElement | null>(null)
+  useColResize(tableRef, 7 + (editMode ? 1 : 0))
 
   const filtered = useMemo(() => items.filter((i) => !q || i.assetName.toLowerCase().includes(q.toLowerCase())), [items, q])
 
@@ -73,7 +76,7 @@ export default function QuoteDepreciationClient({ items, canManage = true }: { i
 
       <div className="card" style={{ padding: 0, overflowX: "auto" }}>
         <div className="qs-box" id="qtd-scrollbox">
-        <table className="rz-table" id="qtd-table">
+        <table className="rz-table" id="qtd-table" ref={tableRef}>
           <thead>
             <tr>
               {editMode && (

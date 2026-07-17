@@ -1,7 +1,8 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useRef, useState, useTransition } from "react"
 import { saveVariableCost, deleteVariableCosts } from "./actions"
+import { useColResize } from "./useColResize"
 
 type Row = { id: string; costType: string; description: string | null; amount: number | null }
 
@@ -13,6 +14,8 @@ export default function QuoteVariableClient({ items, canManage = true }: { items
   const [editing, setEditing] = useState<Row | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [pending, startTransition] = useTransition()
+  const tableRef = useRef<HTMLTableElement | null>(null)
+  useColResize(tableRef, 5 + (editMode ? 1 : 0))
 
   function toggle(id: string) { setSelected((s) => s.includes(id) ? s.filter((x) => x !== id) : [...s, id]) }
   function openNew() { setEditing(null); setShowForm(true) }
@@ -59,7 +62,7 @@ export default function QuoteVariableClient({ items, canManage = true }: { items
 
       <div className="card" style={{ padding: 0, overflowX: "auto" }}>
         <div className="qs-box" id="qtv-scrollbox">
-        <table className="rz-table" id="qtv-table">
+        <table className="rz-table" id="qtv-table" ref={tableRef}>
           <thead>
             <tr>
               {editMode && (

@@ -30,16 +30,16 @@
  *     từ trình duyệt đang dùng dữ liệu cũ.
  *
  * GIỚI HẠN ĐÃ BIẾT (đọc kỹ trước khi chạy thật):
- *   - (Đã xử lý — rà soát lần 11) `PurchaseItem` đã được bổ sung cột thật cho
- *     lab/supplier/task/jira/pr/po/migo/tinhtrang/pic/tfslink (additive
- *     migration), nên script bên dưới ghi trực tiếp vào các cột này thay vì
- *     gộp tạm vào `note` như trước.
- *   - `tf_equipment_centers_v1` (đơn giá điện/thuê theo trung tâm) vẫn chưa có
- *     model riêng — xem ghi chú tương ứng ở mục equipment centers bên dưới.
+ *   - `tf_equipment_centers_v1` (đơn giá điện/thuê theo trung tâm) và một số
+ *     field của `tf_purchase_v1` (lab, supplier, task, jira, pr, po, migo,
+ *     tinhtrang, tfslink) KHÔNG có cột tương ứng trong schema Prisma hiện tại
+ *     (model PurchaseItem chỉ có id/name/quantity/cost/status/note). Để
+ *     không mất dữ liệu, script gộp toàn bộ các field dư vào cột `note` dưới
+ *     dạng JSON — ĐÂY LÀ GIẢI PHÁP TẠM, nên bổ sung cột thật cho PurchaseItem
+ *     (additive migration) rồi viết lại migration để tách ra cột riêng.
  *   - `amount`/`price` trong Purchase là chuỗi định dạng kiểu Việt Nam (VD:
- *     "160.000.000") — script tự parseVnNumber() sang Float cho `cost`, và
- *     vẫn giữ thêm chuỗi gốc (amountRaw/priceRaw) trong `note` JSON để không
- *     mất định dạng gốc nếu parse sai hoặc cần đối chiếu thủ công.
+ *     "160.000.000") — script tự parseVnNumber() sang Float, giữ chuỗi gốc
+ *     trong `note` JSON để không mất định dạng gốc nếu parse sai.
  */
 
 import { PrismaClient } from "@prisma/client"
@@ -448,7 +448,7 @@ async function main() {
   }
   pushReport("tf_audit_log_v1 -> AuditLog", auditLogSrc.length, logWritten, logSkipped)
 
-  // ---------- 11. Purchase (đã có cột thật cho lab/supplier/task/jira/pr/po/migo/tinhtrang/pic/tfslink) ----------
+  // ---------- 11. Purchase (CẢNH BÁO: schema hiện tại thiếu nhiều cột, xem đầu file) ----------
   const purchaseSrc: AnyRec[] = data.tf_purchase_v1 || []
   let pmWritten = 0
   const pmSkipped: Array<{ reason: string; record: AnyRec }> = []
@@ -457,36 +457,40 @@ async function main() {
       pmSkipped.push({ reason: "thiếu id", record: p })
       continue
     }
-    // Giữ nguyên chuỗi gốc amount/price trong note (JSON) để đối chiếu thủ công
-    // nếu parseVnNumber() không khớp định dạng gốc (ví dụ "79.000 eur").
-    const rawNote = JSON.stringify({ amountRaw: p.amount, priceRaw: p.price, tfs: p.tfs })
-    const mapped = {
-      name: p.name || `(chưa có tên) #${p.no ?? p.id}`,
-      quantity: null,
-      cost: parseVnNumber(p.amount) ?? parseVnNumber(p.price),
-      status: p.status ?? null,
-      note: rawNote,
-      lab: p.lab ?? null,
-      supplier: p.supplier ?? null,
-      task: p.task ?? null,
-      jira: p.jira ?? null,
-      pr: p.pr ?? null,
-      po: p.po ?? null,
-      migo: p.migo ?? null,
-      tinhtrang: p.tinhtrang ?? null,
-      pic: p.pic ?? null,
-      tfslink: p.tfslink ?? null,
+    const extra = {
+      lab: p.lab,
+      supplier: p.supplier,
+      task: p.task,
+      tfs: p.tfs,
+      jira: p.jira,
+      pr: p.pr,
+      po: p.po,
+      migo: p.migo,
+      tinhtrang: p.tinhtrang,
+      pic: p.pic,
+      tfslink: p.tfslink,
+      amountRaw: p.amount,
+      priceRaw: p.price,
     }
     if (COMMIT) {
       await prisma.purchaseItem.upsert({
         where: { id: p.id },
-        create: { id: p.id, ...mapped },
+        create: {
+          id: p.id,
+          name: p.name || `(chưa có tên) #${p.no ?? p.id}`,
+          quantity: null,
+          cost: parseVnNumber(p.amount) ?? parseVnNumber(p.price),
+          status: p.status ?? null,
+          // Gộp tạm các field chưa có cột riêng vào note dưới dạng JSON — cần bổ
+          // sung cột thật cho PurchaseItem rồi tách ra ở migration sau.
+          note: JSON.stringify(extra),
+        },
         update: {},
       })
     }
     pmWritten++
   }
-  pushReport("tf_purchase_v1 -> PurchaseItem (cột đầy đủ, rà soát lần 11)", purchaseSrc.length, pmWritten, pmSkipped)
+  pushReport("tf_purchase_v1 -> PurchaseItem (⚠ mapping tạm, xem ghi chú đầu file)", purchaseSrc.length, pmWritten, pmSkipped)
 
   // ---------- 12. Quality checklist (object dạng {key: true/false}, không phải mảng) ----------
   const qlChecklist: AnyRec = data.tf_ql_checklist_v1 || {}

@@ -1,7 +1,8 @@
 "use client"
 
-import { useMemo, useState, useTransition } from "react"
+import { useMemo, useRef, useState, useTransition } from "react"
 import { saveTestCatalogItem, deleteTestCatalogItems } from "./actions"
+import { useColResize } from "./useColResize"
 
 type Row = { id: string; code: string | null; name: string; standard: string | null; sampleQty: string | null; leadTime: string | null; price: number | null }
 
@@ -14,6 +15,8 @@ export default function QuoteCatalogClient({ items, canManage = true }: { items:
   const [editing, setEditing] = useState<Row | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [pending, startTransition] = useTransition()
+  const tableRef = useRef<HTMLTableElement | null>(null)
+  useColResize(tableRef, 8 + (editMode ? 1 : 0))
 
   const filtered = useMemo(() => items.filter((i) => !q || i.name.toLowerCase().includes(q.toLowerCase()) || (i.code ?? "").toLowerCase().includes(q.toLowerCase())), [items, q])
 
@@ -70,7 +73,7 @@ export default function QuoteCatalogClient({ items, canManage = true }: { items:
 
       <div className="card" style={{ padding: 0, overflowX: "auto" }}>
         <div className="qs-box" id="qtc-scrollbox">
-        <table className="rz-table" id="qtc-table">
+        <table className="rz-table" id="qtc-table" ref={tableRef}>
           <thead>
             <tr>
               {editMode && (
