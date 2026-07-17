@@ -1,45 +1,55 @@
 import { db } from "@/lib/db"
-import { auth } from "@/lib/auth"
 
 export default async function DashPage() {
-  const session = await auth()
-
-  const [taskCount, projectCount, equipmentCount, bookingCount, quoteCount, customerCount, memberCount, purchaseCount, auditPlanCount] = await Promise.all([
-    db.task.count(),
+  const [projectCount, taskCount, equipmentCount, quoteCount, customerCount, openTasks] = await Promise.all([
     db.project.count(),
+    db.task.count(),
     db.equipment.count(),
-    db.equipmentBooking.count(),
     db.quote.count(),
     db.customer.count(),
-    db.member.count(),
-    db.purchaseItem.count(),
-    db.auditPlan.count(),
+    db.task.count({ where: { status: { not: "Hoan thanh" } } }),
   ])
 
-  const cards = [
-    { label: "Tasks", count: taskCount, href: "/tasks" },
-    { label: "Projects", count: projectCount, href: "/projects" },
-    { label: "Equipment", count: equipmentCount, href: "/equipment" },
-    { label: "Bookings", count: bookingCount, href: "/equipment" },
-    { label: "Quotes", count: quoteCount, href: "/quote" },
-    { label: "Customers", count: customerCount, href: "/customers" },
-    { label: "Members", count: memberCount, href: "/members" },
-    { label: "Purchase items", count: purchaseCount, href: "/purchase" },
-    { label: "Audit plans", count: auditPlanCount, href: "/auditplan" },
+  const recentTasks = await db.task.findMany({ orderBy: { createdAt: "desc" }, take: 5, include: { project: true } })
+
+  const kpis = [
+    { label: "Du an", value: projectCount },
+    { label: "Cong viec", value: taskCount },
+    { label: "Cong viec chua xong", value: openTasks },
+    { label: "Thiet bi", value: equipmentCount },
+    { label: "Bao gia", value: quoteCount },
+    { label: "Khach hang", value: customerCount },
   ]
 
   return (
-    <main style={{ padding: 24 }}>
-      <h1>Dashboard</h1>
-      <p>Xin chao, {session?.user?.email ?? "ban"}.</p>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(140px, 1fr))", gap: 16, marginTop: 24, maxWidth: 700 }}>
-        {cards.map((c) => (
-          <a key={c.label} href={c.href} style={{ textDecoration: "none", color: "#333", border: "1px solid #ddd", borderRadius: 8, padding: 16 }}>
-            <div style={{ fontSize: 28, fontWeight: 700 }}>{c.count}</div>
-            <div style={{ color: "#666" }}>{c.label}</div>
-          </a>
+    <section>
+      <div className="section-head"><h3>Tong quan</h3></div>
+      <div className="kpis">
+        {kpis.map((k) => (
+          <div key={k.label} className="kcard">
+            <div className="kv">{k.value}</div>
+            <div className="kl">{k.label}</div>
+          </div>
         ))}
       </div>
-    </main>
+
+      <div className="section-head"><h3>Cong viec gan day</h3></div>
+      <div className="card" style={{ padding: 0, overflowX: "auto" }}>
+        <table>
+          <thead><tr><th>Cong viec</th><th>Du an</th><th>Trang thai</th><th>Han chot</th></tr></thead>
+          <tbody>
+            {recentTasks.map((t) => (
+              <tr key={t.id}>
+                <td>{t.title}</td>
+                <td>{t.project?.name ?? "-"}</td>
+                <td>{t.status ?? "-"}</td>
+                <td>{t.dueDate ? new Date(t.dueDate).toLocaleDateString("vi-VN") : "-"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {recentTasks.length === 0 && <div className="empty">Chua co cong viec nao.</div>}
+      </div>
+    </section>
   )
 }

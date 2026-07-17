@@ -8,23 +8,24 @@ export default async function MembersPage() {
   const userId = session?.user?.id
 
   const canCreate = userId ? await can(userId, "members", "create") : false
+  const canEdit = userId ? await can(userId, "members", "edit") : false
   const canDelete = userId ? await can(userId, "members", "delete") : false
 
-  const members = await db.member.findMany({ orderBy: { createdAt: "desc" } })
+  const [members, roles] = await Promise.all([
+    db.member.findMany({ orderBy: { name: "asc" } }),
+    db.role.findMany({ orderBy: { name: "asc" } }),
+  ])
 
   async function createMember(formData: FormData) {
     "use server"
     const session = await auth()
     if (!session?.user?.id) return
     if (!(await can(session.user.id, "members", "create"))) return
-
     const name = String(formData.get("name") ?? "").trim()
     if (!name) return
-    const role = String(formData.get("role") ?? "") || null
     const email = String(formData.get("email") ?? "") || null
-    const phone = String(formData.get("phone") ?? "") || null
-
-    await db.member.create({ data: { name, role, email, phone } })
+    const position = String(formData.get("position") ?? "") || null
+    await db.member.create({ data: { name, email, position } })
     revalidatePath("/members")
   }
 
@@ -33,7 +34,6 @@ export default async function MembersPage() {
     const session = await auth()
     if (!session?.user?.id) return
     if (!(await can(session.user.id, "members", "delete"))) return
-
     const id = String(formData.get("id") ?? "")
     if (!id) return
     await db.member.delete({ where: { id } })
@@ -41,55 +41,54 @@ export default async function MembersPage() {
   }
 
   return (
-    <main style={{ padding: 24, maxWidth: 900 }}>
-      <h1>Members</h1>
-
+    <section>
+      <div className="section-head"><h3>Thanh vien</h3></div>
       {canCreate ? (
-        <form action={createMember} style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 24, padding: 16, border: "1px solid #ddd", borderRadius: 8 }}>
-          <input name="name" placeholder="Ten" required style={{ padding: 8, flex: "1 1 160px" }} />
-          <input name="role" placeholder="Vai tro (vd: technician)" style={{ padding: 8, flex: "1 1 160px" }} />
-          <input name="email" type="email" placeholder="Email" style={{ padding: 8, flex: "1 1 160px" }} />
-          <input name="phone" placeholder="So dien thoai" style={{ padding: 8, flex: "1 1 140px" }} />
-          <button type="submit" style={{ padding: "8px 16px" }}>Them thanh vien</button>
-        </form>
+        <div className="card">
+          <form action={createMember}>
+            <div className="row">
+              <div className="field" style={{ flex: 2, minWidth: 200 }}><label>Ho ten *</label><input name="name" required placeholder="Ho ten" /></div>
+              <div className="field" style={{ flex: 2, minWidth: 200 }}><label>Email</label><input name="email" type="email" placeholder="Email" /></div>
+              <div className="field"><label>Chuc vu</label><input name="position" placeholder="Chuc vu" /></div>
+            </div>
+            <div className="row" style={{ marginTop: 12 }}><button type="submit" className="btn-pri">+ Them thanh vien</button></div>
+          </form>
+        </div>
       ) : (
-        <p style={{ color: "#888" }}>Ban khong co quyen tao thanh vien moi.</p>
+        <p className="muted">Ban khong co quyen tao thanh vien moi.</p>
       )}
 
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
-        <thead>
-          <tr style={{ textAlign: "left", borderBottom: "1px solid #ddd" }}>
-            <th style={{ padding: 8 }}>Ten</th>
-            <th style={{ padding: 8 }}>Vai tro</th>
-            <th style={{ padding: 8 }}>Email</th>
-            <th style={{ padding: 8 }}>Dien thoai</th>
-            {canDelete && <th style={{ padding: 8 }}>Hanh dong</th>}
-          </tr>
-        </thead>
-        <tbody>
-          {members.map((m) => (
-            <tr key={m.id} style={{ borderBottom: "1px solid #f0f0f0" }}>
-              <td style={{ padding: 8 }}>{m.name}</td>
-              <td style={{ padding: 8 }}>{m.role ?? "-"}</td>
-              <td style={{ padding: 8 }}>{m.email ?? "-"}</td>
-              <td style={{ padding: 8 }}>{m.phone ?? "-"}</td>
-              {canDelete && (
-                <td style={{ padding: 8 }}>
-                  <form action={deleteMember}>
-                    <input type="hidden" name="id" value={m.id} />
-                    <button type="submit" style={{ color: "#b00" }}>Xoa</button>
-                  </form>
-                </td>
-              )}
-            </tr>
-          ))}
-          {members.length === 0 && (
-            <tr>
-              <td colSpan={5} style={{ padding: 16, textAlign: "center", color: "#888" }}>Chua co thanh vien nao.</td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-    </main>
+      <div className="card" style={{ padding: 0, overflowX: "auto" }}>
+        <table>
+          <thead><tr><th>Ho ten</th><th>Email</th><th>Chuc vu</th>{canDelete && <th>Thao tac</th>}</tr></thead>
+          <tbody>
+            {members.map((m) => (
+              <tr key={m.id}>
+                <td>{m.name}</td>
+                <td>{m.email ?? "-"}</td>
+                <td>{m.position ?? "-"}</td>
+                {canDelete && (
+                  <td>
+                    <form action={deleteMember}>
+                      <input type="hidden" name="id" value={m.id} />
+                      <button type="submit" className="btn-danger">Xoa</button>
+                    </form>
+                  </td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {members.length === 0 && <div className="empty">Chua co thanh vien nao.</div>}
+      </div>
+
+      <div className="section-head"><h3>Vai tro he thong</h3></div>
+      <div className="card">
+        <ul style={{ margin: 0, paddingLeft: 20 }}>
+          {roles.map((r) => (<li key={r.id}>{r.name}</li>))}
+        </ul>
+        <p className="muted" style={{ marginTop: 8 }}>{canEdit ? "Ban co quyen chinh sua vai tro nguoi dung tai trang Cai dat." : ""}</p>
+      </div>
+    </section>
   )
 }

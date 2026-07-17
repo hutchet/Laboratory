@@ -10,24 +10,18 @@ export default async function CustomersPage() {
   const canCreate = userId ? await can(userId, "customers", "create") : false
   const canDelete = userId ? await can(userId, "customers", "delete") : false
 
-  const customers = await db.customer.findMany({
-    orderBy: { name: "asc" },
-    include: { quotes: true },
-  })
+  const customers = await db.customer.findMany({ orderBy: { name: "asc" }, include: { quotes: true } })
 
   async function createCustomer(formData: FormData) {
     "use server"
     const session = await auth()
     if (!session?.user?.id) return
     if (!(await can(session.user.id, "customers", "create"))) return
-
     const name = String(formData.get("name") ?? "").trim()
     if (!name) return
-    const email = String(formData.get("email") ?? "") || null
+    const contact = String(formData.get("contact") ?? "") || null
     const phone = String(formData.get("phone") ?? "") || null
-    const address = String(formData.get("address") ?? "") || null
-
-    await db.customer.create({ data: { name, email, phone, address } })
+    await db.customer.create({ data: { name, contact, phone } })
     revalidatePath("/customers")
   }
 
@@ -36,7 +30,6 @@ export default async function CustomersPage() {
     const session = await auth()
     if (!session?.user?.id) return
     if (!(await can(session.user.id, "customers", "delete"))) return
-
     const id = String(formData.get("id") ?? "")
     if (!id) return
     await db.customer.delete({ where: { id } })
@@ -44,57 +37,47 @@ export default async function CustomersPage() {
   }
 
   return (
-    <main style={{ padding: 24, maxWidth: 900 }}>
-      <h1>Customers</h1>
-
+    <section>
+      <div className="section-head"><h3>Khach hang</h3></div>
       {canCreate ? (
-        <form action={createCustomer} style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 24, padding: 16, border: "1px solid #ddd", borderRadius: 8 }}>
-          <input name="name" placeholder="Ten khach hang" required style={{ padding: 8, flex: "1 1 160px" }} />
-          <input name="email" type="email" placeholder="Email" style={{ padding: 8, flex: "1 1 160px" }} />
-          <input name="phone" placeholder="So dien thoai" style={{ padding: 8, flex: "1 1 140px" }} />
-          <input name="address" placeholder="Dia chi" style={{ padding: 8, flex: "1 1 200px" }} />
-          <button type="submit" style={{ padding: "8px 16px" }}>Them khach hang</button>
-        </form>
+        <div className="card">
+          <form action={createCustomer}>
+            <div className="row">
+              <div className="field" style={{ flex: 2, minWidth: 200 }}><label>Ten khach hang *</label><input name="name" required placeholder="Ten khach hang" /></div>
+              <div className="field" style={{ flex: 2, minWidth: 200 }}><label>Nguoi lien he</label><input name="contact" placeholder="Nguoi lien he" /></div>
+              <div className="field"><label>Dien thoai</label><input name="phone" placeholder="Dien thoai" /></div>
+            </div>
+            <div className="row" style={{ marginTop: 12 }}><button type="submit" className="btn-pri">+ Them khach hang</button></div>
+          </form>
+        </div>
       ) : (
-        <p style={{ color: "#888" }}>Ban khong co quyen tao khach hang moi.</p>
+        <p className="muted">Ban khong co quyen tao khach hang moi.</p>
       )}
 
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
-        <thead>
-          <tr style={{ textAlign: "left", borderBottom: "1px solid #ddd" }}>
-            <th style={{ padding: 8 }}>Ten</th>
-            <th style={{ padding: 8 }}>Email</th>
-            <th style={{ padding: 8 }}>Dien thoai</th>
-            <th style={{ padding: 8 }}>Dia chi</th>
-            <th style={{ padding: 8 }}>So bao gia</th>
-            {canDelete && <th style={{ padding: 8 }}>Hanh dong</th>}
-          </tr>
-        </thead>
-        <tbody>
-          {customers.map((c) => (
-            <tr key={c.id} style={{ borderBottom: "1px solid #f0f0f0" }}>
-              <td style={{ padding: 8 }}>{c.name}</td>
-              <td style={{ padding: 8 }}>{c.email ?? "-"}</td>
-              <td style={{ padding: 8 }}>{c.phone ?? "-"}</td>
-              <td style={{ padding: 8 }}>{c.address ?? "-"}</td>
-              <td style={{ padding: 8 }}>{c.quotes.length}</td>
-              {canDelete && (
-                <td style={{ padding: 8 }}>
-                  <form action={deleteCustomer}>
-                    <input type="hidden" name="id" value={c.id} />
-                    <button type="submit" style={{ color: "#b00" }}>Xoa</button>
-                  </form>
-                </td>
-              )}
-            </tr>
-          ))}
-          {customers.length === 0 && (
-            <tr>
-              <td colSpan={6} style={{ padding: 16, textAlign: "center", color: "#888" }}>Chua co khach hang nao.</td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-    </main>
+      <div className="card" style={{ padding: 0, overflowX: "auto" }}>
+        <table>
+          <thead><tr><th>Ten</th><th>Lien he</th><th>Dien thoai</th><th>So bao gia</th>{canDelete && <th>Thao tac</th>}</tr></thead>
+          <tbody>
+            {customers.map((c) => (
+              <tr key={c.id}>
+                <td>{c.name}</td>
+                <td>{c.contact ?? "-"}</td>
+                <td>{c.phone ?? "-"}</td>
+                <td>{c.quotes.length}</td>
+                {canDelete && (
+                  <td>
+                    <form action={deleteCustomer}>
+                      <input type="hidden" name="id" value={c.id} />
+                      <button type="submit" className="btn-danger">Xoa</button>
+                    </form>
+                  </td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {customers.length === 0 && <div className="empty">Chua co khach hang nao.</div>}
+      </div>
+    </section>
   )
 }

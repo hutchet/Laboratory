@@ -8,7 +8,6 @@ export default async function EquipmentPage() {
   const userId = session?.user?.id
 
   const canCreate = userId ? await can(userId, "equipment", "create") : false
-  const canEdit = userId ? await can(userId, "equipment", "edit") : false
   const canDelete = userId ? await can(userId, "equipment", "delete") : false
 
   const [centers, equipment, bookings] = await Promise.all([
@@ -22,7 +21,6 @@ export default async function EquipmentPage() {
     const session = await auth()
     if (!session?.user?.id) return
     if (!(await can(session.user.id, "equipment", "create"))) return
-
     const name = String(formData.get("name") ?? "").trim()
     if (!name) return
     const address = String(formData.get("address") ?? "") || null
@@ -35,7 +33,6 @@ export default async function EquipmentPage() {
     const session = await auth()
     if (!session?.user?.id) return
     if (!(await can(session.user.id, "equipment", "create"))) return
-
     const name = String(formData.get("name") ?? "").trim()
     if (!name) return
     const code = String(formData.get("code") ?? "") || null
@@ -49,7 +46,6 @@ export default async function EquipmentPage() {
     const session = await auth()
     if (!session?.user?.id) return
     if (!(await can(session.user.id, "equipment", "delete"))) return
-
     const id = String(formData.get("id") ?? "")
     if (!id) return
     await db.equipmentBooking.deleteMany({ where: { equipmentId: id } })
@@ -62,26 +58,18 @@ export default async function EquipmentPage() {
     const session = await auth()
     if (!session?.user?.id) return
     if (!(await can(session.user.id, "equipment", "create"))) return
-
     const equipmentId = String(formData.get("equipmentId") ?? "")
     const startTimeRaw = String(formData.get("startTime") ?? "")
     const endTimeRaw = String(formData.get("endTime") ?? "")
     const bookedBy = String(formData.get("bookedBy") ?? "") || null
     if (!equipmentId || !startTimeRaw || !endTimeRaw) return
-
     const startTime = new Date(startTimeRaw)
     const endTime = new Date(endTimeRaw)
     if (endTime <= startTime) return
-
-    // Kiem tra trung lich cho cung 1 thiet bi (chay tren server, khong the bi qua mat tu client)
     const overlap = await db.equipmentBooking.findFirst({
-      where: {
-        equipmentId,
-        AND: [{ startTime: { lt: endTime } }, { endTime: { gt: startTime } }],
-      },
+      where: { equipmentId, AND: [{ startTime: { lt: endTime } }, { endTime: { gt: startTime } }] },
     })
     if (overlap) return
-
     const equipmentRow = await db.equipment.findUnique({ where: { id: equipmentId } })
     await db.equipmentBooking.create({
       data: { equipmentId, centerId: equipmentRow?.centerId ?? null, startTime, endTime, bookedBy },
@@ -94,7 +82,6 @@ export default async function EquipmentPage() {
     const session = await auth()
     if (!session?.user?.id) return
     if (!(await can(session.user.id, "equipment", "delete"))) return
-
     const id = String(formData.get("id") ?? "")
     if (!id) return
     await db.equipmentBooking.delete({ where: { id } })
@@ -102,129 +89,110 @@ export default async function EquipmentPage() {
   }
 
   return (
-    <main style={{ padding: 24, maxWidth: 960 }}>
-      <h1>Equipment</h1>
-
-      <section style={{ marginBottom: 32 }}>
-        <h2 style={{ fontSize: 18 }}>Trung tam (Centers)</h2>
+    <section>
+      <div className="section-head"><h3>Trung tam thu nghiem</h3></div>
+      <div className="card">
         {canCreate && (
-          <form action={createCenter} style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-            <input name="name" placeholder="Ten trung tam" required style={{ padding: 8, flex: "1 1 160px" }} />
-            <input name="address" placeholder="Dia chi" style={{ padding: 8, flex: "1 1 200px" }} />
-            <button type="submit" style={{ padding: "8px 16px" }}>Them trung tam</button>
+          <form action={createCenter}>
+            <div className="row">
+              <div className="field" style={{ flex: 2, minWidth: 200 }}><label>Ten trung tam *</label><input name="name" required placeholder="VD: Trung tam thu nghiem Pin" /></div>
+              <div className="field" style={{ flex: 2, minWidth: 200 }}><label>Dia chi</label><input name="address" placeholder="Dia chi" /></div>
+            </div>
+            <div className="row" style={{ marginTop: 12 }}><button type="submit" className="btn-pri">+ Them trung tam</button></div>
           </form>
         )}
-        <ul style={{ margin: 0, paddingLeft: 20 }}>
-          {centers.map((c) => (
-            <li key={c.id}>{c.name}{c.address ? ` — ${c.address}` : ""}</li>
-          ))}
-          {centers.length === 0 && <li style={{ color: "#888" }}>Chua co trung tam nao.</li>}
+        <ul style={{ margin: "12px 0 0", paddingLeft: 20 }}>
+          {centers.map((c) => (<li key={c.id}>{c.name}{c.address ? ` - ${c.address}` : ""}</li>))}
+          {centers.length === 0 && <li className="muted">Chua co trung tam nao.</li>}
         </ul>
-      </section>
+      </div>
 
-      <section style={{ marginBottom: 32 }}>
-        <h2 style={{ fontSize: 18 }}>Thiet bi</h2>
+      <div className="section-head"><h3>Thiet bi</h3></div>
+      <div className="card">
         {canCreate && (
-          <form action={createEquipment} style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
-            <input name="name" placeholder="Ten thiet bi" required style={{ padding: 8, flex: "1 1 160px" }} />
-            <input name="code" placeholder="Ma thiet bi" style={{ padding: 8, flex: "1 1 120px" }} />
-            <select name="centerId" style={{ padding: 8 }}>
-              <option value="">-- Trung tam --</option>
-              {centers.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
-            <button type="submit" style={{ padding: "8px 16px" }}>Them thiet bi</button>
+          <form action={createEquipment}>
+            <div className="row">
+              <div className="field" style={{ flex: 2, minWidth: 200 }}><label>Ten thiet bi *</label><input name="name" required placeholder="VD: May do dien" /></div>
+              <div className="field"><label>Ma thiet bi</label><input name="code" placeholder="Ma" /></div>
+              <div className="field"><label>Trung tam</label>
+                <select name="centerId">
+                  <option value="">-- Trung tam --</option>
+                  {centers.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
+                </select>
+              </div>
+            </div>
+            <div className="row" style={{ marginTop: 12 }}><button type="submit" className="btn-pri">+ Them thiet bi</button></div>
           </form>
         )}
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr style={{ textAlign: "left", borderBottom: "1px solid #ddd" }}>
-              <th style={{ padding: 8 }}>Ten</th>
-              <th style={{ padding: 8 }}>Ma</th>
-              <th style={{ padding: 8 }}>Trung tam</th>
-              {canDelete && <th style={{ padding: 8 }}>Hanh dong</th>}
-            </tr>
-          </thead>
+      </div>
+      <div className="card" style={{ padding: 0, overflowX: "auto" }}>
+        <table>
+          <thead><tr><th>Ten</th><th>Ma</th><th>Trung tam</th>{canDelete && <th>Thao tac</th>}</tr></thead>
           <tbody>
             {equipment.map((e) => (
-              <tr key={e.id} style={{ borderBottom: "1px solid #f0f0f0" }}>
-                <td style={{ padding: 8 }}>{e.name}</td>
-                <td style={{ padding: 8 }}>{e.code ?? "-"}</td>
-                <td style={{ padding: 8 }}>{e.center?.name ?? "-"}</td>
+              <tr key={e.id}>
+                <td>{e.name}</td>
+                <td>{e.code ?? "-"}</td>
+                <td>{e.center?.name ?? "-"}</td>
                 {canDelete && (
-                  <td style={{ padding: 8 }}>
+                  <td>
                     <form action={deleteEquipment}>
                       <input type="hidden" name="id" value={e.id} />
-                      <button type="submit" style={{ color: "#b00" }}>Xoa</button>
+                      <button type="submit" className="btn-danger">Xoa</button>
                     </form>
                   </td>
                 )}
               </tr>
             ))}
-            {equipment.length === 0 && (
-              <tr>
-                <td colSpan={4} style={{ padding: 16, textAlign: "center", color: "#888" }}>Chua co thiet bi nao.</td>
-              </tr>
-            )}
           </tbody>
         </table>
-      </section>
+        {equipment.length === 0 && <div className="empty">Chua co thiet bi nao.</div>}
+      </div>
 
-      <section>
-        <h2 style={{ fontSize: 18 }}>Dat lich (Bookings)</h2>
+      <div className="section-head"><h3>Dat lich (Bookings)</h3></div>
+      <div className="card">
         {canCreate && (
-          <form action={createBooking} style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
-            <select name="equipmentId" required style={{ padding: 8 }}>
-              <option value="">-- Thiet bi --</option>
-              {equipment.map((e) => (
-                <option key={e.id} value={e.id}>{e.name}</option>
-              ))}
-            </select>
-            <input name="startTime" type="datetime-local" required style={{ padding: 8 }} />
-            <input name="endTime" type="datetime-local" required style={{ padding: 8 }} />
-            <input name="bookedBy" placeholder="Nguoi dat" style={{ padding: 8, flex: "1 1 140px" }} />
-            <button type="submit" style={{ padding: "8px 16px" }}>Dat lich</button>
+          <form action={createBooking}>
+            <div className="row">
+              <div className="field"><label>Thiet bi *</label>
+                <select name="equipmentId" required>
+                  <option value="">-- Thiet bi --</option>
+                  {equipment.map((e) => (<option key={e.id} value={e.id}>{e.name}</option>))}
+                </select>
+              </div>
+              <div className="field"><label>Bat dau *</label><input name="startTime" type="datetime-local" required /></div>
+              <div className="field"><label>Ket thuc *</label><input name="endTime" type="datetime-local" required /></div>
+              <div className="field"><label>Nguoi dat</label><input name="bookedBy" placeholder="Nguoi dat" /></div>
+            </div>
+            <div className="row" style={{ marginTop: 12 }}><button type="submit" className="btn-pri">Dat lich</button></div>
           </form>
         )}
-        <p style={{ color: "#888", fontSize: 13, marginTop: -4, marginBottom: 12 }}>
-          He thong tu kiem tra trung lich tren server — neu thiet bi da co lich trong khoang thoi gian chon, viec dat lich se bi bo qua.
-        </p>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr style={{ textAlign: "left", borderBottom: "1px solid #ddd" }}>
-              <th style={{ padding: 8 }}>Thiet bi</th>
-              <th style={{ padding: 8 }}>Bat dau</th>
-              <th style={{ padding: 8 }}>Ket thuc</th>
-              <th style={{ padding: 8 }}>Nguoi dat</th>
-              {canDelete && <th style={{ padding: 8 }}>Hanh dong</th>}
-            </tr>
-          </thead>
+        <p className="muted" style={{ marginTop: 8 }}>He thong tu kiem tra trung lich tren server, neu thiet bi da co lich trong khoang thoi gian chon, viec dat lich se bi bo qua.</p>
+      </div>
+      <div className="card" style={{ padding: 0, overflowX: "auto" }}>
+        <table>
+          <thead><tr><th>Thiet bi</th><th>Bat dau</th><th>Ket thuc</th><th>Nguoi dat</th>{canDelete && <th>Thao tac</th>}</tr></thead>
           <tbody>
             {bookings.map((b) => (
-              <tr key={b.id} style={{ borderBottom: "1px solid #f0f0f0" }}>
-                <td style={{ padding: 8 }}>{b.equipment.name}</td>
-                <td style={{ padding: 8 }}>{new Date(b.startTime).toLocaleString("vi-VN")}</td>
-                <td style={{ padding: 8 }}>{new Date(b.endTime).toLocaleString("vi-VN")}</td>
-                <td style={{ padding: 8 }}>{b.bookedBy ?? "-"}</td>
+              <tr key={b.id}>
+                <td>{b.equipment.name}</td>
+                <td>{new Date(b.startTime).toLocaleString("vi-VN")}</td>
+                <td>{new Date(b.endTime).toLocaleString("vi-VN")}</td>
+                <td>{b.bookedBy ?? "-"}</td>
                 {canDelete && (
-                  <td style={{ padding: 8 }}>
+                  <td>
                     <form action={deleteBooking}>
                       <input type="hidden" name="id" value={b.id} />
-                      <button type="submit" style={{ color: "#b00" }}>Xoa</button>
+                      <button type="submit" className="btn-danger">Xoa</button>
                     </form>
                   </td>
                 )}
               </tr>
             ))}
-            {bookings.length === 0 && (
-              <tr>
-                <td colSpan={5} style={{ padding: 16, textAlign: "center", color: "#888" }}>Chua co lich dat nao.</td>
-              </tr>
-            )}
           </tbody>
         </table>
-      </section>
-    </main>
+        {bookings.length === 0 && <div className="empty">Chua co lich dat nao.</div>}
+      </div>
+    </section>
   )
 }

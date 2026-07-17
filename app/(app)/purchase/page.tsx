@@ -3,28 +3,40 @@ import { auth } from "@/lib/auth"
 import { can } from "@/lib/rbac"
 import { revalidatePath } from "next/cache"
 
+const STATUSES = ["Yeu cau", "Da duyet", "Da mua", "Tu choi"]
+
 export default async function PurchasePage() {
   const session = await auth()
   const userId = session?.user?.id
 
   const canCreate = userId ? await can(userId, "purchase", "create") : false
+  const canApprove = userId ? await can(userId, "purchase", "approve") : false
   const canDelete = userId ? await can(userId, "purchase", "delete") : false
 
-  const items = await db.purchaseItem.findMany({ orderBy: { id: "desc" } })
-  const totalCost = items.reduce((sum, i) => sum + (i.cost ?? 0) * (i.quantity ?? 1), 0)
+  const items = await db.purchaseItem.findMany({ orderBy: { createdAt: "desc" } })
 
   async function createItem(formData: FormData) {
     "use server"
     const session = await auth()
     if (!session?.user?.id) return
     if (!(await can(session.user.id, "purchase", "create"))) return
-
     const name = String(formData.get("name") ?? "").trim()
     if (!name) return
     const quantity = Number(formData.get("quantity") ?? 1) || 1
-    const cost = Number(formData.get("cost") ?? 0) || 0
+    const note = String(formData.get("note") ?? "") || null
+    await db.purchaseItem.create({ data: { name, quantity, note, status: STATUSES[0] } })
+    revalidatePath("/purchase")
+  }
 
-    await db.purchaseItem.create({ data: { name, quantity, cost } })
+  async function updateStatus(formData: FormData) {
+    "use server"
+    const session = await auth()
+    if (!session?.user?.id) return
+    if (!(await can(session.user.id, "purchase", "approve"))) return
+    const id = String(formData.get("id") ?? "")
+    const status = String(formData.get("status") ?? "")
+    if (!id || !status) return
+    await db.purchaseItem.update({ where: { id }, data: { status } })
     revalidatePath("/purchase")
   }
 
@@ -33,7 +45,6 @@ export default async function PurchasePage() {
     const session = await auth()
     if (!session?.user?.id) return
     if (!(await can(session.user.id, "purchase", "delete"))) return
-
     const id = String(formData.get("id") ?? "")
     if (!id) return
     await db.purchaseItem.delete({ where: { id } })
@@ -41,63 +52,60 @@ export default async function PurchasePage() {
   }
 
   return (
-    <main style={{ padding: 24, maxWidth: 900 }}>
-      <h1>Purchase</h1>
-
+    <section>
+      <div className="section-head"><h3>Theo doi mua hang</h3></div>
       {canCreate ? (
-        <form action={createItem} style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 24, padding: 16, border: "1px solid #ddd", borderRadius: 8 }}>
-          <input name="name" placeholder="Ten vat tu" required style={{ padding: 8, flex: "1 1 200px" }} />
-          <input name="quantity" type="number" min="1" placeholder="So luong" defaultValue="1" style={{ padding: 8, width: 100 }} />
-          <input name="cost" type="number" min="0" step="0.01" placeholder="Don gia" style={{ padding: 8, width: 140 }} />
-          <button type="submit" style={{ padding: "8px 16px" }}>Them vat tu</button>
-        </form>
+        <div className="card">
+          <form action={createItem}>
+            <div className="row">
+              <div className="field" style={{ flex: 2, minWidth: 200 }}><label>Ten mat hang *</label><input name="name" required placeholder="Ten mat hang" /></div>
+              <div className="field"><label>So luong</label><input name="quantity" type="number" min="1" defaultValue="1" /></div>
+              <div className="field" style={{ flex: 2, minWidth: 200 }}><label>Ghi chu</label><input name="note" placeholder="Ghi chu" /></div>
+            </div>
+            <div className="row" style={{ marginTop: 12 }}><button type="submit" className="btn-pri">+ Them yeu cau</button></div>
+          </form>
+        </div>
       ) : (
-        <p style={{ color: "#888" }}>Ban khong co quyen tao vat tu moi.</p>
+        <p className="muted">Ban khong co quyen tao yeu cau mua hang.</p>
       )}
 
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
-        <thead>
-          <tr style={{ textAlign: "left", borderBottom: "1px solid #ddd" }}>
-            <th style={{ padding: 8 }}>Ten vat tu</th>
-            <th style={{ padding: 8 }}>So luong</th>
-            <th style={{ padding: 8 }}>Don gia</th>
-            <th style={{ padding: 8 }}>Thanh tien</th>
-            {canDelete && <th style={{ padding: 8 }}>Hanh dong</th>}
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((i) => (
-            <tr key={i.id} style={{ borderBottom: "1px solid #f0f0f0" }}>
-              <td style={{ padding: 8 }}>{i.name}</td>
-              <td style={{ padding: 8 }}>{i.quantity ?? 1}</td>
-              <td style={{ padding: 8 }}>{(i.cost ?? 0).toLocaleString("vi-VN")}</td>
-              <td style={{ padding: 8 }}>{((i.cost ?? 0) * (i.quantity ?? 1)).toLocaleString("vi-VN")}</td>
-              {canDelete && (
-                <td style={{ padding: 8 }}>
-                  <form action={deleteItem}>
-                    <input type="hidden" name="id" value={i.id} />
-                    <button type="submit" style={{ color: "#b00" }}>Xoa</button>
-                  </form>
-                </td>
-              )}
-            </tr>
-          ))}
-          {items.length === 0 && (
-            <tr>
-              <td colSpan={5} style={{ padding: 16, textAlign: "center", color: "#888" }}>Chua co vat tu nao.</td>
-            </tr>
-          )}
-        </tbody>
-        {items.length > 0 && (
-          <tfoot>
-            <tr>
-              <td colSpan={3} style={{ padding: 8, fontWeight: 700 }}>Tong cong</td>
-              <td style={{ padding: 8, fontWeight: 700 }}>{totalCost.toLocaleString("vi-VN")}</td>
-              {canDelete && <td />}
-            </tr>
-          </tfoot>
-        )}
-      </table>
-    </main>
+      <div className="card" style={{ padding: 0, overflowX: "auto" }}>
+        <table>
+          <thead><tr><th>Ten mat hang</th><th>So luong</th><th>Ghi chu</th><th>Trang thai</th>{(canApprove || canDelete) && <th>Thao tac</th>}</tr></thead>
+          <tbody>
+            {items.map((it) => (
+              <tr key={it.id}>
+                <td>{it.name}</td>
+                <td>{it.quantity ?? 1}</td>
+                <td>{it.note ?? "-"}</td>
+                <td>{it.status ?? "-"}</td>
+                {(canApprove || canDelete) && (
+                  <td>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      {canApprove && (
+                        <form action={updateStatus} style={{ display: "flex", gap: 4 }}>
+                          <input type="hidden" name="id" value={it.id} />
+                          <select name="status" defaultValue={it.status ?? STATUSES[0]}>
+                            {STATUSES.map((s) => (<option key={s} value={s}>{s}</option>))}
+                          </select>
+                          <button type="submit" className="btn-line">Luu</button>
+                        </form>
+                      )}
+                      {canDelete && (
+                        <form action={deleteItem}>
+                          <input type="hidden" name="id" value={it.id} />
+                          <button type="submit" className="btn-danger">Xoa</button>
+                        </form>
+                      )}
+                    </div>
+                  </td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {items.length === 0 && <div className="empty">Chua co yeu cau mua hang nao.</div>}
+      </div>
+    </section>
   )
 }

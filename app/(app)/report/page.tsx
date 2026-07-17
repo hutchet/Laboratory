@@ -10,19 +10,21 @@ export default async function ReportPage() {
   const canCreate = userId ? await can(userId, "report", "create") : false
   const canDelete = userId ? await can(userId, "report", "delete") : false
 
-  const reports = await db.report.findMany({ orderBy: { createdAt: "desc" } })
+  const [reports, projects] = await Promise.all([
+    db.report.findMany({ orderBy: { createdAt: "desc" }, include: { project: true } }),
+    db.project.findMany({ orderBy: { name: "asc" } }),
+  ])
 
   async function createReport(formData: FormData) {
     "use server"
     const session = await auth()
     if (!session?.user?.id) return
     if (!(await can(session.user.id, "report", "create"))) return
-
     const title = String(formData.get("title") ?? "").trim()
     if (!title) return
+    const projectId = String(formData.get("projectId") ?? "") || null
     const content = String(formData.get("content") ?? "") || null
-
-    await db.report.create({ data: { title, content } })
+    await db.report.create({ data: { title, projectId, content } })
     revalidatePath("/report")
   }
 
@@ -31,7 +33,6 @@ export default async function ReportPage() {
     const session = await auth()
     if (!session?.user?.id) return
     if (!(await can(session.user.id, "report", "delete"))) return
-
     const id = String(formData.get("id") ?? "")
     if (!id) return
     await db.report.delete({ where: { id } })
@@ -39,39 +40,51 @@ export default async function ReportPage() {
   }
 
   return (
-    <main style={{ padding: 24, maxWidth: 900 }}>
-      <h1>Report</h1>
-
+    <section>
+      <div className="section-head"><h3>Bao cao</h3></div>
       {canCreate ? (
-        <form action={createReport} style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 24, padding: 16, border: "1px solid #ddd", borderRadius: 8 }}>
-          <input name="title" placeholder="Tieu de bao cao" required style={{ padding: 8 }} />
-          <textarea name="content" placeholder="Noi dung" rows={3} style={{ padding: 8 }} />
-          <button type="submit" style={{ padding: "8px 16px", alignSelf: "flex-start" }}>Them bao cao</button>
-        </form>
+        <div className="card">
+          <form action={createReport}>
+            <div className="row">
+              <div className="field" style={{ flex: 2, minWidth: 200 }}><label>Ten bao cao *</label><input name="title" required placeholder="Ten bao cao" /></div>
+              <div className="field"><label>Du an</label>
+                <select name="projectId">
+                  <option value="">-- Du an --</option>
+                  {projects.map((p) => (<option key={p.id} value={p.id}>{p.name}</option>))}
+                </select>
+              </div>
+            </div>
+            <div className="row"><div className="field" style={{ width: "100%" }}><label>Noi dung</label><textarea name="content" rows={4} placeholder="Noi dung bao cao" /></div></div>
+            <div className="row" style={{ marginTop: 12 }}><button type="submit" className="btn-pri">+ Tao bao cao</button></div>
+          </form>
+        </div>
       ) : (
-        <p style={{ color: "#888" }}>Ban khong co quyen tao bao cao moi.</p>
+        <p className="muted">Ban khong co quyen tao bao cao moi.</p>
       )}
 
-      <ul style={{ listStyle: "none", padding: 0, display: "flex", flexDirection: "column", gap: 12 }}>
-        {reports.map((r) => (
-          <li key={r.id} style={{ border: "1px solid #eee", borderRadius: 8, padding: 12 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
-              <div>
-                <div style={{ fontWeight: 700 }}>{r.title}</div>
-                <div style={{ color: "#666", fontSize: 13 }}>{new Date(r.createdAt).toLocaleString("vi-VN")}</div>
-                {r.content && <p style={{ marginTop: 8 }}>{r.content}</p>}
-              </div>
-              {canDelete && (
-                <form action={deleteReport}>
-                  <input type="hidden" name="id" value={r.id} />
-                  <button type="submit" style={{ color: "#b00" }}>Xoa</button>
-                </form>
-              )}
-            </div>
-          </li>
-        ))}
-        {reports.length === 0 && <li style={{ color: "#888", textAlign: "center", padding: 16 }}>Chua co bao cao nao.</li>}
-      </ul>
-    </main>
+      <div className="card" style={{ padding: 0, overflowX: "auto" }}>
+        <table>
+          <thead><tr><th>Ten bao cao</th><th>Du an</th><th>Ngay tao</th>{canDelete && <th>Thao tac</th>}</tr></thead>
+          <tbody>
+            {reports.map((r) => (
+              <tr key={r.id}>
+                <td>{r.title}</td>
+                <td>{r.project?.name ?? "-"}</td>
+                <td>{new Date(r.createdAt).toLocaleDateString("vi-VN")}</td>
+                {canDelete && (
+                  <td>
+                    <form action={deleteReport}>
+                      <input type="hidden" name="id" value={r.id} />
+                      <button type="submit" className="btn-danger">Xoa</button>
+                    </form>
+                  </td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {reports.length === 0 && <div className="empty">Chua co bao cao nao.</div>}
+      </div>
+    </section>
   )
 }
