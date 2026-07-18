@@ -1,4 +1,5 @@
 import { handlers } from "@/lib/auth"
 
-// Node.js runtime — bcryptjs + Prisma cần Node APIs
+export const runtime = 'edge'
+
 export const { GET, POST } = handlers

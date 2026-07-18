@@ -17,6 +17,12 @@ function fmtDate(d: Date) {
   return `${y}-${m}-${day}`
 }
 
+function fmtDateVN(s: string) {
+  if (!s) return "—"
+  const p = s.split("-")
+  return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : s
+}
+
 export default function AnalyticsClient({ equipment, bookings }: { equipment: EquipRow[]; bookings: Booking[] }) {
   const [date, setDate] = useState(() => fmtDate(new Date()))
   const [cat, setCat] = useState("all")
@@ -120,10 +126,10 @@ export default function AnalyticsClient({ equipment, bookings }: { equipment: Eq
   return (
     <section id="page-analytics">
       <div className="grid kpis" style={{ marginBottom: 18 }}>
-        <div className="kcard kb"><div className="v" id="eqk-total">{total}</div><div className="l">Tổng thiết bị</div></div>
-        <div className="kcard kg"><div className="v" id="eqk-ready">{ready}</div><div className="l">Sẵn sàng</div></div>
-        <div className="kcard kr"><div className="v" id="eqk-maint">{maint}</div><div className="l">Đang bảo trì</div></div>
-        <div className="kcard kp"><div className="v" id="eqk-today">{todayBookings.length}</div><div className="l" id="eqk-today-s">Lịch đặt hôm nay</div></div>
+        <div className="kcard kb"><div className="v" id="eqk-total">{total}</div><div className="l">Tổng thiết bị</div><div className="s">Trong danh mục</div></div>
+        <div className="kcard kg"><div className="v" id="eqk-ready">{ready}</div><div className="l">Sẵn sàng</div><div className="s">Có thể đặt lịch</div></div>
+        <div className="kcard kr"><div className="v" id="eqk-maint">{maint}</div><div className="l">Đang bảo trì</div><div className="s">Tạm ngưng đặt lịch</div></div>
+        <div className="kcard kp"><div className="v" id="eqk-today">{todayBookings.length}</div><div className="l">Lượt đặt trong ngày</div><div className="s" id="eqk-today-s">{fmtDateVN(date)}</div></div>
       </div>
 
       <div className="card" style={{ marginBottom: 14 }}>
@@ -141,6 +147,12 @@ export default function AnalyticsClient({ equipment, bookings }: { equipment: Eq
       </div>
 
       <div className="card" style={{ marginBottom: 14 }}>
+        <div className="ch" style={{ flexWrap: "wrap" }}>
+          <div>
+            <h3>Lịch đặt thiết bị theo khung giờ</h3>
+            <span>Bấm khung giờ còn trống để đặt. Khung giờ đã có người đặt sẽ không thể chọn lại — hãy chọn giờ khác hoặc ngày khác.</span>
+          </div>
+        </div>
         <div className="eqdatenav">
           <button className="btn-line" id="eq-date-prev" onClick={() => shiftDate(-1)}>‹</button>
           <span className="eqdatenav-pick">
@@ -251,7 +263,7 @@ export default function AnalyticsClient({ equipment, bookings }: { equipment: Eq
               <div className="field"><label>Giờ kết thúc</label><input name="endHour" type="time" defaultValue={`${String(slotPick.hour + 1).padStart(2, "0")}:00`} /></div>
               <div className="field"><label>Người đặt</label><input name="bookedBy" placeholder="Họ tên" /></div>
               <div className="field"><label>Phòng ban</label><input name="department" placeholder="VD: QC" /></div>
-              <div className="field" style={{ flex: 2 }}><label>Mục đích</label><input name="purpose" placeholder="Mục đích sử dụng" /></div>
+              <div className="field" style={{ flex: 2 }}><label>Mục đích</label><input name="purpose" placeholder="Mục đích sử d���ng" /></div>
             </div>
             <div className="row" style={{ marginTop: 10 }}>
               <button type="submit" className="btn-pri" disabled={pending}>Xác nhận đặt lịch</button>
@@ -262,7 +274,10 @@ export default function AnalyticsClient({ equipment, bookings }: { equipment: Eq
       )}
 
       <div className="card">
-        <h3 id="eq-list-sub">Lịch đặt trong ngày</h3>
+        <div style={{ padding: "0 0 4px" }}>
+          <h3 style={{ fontSize: 16, fontWeight: 600 }}>Danh sách lượt đặt trong ngày</h3>
+          <span style={{ fontSize: 12, color: "var(--muted)" }} id="eq-list-sub">{fmtDateVN(date)}</span>
+        </div>
         <table>
           <thead><tr><th>Khung giờ</th><th>Thiết bị</th><th>Người đặt</th><th>Phòng ban</th><th>Mục đích</th><th>Thao tác</th></tr></thead>
           <tbody id="eq-booking-body">
@@ -278,7 +293,7 @@ export default function AnalyticsClient({ equipment, bookings }: { equipment: Eq
             ))}
           </tbody>
         </table>
-        {dayBookings.length === 0 && <div id="eq-booking-empty" className="empty">Chưa có lịch đặt trong ngày này.</div>}
+        {dayBookings.length === 0 && <div id="eq-booking-empty" className="empty">Chưa có lượt đặt nào trong ngày này.</div>}
       </div>
     </section>
   )

@@ -24,48 +24,11 @@ function plFontStack(key: string) {
   return FONT_OPTIONS.find((f) => f.key === key)?.stack ?? FONT_OPTIONS[0].stack
 }
 
-const IDB_NAME = "tf-db-handles"
-const IDB_STORE = "handles"
-const IDB_KEY = "db-folder"
-
-function idbOpen(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(IDB_NAME, 1)
-    req.onupgradeneeded = () => { req.result.createObjectStore(IDB_STORE) }
-    req.onsuccess = () => resolve(req.result)
-    req.onerror = () => reject(req.error)
-  })
-}
-async function idbSaveHandle(handle: unknown) {
-  const db = await idbOpen()
-  return new Promise<void>((resolve, reject) => {
-    const tx = db.transaction(IDB_STORE, "readwrite")
-    tx.objectStore(IDB_STORE).put(handle, IDB_KEY)
-    tx.oncomplete = () => resolve()
-    tx.onerror = () => reject(tx.error)
-  })
-}
-async function idbLoadHandle(): Promise<any | null> {
-  try {
-    const db = await idbOpen()
-    return await new Promise((resolve) => {
-      const tx = db.transaction(IDB_STORE, "readonly")
-      const req = tx.objectStore(IDB_STORE).get(IDB_KEY)
-      req.onsuccess = () => resolve(req.result ?? null)
-      req.onerror = () => resolve(null)
-    })
-  } catch {
-    return null
-  }
-}
-
 export default function SettingsClient({ roleLabel }: { roleLabel: string }) {
   const [theme, setTheme] = useState("light")
   const [font, setFont] = useState("default")
   const [activeRole, setActiveRole] = useState("")
   const [backupMeta, setBackupMeta] = useState<string | null>(null)
-  const [dbStatus, setDbStatus] = useState("Chưa chọn thư mục database")
-  const [dbGrantVisible, setDbGrantVisible] = useState(false)
 
   function applyAutoTheme() {
     const dark = !!(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches)
@@ -140,56 +103,6 @@ export default function SettingsClient({ roleLabel }: { roleLabel: string }) {
     if (!file) return
     alert("Khôi phục dữ liệu đầy đủ cần endpoint import trên server — sẽ được bổ sung ở bản sau.")
   }
-  useEffect(() => {
-    if (!("indexedDB" in window)) return
-    ;(async () => {
-      const handle = await idbLoadHandle()
-      if (!handle) { setDbStatus("Chưa chọn thư mục database"); return }
-      try {
-        const perm = await handle.queryPermission({ mode: "readwrite" })
-        if (perm === "granted") {
-          setDbStatus(`Đã kết nối: ${handle.name}`)
-          setDbGrantVisible(false)
-        } else {
-          setDbStatus("Cần cấp lại quyền truy cập thư mục database")
-          setDbGrantVisible(true)
-        }
-      } catch {
-        setDbStatus("Chưa chọn thư mục database")
-      }
-    })()
-  }, [])
-
-  async function chooseDbFolder() {
-    if (!("showDirectoryPicker" in window)) {
-      alert("Trình duyệt này không hỗ trợ lưu dữ liệu ra thư mục. Hãy dùng Chrome hoặc Edge trên máy tính.")
-      return
-    }
-    try {
-      const parent = await (window as any).showDirectoryPicker({ mode: "readwrite" })
-      const dbHandle = await parent.getDirectoryHandle("database", { create: true })
-      await idbSaveHandle(dbHandle)
-      setDbStatus(`Đã kết nối: ${parent.name}/database`)
-      setDbGrantVisible(false)
-    } catch (e: any) {
-      if (e?.name !== "AbortError") alert("Không thể chọn thư mục: " + (e?.message ?? "Lỗi không rõ"))
-    }
-  }
-
-  async function grantPermission() {
-    const handle = await idbLoadHandle()
-    if (!handle) return
-    try {
-      const perm = await handle.requestPermission({ mode: "readwrite" })
-      if (perm === "granted") {
-        setDbStatus(`Đã kết nối: ${handle.name}`)
-        setDbGrantVisible(false)
-      }
-    } catch {
-      /* user dismissed the permission prompt */
-    }
-  }
-
   return (
     <section id="page-settings">
       <div className="card" style={{ marginBottom: 18 }}>
@@ -237,20 +150,6 @@ export default function SettingsClient({ roleLabel }: { roleLabel: string }) {
         {backupMeta && <div className="eqbackup-meta" id="set-backup-meta" style={{ marginTop: 10 }}>{backupMeta}</div>}
       </div>
 
-      <div className="card" style={{ marginTop: 18 }}>
-        <div className="ch"><h3>Thư mục Database (offline)</h3><span>Lưu dữ liệu ra một thư mục trên máy, không chỉ trong trình duyệt</span></div>
-        <div className="eqinfo-note">
-          <span>ℹ️</span>
-          <div>Trong bản Next.js này, dữ liệu đã được lưu tập trung trên Postgres (Neon) thông qua server, nên không cần thư mục database cục bộ như bản HTML đơn gốc. Giữ lại nút này để tham khảo giao diện gốc; chức năng thực tế sẽ không cần thiết nữa.</div>
-        </div>
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginTop: 10 }}>
-          <button className="btn-pri" type="button" id="tf-db-choose-btn" onClick={chooseDbFolder}>📁 Chọn thư mục database</button>
-          {dbGrantVisible && (
-            <button className="btn-line" type="button" id="tf-db-grant-btn" onClick={grantPermission}>🔓 Cấp lại quyền truy cập</button>
-          )}
-        </div>
-        <div style={{ marginTop: 10, fontSize: 12.5, fontWeight: 600, color: "var(--muted)" }} id="tf-db-status">{dbStatus}</div>
-      </div>
     </section>
   )
 }
