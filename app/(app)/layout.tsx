@@ -6,6 +6,8 @@ import NavLink from "@/components/NavLink"
 import { logoutAction } from "./logout-action"
 import { VINFAST_LOGO } from "@/lib/vinfast-logo"
 import ResponsiveController from "@/components/ResponsiveController"
+import CommandPalette from "@/components/CommandPalette"
+import ToolbarEnforcer from "@/components/ToolbarEnforcer"
 
 type NavItem = { href: string; label: string; dataPage: string; icon: ReactNode }
 type NavGroup = { heading: string; items: NavItem[] }
@@ -90,6 +92,8 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   return (
     <div className="app">
       <ResponsiveController />
+      <CommandPalette />
+      <ToolbarEnforcer />
       <aside className="side">
         <div className="brand">
           {/* eslint-disable-next-line @next/next/no-img-element */}

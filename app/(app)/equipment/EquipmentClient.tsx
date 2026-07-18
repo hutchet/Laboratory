@@ -22,6 +22,7 @@ export default function EquipmentClient({ equipment, centers, canManage = true }
   const [pending, startTransition] = useTransition()
   const [editMode, setEditMode] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [formError, setFormError] = useState<string | null>(null)
 
   const total = equipment.length
   const ready = equipment.filter((e) => e.status === "ready").length
@@ -49,6 +50,21 @@ export default function EquipmentClient({ equipment, centers, canManage = true }
   useColResize(tableRef, 7 + (editMode ? 1 : 0))
 
   function onSubmit(formData: FormData) {
+    const check = validateModalState(
+      { name: formData.get("name"), qty: formData.get("qty"), area: formData.get("area"), power: formData.get("power"), calInterval: formData.get("calInterval") },
+      {
+        name: [required("Ten thiet bi khong duoc de trong")],
+        qty: [min(0, "So luong khong duoc am")],
+        area: [min(0, "Dien tich khong duoc am")],
+        power: [min(0, "Cong suat khong duoc am")],
+        calInterval: [min(0, "Chu ky hieu chuan khong duoc am")],
+      },
+    )
+    if (!check.valid) {
+      setFormError(check.firstError)
+      return
+    }
+    setFormError(null)
     if (editing) formData.set("id", editing.id)
     startTransition(async () => {
       await saveEquipment(formData)
@@ -106,6 +122,7 @@ export default function EquipmentClient({ equipment, centers, canManage = true }
               <button type="button" className="modal-x eq-popup-close" id="eq-popup-close" aria-label="Dong" onClick={() => { setShowForm(false); setEditing(null) }}>✕</button>
             </div>
             <div className="modal-body">
+              {formError && <div className="form-error" role="alert" style={{ color: "#c0392b", marginBottom: 8 }}>{formError}</div>}
               <form action={onSubmit}>
                 <div className="row">
                   <div className="field">

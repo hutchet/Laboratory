@@ -1,4 +1,6 @@
 import { db } from "@/lib/db"
+import { DonutChart } from "@/components/DonutChart"
+import { BubbleChart } from "@/components/BubbleChart"
 
 function fmtVnd(n: number) {
   return new Intl.NumberFormat("vi-VN").format(Math.round(n)) + "đ"
@@ -224,15 +226,19 @@ export default async function DashPage() {
               </div>
             </div>
             <div className="exp-summary" id="pvd-summary">
-              <div className="pvd-donut-wrap">
-                <svg width="110" height="110" viewBox="0 0 42 42" id="pvd-donut">
-                  <circle cx="21" cy="21" r={DONUT_R} fill="transparent" stroke="var(--line)" strokeWidth="3" />
-                  <DonutCircles segments={pvdTop.map((p, i) => ({ value: p.value ?? 0, color: PVD_COLORS[i % PVD_COLORS.length] }))} />
-                </svg>
-                <div className="pvd-donut-center">
-                  <div className="pvd-donut-lab">Tổng</div>
-                  <div className="pvd-donut-val" id="pvd-total-val">{fmtVnd(pvdTotal)}</div>
-                </div>
+              <div className="pvd-donut-wrap" id="pvd-donut">
+                <DonutChart
+                  size={110}
+                  strokeWidth={3}
+                  background="var(--line)"
+                  segments={pvdTop.map((p, i) => ({ value: p.value ?? 0, color: PVD_COLORS[i % PVD_COLORS.length] }))}
+                  center={(
+                    <div className="pvd-donut-center">
+                      <div className="pvd-donut-lab">Tổng</div>
+                      <div className="pvd-donut-val" id="pvd-total-val">{fmtVnd(pvdTotal)}</div>
+                    </div>
+                  )}
+                />
               </div>
               <div className="exp-legend" id="pvd-legend">
                 {pvdTop.length === 0 && <div className="empty">Chưa có dự án khai báo giá trị.</div>}
@@ -307,32 +313,11 @@ export default async function DashPage() {
               <h3>Khối lượng công việc</h3>
             </div>
           </div>
-          <div className="bubble-chart" id="team-bubbles" style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", justifyContent: "center", padding: "14px 0" }}>
-            {workload.length === 0 && <div className="empty">Chưa có công việc được phân công.</div>}
-            {workload.map(([name, count], i) => {
-              const size = 40 + (count / workloadMax) * 50
-              return (
-                <div key={name} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                  <div
-                    style={{
-                      width: size,
-                      height: size,
-                      borderRadius: "50%",
-                      background: PVD_COLORS[i % PVD_COLORS.length],
-                      color: "#fff",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontWeight: 600,
-                      fontSize: 13,
-                    }}
-                  >
-                    {count}
-                  </div>
-                  <div style={{ fontSize: 11, color: "var(--muted)", maxWidth: 70, textAlign: "center", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</div>
-                </div>
-              )
-            })}
+          <div className="bubble-chart" id="team-bubbles" style={{ padding: "14px 0" }}>
+            <BubbleChart
+              data={workload.map(([name, count], i) => ({ label: name, value: count, color: PVD_COLORS[i % PVD_COLORS.length] }))}
+              emptyLabel="Chưa có công việc được phân công."
+            />
           </div>
         </div>
 
@@ -350,16 +335,18 @@ export default async function DashPage() {
             </div>
           </div>
           <div className="exp-summary">
-            <svg width="110" height="110" viewBox="0 0 42 42" id="donut">
-              <circle cx="21" cy="21" r={DONUT_R} fill="transparent" stroke="var(--line)" strokeWidth="3" />
-              <DonutCircles
+            <div id="donut">
+              <DonutChart
+                size={110}
+                strokeWidth={3}
+                background="var(--line)"
                 segments={[
                   { value: pHigh, color: "var(--pri)" },
                   { value: pMed, color: "var(--muted)" },
                   { value: pLow, color: "var(--line)" },
                 ]}
               />
-            </svg>
+            </div>
             <div className="exp-legend">
               <div className="exp-row"><span className="dot" style={{ background: "var(--pri)" }} /><span className="exp-lab">Ưu tiên cao</span><span className="exp-val" id="p-high">{pHigh}</span></div>
               <div className="exp-row"><span className="dot" style={{ background: "var(--muted)" }} /><span className="exp-lab">Trung bình</span><span className="exp-val" id="p-med">{pMed}</span></div>

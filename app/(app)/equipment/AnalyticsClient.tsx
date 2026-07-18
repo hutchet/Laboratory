@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react"
 import { createBooking, deleteBooking } from "./actions"
+import { HeatmapChart } from "@/components/HeatmapChart"
 
 type EquipRow = { id: string; name: string; category: string | null; status: string | null }
 type Booking = {
@@ -56,6 +57,41 @@ export default function AnalyticsClient({ equipment, bookings }: { equipment: Eq
     return map
   }, [bookings])
 
+  const last7Days = useMemo(() => {
+    const days: string[] = []
+    const base = new Date()
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(base)
+      d.setDate(d.getDate() - i)
+      days.push(fmtDate(d))
+    }
+    return days
+  }, [])
+  const last7DayLabels = useMemo(
+    () => last7Days.map((d) => { const dt = new Date(d); return `${String(dt.getDate()).padStart(2, "0")}/${String(dt.getMonth() + 1).padStart(2, "0")}` }),
+    [last7Days],
+  )
+  const equipmentIdToCategory = useMemo(() => {
+    const map: Record<string, string> = {}
+    equipment.forEach((e) => { map[e.id] = e.category || "Khác" })
+    return map
+  }, [equipment])
+  const categoryHeatmapRows = useMemo(() => Array.from(new Set(equipment.map((e) => e.category || "Khác"))), [equipment])
+  const categoryHeatmapCells = useMemo(() => {
+    const counts: Record<string, number> = {}
+    bookings.forEach((b) => {
+      const day = b.startTime.slice(0, 10)
+      if (!last7Days.includes(day)) return
+      const category = equipmentIdToCategory[b.equipmentId] || "Khác"
+      const dayLabel = last7DayLabels[last7Days.indexOf(day)]
+      const key = `${category}__${dayLabel}`
+      counts[key] = (counts[key] ?? 0) + 1
+    })
+    return categoryHeatmapRows.flatMap((row) =>
+      last7DayLabels.map((colLabel) => ({ rowLabel: row, colLabel, value: counts[`${row}__${colLabel}`] ?? 0 })),
+    )
+  }, [bookings, equipmentIdToCategory, categoryHeatmapRows, last7Days, last7DayLabels])
+
   function monthMatrix(baseDate: Date) {
     const y = baseDate.getFullYear(); const m = baseDate.getMonth()
     const first = new Date(y, m, 1)
@@ -88,6 +124,20 @@ export default function AnalyticsClient({ equipment, bookings }: { equipment: Eq
         <div className="kcard kg"><div className="v" id="eqk-ready">{ready}</div><div className="l">Sẵn sàng</div></div>
         <div className="kcard kr"><div className="v" id="eqk-maint">{maint}</div><div className="l">Đang bảo trì</div></div>
         <div className="kcard kp"><div className="v" id="eqk-today">{todayBookings.length}</div><div className="l" id="eqk-today-s">Lịch đặt hôm nay</div></div>
+      </div>
+
+      <div className="card" style={{ marginBottom: 14 }}>
+        <div className="ch">
+          <div className="ch-l">
+            <h3>Tình trạng thiết bị theo nhóm (7 ngày qua)</h3>
+          </div>
+        </div>
+        <HeatmapChart
+          rowLabels={categoryHeatmapRows}
+          colLabels={last7DayLabels}
+          cells={categoryHeatmapCells}
+          emptyLabel="Chưa có nhóm thiết bị nào."
+        />
       </div>
 
       <div className="card" style={{ marginBottom: 14 }}>
