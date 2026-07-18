@@ -7,12 +7,13 @@ import NavLink from "@/components/NavLink"
 import { logoutAction } from "./logout-action"
 import { VINFAST_LOGO } from "@/lib/vinfast-logo"
 import ResponsiveController from "@/components/ResponsiveController"
+import SearchInput from "@/components/SearchInput"
 import CommandPalette from "@/components/CommandPalette"
 import ToolbarEnforcer from "@/components/ToolbarEnforcer"
 import GlobalDetailModal from "@/components/GlobalDetailModal"
 import PageHeaderTitle from "@/components/PageHeaderTitle"
 import NotificationBell, { type NotifTask } from "@/components/NotificationBell"
-import SearchInput from "@/components/SearchInput"
+import MobileMenuButton from "@/components/MobileMenuButton"
 
 type NavItem = { href: string; label: string; dataPage: string; icon: ReactNode }
 type NavGroup = { heading: string; items: NavItem[] }
@@ -144,6 +145,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       </aside>
       <main className="main">
         <div className="top">
+          <MobileMenuButton />
           <PageHeaderTitle />
           <div className="top-r">
             <div className="search" style={{ minWidth: 0, maxWidth: 260 }}>
