@@ -1,6 +1,7 @@
 import { db } from "@/lib/db"
 import { DonutChart } from "@/components/DonutChart"
 import { BubbleChart } from "@/components/BubbleChart"
+import { LineChart } from "@/components/LineChart"
 
 function fmtVnd(n: number) {
   return new Intl.NumberFormat("vi-VN").format(Math.round(n)) + "đ"
@@ -63,15 +64,15 @@ export default async function DashPage() {
   const tasksWithProject = tasks.filter((t) => t.projectId).length
   const kUtil = totalTasks ? Math.round((tasksWithProject / totalTasks) * 100) : 0
   const internalTaskCount = tasks.filter((t) => !t.projectId).length
+  const activeTasks = tasks.filter((t) => t.status !== "done")
+  const overdueTasks = tasks.filter((t) => t.dueDate && t.dueDate < now && t.status !== "done")
+  const riskyProjects = projects.filter((p) => p.tasks.some((t) => t.dueDate && t.dueDate < now && t.status !== "done"))
   // Week trend: tasks created in current week vs last week
   const oneWeekAgo = new Date(now); oneWeekAgo.setDate(now.getDate() - 7)
   const twoWeeksAgo = new Date(now); twoWeeksAgo.setDate(now.getDate() - 14)
   const activeThisWeek = tasks.filter((t) => t.status !== "done" && t.createdAt >= oneWeekAgo).length
   const activeLastWeek = tasks.filter((t) => t.status !== "done" && t.createdAt >= twoWeeksAgo && t.createdAt < oneWeekAgo).length
   const activeDiff = activeThisWeek - activeLastWeek
-  const activeTasks = tasks.filter((t) => t.status !== "done")
-  const overdueTasks = tasks.filter((t) => t.dueDate && t.dueDate < now && t.status !== "done")
-  const riskyProjects = projects.filter((p) => p.tasks.some((t) => t.dueDate && t.dueDate < now && t.status !== "done"))
   const riskThisWeek = riskyProjects.length
   const riskLastWeek = Math.max(0, riskThisWeek - Math.floor(Math.random() * 0)) // placeholder
   const spotlight = riskyProjects[0] ?? projects[0]
@@ -141,7 +142,11 @@ export default async function DashPage() {
       <div className="grid" style={{ gridTemplateColumns: "1.6fr 1fr", marginBottom: 18, alignItems: "stretch" }} id="dash-top-grid">
         <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
           <div className="grid kpis" style={{ gridTemplateColumns: "repeat(3,1fr)" }}>
-            <div className="kcard kb kcard-hero pcard clickable" data-detail="kpi-util">
+            <div className="kcard kb kcard-hero pcard clickable" data-detail="kpi-util"
+              data-modal-title="Dự án/Nội bộ"
+              data-modal-wide="1"
+              data-modal-body={`<div class="mdl-kpi-row"><div class="mdl-kpi"><div class="mdl-kpi-v">${tasksWithProject}</div><div class="mdl-kpi-l">Theo dự án</div></div><div class="mdl-kpi"><div class="mdl-kpi-v">${internalTaskCount}</div><div class="mdl-kpi-l">Nội bộ phát sinh</div></div><div class="mdl-kpi"><div class="mdl-kpi-v">${kUtil}%</div><div class="mdl-kpi-l">Tỷ lệ theo dự án</div></div></div><div class="mdl-sect">Công việc nội bộ phát sinh</div><div class="rtable-wrap"><table class="rtable"><thead><tr><th>Công việc</th><th>Dự án</th><th>Phụ trách</th><th>Hạn chốt</th><th>Trạng thái</th></tr></thead><tbody>${tasks.filter(t=>!t.projectId).slice(0,8).map(t=>{const st=t.status==='done'?'st-done':t.status==='doing'?'st-doing':'st-todo';const stL=t.status==='done'?'Hoàn thành':t.status==='doing'?'Đang làm':'Chưa làm';const mem=memberName(t.assigneeId);return '<tr><td>'+t.title+'</td><td><span class="pill" style="color:var(--neutral);background:var(--neutral-soft)">Nội bộ phát sinh</span></td><td>'+mem+'</td><td>'+( t.dueDate?t.dueDate.toLocaleDateString('vi-VN'):'-')+'</td><td><span class="tag2 '+st+'">'+stL+'</span></td></tr>';}).join('')}</tbody></table></div>`}>
+            
               <div className="kcard-top">
                 <div className="kcard-icon">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -159,7 +164,11 @@ export default async function DashPage() {
               </div>
               <div className="s" id="k-util-t">{internalTaskCount} nội bộ phát sinh · {tasksWithProject} theo dự án</div>
             </div>
-            <div className="kcard kg kcard-hero pcard clickable" data-detail="kpi-active">
+            <div className="kcard kg kcard-hero pcard clickable" data-detail="kpi-active"
+              data-modal-title="Công việc đang hoạt động"
+              data-modal-wide="1"
+              data-modal-body={`<div class="mdl-kpi-row"><div class="mdl-kpi"><div class="mdl-kpi-v">${activeTasks.length}</div><div class="mdl-kpi-l">Đang hoạt động</div></div><div class="mdl-kpi"><div class="mdl-kpi-v">${done}</div><div class="mdl-kpi-l">Hoàn thành</div></div><div class="mdl-kpi"><div class="mdl-kpi-v">${totalTasks}</div><div class="mdl-kpi-l">Tổng cộng</div></div></div><div class="mdl-sect">Công việc chưa hoàn thành</div><div class="rtable-wrap"><table class="rtable"><thead><tr><th>Công việc</th><th>Dự án</th><th>Phụ trách</th><th>Hạn chốt</th><th>Trạng thái</th></tr></thead><tbody>${activeTasks.slice(0,10).map(t=>{const st=t.status==='doing'?'st-doing':'st-todo';const stL=t.status==='doing'?'Đang làm':'Chưa làm';const mem=memberName(t.assigneeId);const over=t.dueDate&&t.dueDate<now;return '<tr><td>'+t.title+'</td><td>'+( t.project?t.project.name:'-')+'</td><td>'+mem+'</td><td style="'+( over?'color:var(--red)':'')+'">'+(t.dueDate?t.dueDate.toLocaleDateString('vi-VN'):'-')+'</td><td><span class="tag2 '+st+'">'+stL+'</span></td></tr>';}).join('')}</tbody></table></div>`}>
+            
               <div className="kcard-top">
                 <div className="kcard-icon">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -174,7 +183,11 @@ export default async function DashPage() {
               </div>
               <div className="s" id="k-active-t">chưa hoàn thành</div>
             </div>
-            <div className="kcard kr kcard-hero pcard clickable" data-detail="kpi-risk">
+            <div className="kcard kr kcard-hero pcard clickable" data-detail="kpi-risk"
+              data-modal-title="Dự án có rủi ro"
+              data-modal-wide="1"
+              data-modal-body={`<div class="mdl-kpi-row"><div class="mdl-kpi"><div class="mdl-kpi-v">${riskyProjects.length}</div><div class="mdl-kpi-l">Dự án rủi ro</div></div><div class="mdl-kpi"><div class="mdl-kpi-v">${overdueTasks.length}</div><div class="mdl-kpi-l">Task quá hạn</div></div><div class="mdl-kpi"><div class="mdl-kpi-v">${projects.length}</div><div class="mdl-kpi-l">Tổng dự án</div></div></div><div class="mdl-sect">Dự án có task quá hạn</div><div class="rtable-wrap"><table class="rtable"><thead><tr><th>Dự án</th><th>Task quá hạn</th><th>Tổng task</th></tr></thead><tbody>${riskyProjects.slice(0,8).map(p=>{const cnt=p.tasks.filter(t=>t.dueDate&&t.dueDate<now&&t.status!=='done').length;return '<tr><td><b>'+p.name+'</b></td><td style="color:var(--red);font-weight:700">'+cnt+'</td><td>'+p.tasks.length+'</td></tr>';}).join('')}</tbody></table></div>`}>
+            
               <div className="kcard-top">
                 <div className="kcard-icon">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -192,7 +205,11 @@ export default async function DashPage() {
               <div className="s" id="k-risk-t" />
             </div>
           </div>
-          <div className="card clickable" data-detail="due-bars" style={{ marginBottom: 0, flex: 1 }}>
+          <div className="card clickable" data-detail="due-bars"
+            data-modal-title="Công việc/hạn chốt sắp tới"
+            data-modal-wide="1"
+            data-modal-body={`<div class="mdl-kpi-row"><div class="mdl-kpi"><div class="mdl-kpi-v">${tasks.filter(t=>t.status!=='done'&&t.dueDate).length}</div><div class="mdl-kpi-l">Tổng chưa xong có hạn</div></div><div class="mdl-kpi"><div class="mdl-kpi-v">${overdueTasks.length}</div><div class="mdl-kpi-l">Quá hạn</div></div><div class="mdl-kpi"><div class="mdl-kpi-v">${tasks.filter(t=>t.status!=='done'&&t.dueDate&&t.dueDate>=now&&(t.dueDate.getTime()-now.getTime())<=7*86400000).length}</div><div class="mdl-kpi-l">Sắp tới (7 ngày)</div></div></div><div class="mdl-sect">Công việc theo thứ tự hạn chốt</div><div class="rtable-wrap"><table class="rtable"><thead><tr><th>Công việc</th><th>Dự án</th><th>Phụ trách</th><th>Hạn chốt</th><th>Trạng thái</th></tr></thead><tbody>${tasks.filter(t=>t.status!=='done'&&t.dueDate).sort((a,b)=>a.dueDate!.getTime()-b.dueDate!.getTime()).slice(0,15).map(t=>{const s=t.dueDate&&t.dueDate<now?'over':'doing';const sl=s==='over'?'Quá hạn':'Đang làm';const sc=s==='over'?'st-over':'st-doing';const mem=memberName(t.assigneeId);return '<tr><td><b>'+t.title+'</b></td><td>'+(t.project?t.project.name:'<span class="pill" style="color:var(--neutral);background:var(--neutral-soft)">Nội bộ</span>')+'</td><td>'+mem+'</td><td style="'+(s==='over'?'color:var(--red)':'')+'">'+t.dueDate!.toLocaleDateString('vi-VN')+'</td><td><span class="tag2 '+sc+'">'+sl+'</span></td></tr>';}).join('')}</tbody></table></div>`}
+            style={{ marginBottom: 0, flex: 1 }}>
             <div className="ch">
               <div className="ch-l">
                 <div className="ch-ic" style={{ background: "var(--pri-soft)", color: "var(--pri-d)" }}>
@@ -205,19 +222,17 @@ export default async function DashPage() {
                 <h3 id="due-bars-title">Công việc/hạn chốt</h3>
               </div>
             </div>
-            <div className="due-bars" id="due-bars" style={{ display: "flex", alignItems: "flex-end", gap: 10, height: 140, padding: "10px 4px" }}>
-              {dueBuckets.map((b, i) => (
-                <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: "var(--pri-d)" }}>{b.count || ""}</div>
-                  <div style={{ width: "70%", height: Math.max(4, (b.count / dueMax) * 90), background: b.count ? "var(--pri)" : "var(--line)", borderRadius: 4 }} />
-                  <div style={{ fontSize: 11, color: "var(--muted)" }}>{b.label}</div>
-                </div>
-              ))}
+            <div id="due-bars" style={{ padding: "4px 0 0" }}>
+              <LineChart data={dueBuckets} color="var(--pri)" />
             </div>
           </div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-          <div className="spotlight clickable" id="dash-spotlight" data-detail="dash-projects" style={{ marginBottom: 0 }}>
+          <div className="spotlight clickable" id="dash-spotlight" data-detail="dash-projects"
+            data-modal-title="Tổng quan dự án"
+            data-modal-wide="1"
+            data-modal-body={`<div class="mdl-kpi-row"><div class="mdl-kpi"><div class="mdl-kpi-v">${projects.length}</div><div class="mdl-kpi-l">Tổng dự án</div></div><div class="mdl-kpi"><div class="mdl-kpi-v">${riskyProjects.length}</div><div class="mdl-kpi-l">Có rủi ro</div></div><div class="mdl-kpi"><div class="mdl-kpi-v">${projects.filter(p=>p.tasks.length>0&&p.tasks.every(t=>t.status==='done')).length}</div><div class="mdl-kpi-l">Đã hoàn thành</div></div></div><div class="mdl-sect">Tất cả dự án</div><div class="rtable-wrap"><table class="rtable"><thead><tr><th>Dự án</th><th>Trạng thái</th><th>Tiến độ</th><th>Quá hạn</th><th>Hạn chốt</th></tr></thead><tbody>${projects.map(p=>{const tot=p.tasks.length;const dn=p.tasks.filter(t=>t.status==='done').length;const od=p.tasks.filter(t=>t.dueDate&&t.dueDate<now&&t.status!=='done').length;const pct=tot?Math.round(dn/tot*100):0;const st=dn===tot&&tot>0?'Đã xong':od>0?'Rủi ro':'Đang làm';const stc=dn===tot&&tot>0?'st-done':od>0?'st-over':'st-doing';const due='—';return '<tr><td><b>'+p.name+'</b></td><td><span class="tag2 '+stc+'">'+st+'</span></td><td>'+dn+'/'+tot+' ('+pct+'%)</td><td style="'+(od>0?'color:var(--red);font-weight:700':'')+'">'+od+'</td><td>'+due+'</td></tr>';}).join('')}</tbody></table></div>`}
+            style={{ marginBottom: 0 }}>
             <div>
               <div className="spotlight-lab" id="spot-lab">Dự án cần chú ý nhất</div>
               <div className="spotlight-name" id="spot-name">{spotlight ? spotlight.name : "Chưa có dự án"}</div>
@@ -230,7 +245,11 @@ export default async function DashPage() {
               <span className="spotlight-btn">Tất cả cảnh báo</span>
             </div>
           </div>
-          <div className="card clickable" data-detail="proj-value" style={{ marginBottom: 0, flex: 1 }}>
+          <div className="card clickable" data-detail="proj-value"
+            data-modal-title="Phân bổ giá trị dự án"
+            data-modal-wide="1"
+            data-modal-body={`<div class="mdl-kpi-row"><div class="mdl-kpi"><div class="mdl-kpi-v">${withValue.length}</div><div class="mdl-kpi-l">Dự án có giá trị</div></div><div class="mdl-kpi"><div class="mdl-kpi-v">${new Intl.NumberFormat('vi-VN').format(Math.round(pvdTotal))}đ</div><div class="mdl-kpi-l">Tổng giá trị</div></div><div class="mdl-kpi"><div class="mdl-kpi-v">${withValue[0]?.name||'—'}</div><div class="mdl-kpi-l">Dự án lớn nhất</div></div></div><div class="mdl-sect">Chi tiết giá trị từng dự án</div><div class="rtable-wrap"><table class="rtable"><thead><tr><th>Dự án</th><th>Giá trị (VNĐ)</th><th>Tỷ trọng</th></tr></thead><tbody>${withValue.map(p=>{const pct=pvdTotal?Math.round((p.value??0)/pvdTotal*100):0;return '<tr><td><b>'+p.name+'</b></td><td>'+new Intl.NumberFormat('vi-VN').format(Math.round(p.value??0))+'đ</td><td><b>'+pct+'%</b></td></tr>';}).join('')}</tbody></table></div>`}
+            style={{ marginBottom: 0, flex: 1 }}>
             <div className="ch">
               <div className="ch-l">
                 <div className="ch-ic" style={{ background: "var(--neutral-soft)", color: "var(--neutral)" }}>
@@ -278,7 +297,11 @@ export default async function DashPage() {
       </div>
 
       <div className="grid" style={{ gridTemplateColumns: "repeat(3,1fr)", marginBottom: 18, alignItems: "stretch" }}>
-        <div className="card clickable" data-detail="status" style={{ marginBottom: 0, display: "flex", flexDirection: "column" }}>
+        <div className="card clickable" data-detail="status"
+          data-modal-title="Phân bổ trạng thái công việc"
+          data-modal-wide="1"
+          data-modal-body={`<div class="mdl-kpi-row"><div class="mdl-kpi"><div class="mdl-kpi-v">${doing}</div><div class="mdl-kpi-l">Đang làm</div></div><div class="mdl-kpi"><div class="mdl-kpi-v">${done}</div><div class="mdl-kpi-l">Hoàn thành</div></div><div class="mdl-kpi" style="background:var(--red-soft)"><div class="mdl-kpi-v" style="color:var(--red)">${overdueCount}</div><div class="mdl-kpi-l">Quá hạn</div></div></div><div class="mdl-sect"><span class="dot" style="background:var(--neutral2);margin-right:6px;vertical-align:middle"></span>Đang làm</div><div class="rtable-wrap"><table class="rtable"><thead><tr><th>Công việc</th><th>Dự án</th><th>Phụ trách</th><th>Hạn chốt</th><th>Trạng thái</th></tr></thead><tbody>${tasks.filter(t=>t.status==='doing').map(t=>{const mem=memberName(t.assigneeId);const over=t.dueDate&&t.dueDate<now;return '<tr><td><b>'+t.title+'</b></td><td>'+(t.project?t.project.name:'Nội bộ')+'</td><td>'+mem+'</td><td style="'+(over?'color:var(--red)':'')+'">'+( t.dueDate?t.dueDate.toLocaleDateString('vi-VN'):'-')+'</td><td><span class="tag2 st-doing">Đang làm</span></td></tr>';}).join('')}</tbody></table></div><div class="mdl-sect"><span class="dot" style="background:var(--green);margin-right:6px;vertical-align:middle"></span>Hoàn thành</div><div class="rtable-wrap"><table class="rtable"><thead><tr><th>Công việc</th><th>Dự án</th><th>Phụ trách</th><th>Hạn chốt</th><th>Trạng thái</th></tr></thead><tbody>${tasks.filter(t=>t.status==='done').map(t=>{const mem=memberName(t.assigneeId);return '<tr><td><b>'+t.title+'</b></td><td>'+(t.project?t.project.name:'Nội bộ')+'</td><td>'+mem+'</td><td>'+(t.dueDate?t.dueDate.toLocaleDateString('vi-VN'):'-')+'</td><td><span class="tag2 st-done">Hoàn thành</span></td></tr>';}).join('')}</tbody></table></div><div class="mdl-sect"><span class="dot" style="background:var(--red);margin-right:6px;vertical-align:middle"></span>Quá hạn</div><div class="rtable-wrap"><table class="rtable"><thead><tr><th>Công việc</th><th>Dự án</th><th>Phụ trách</th><th>Hạn chốt</th><th>Trạng thái</th></tr></thead><tbody>${tasks.filter(t=>t.dueDate&&t.dueDate<now&&t.status!=='done').map(t=>{const mem=memberName(t.assigneeId);return '<tr><td><b>'+t.title+'</b></td><td>'+(t.project?t.project.name:'Nội bộ')+'</td><td>'+mem+'</td><td style="color:var(--red)">'+t.dueDate!.toLocaleDateString('vi-VN')+'</td><td><span class="tag2 st-over">Quá hạn</span></td></tr>';}).join('')}</tbody></table></div>`}
+          style={{ marginBottom: 0, display: "flex", flexDirection: "column" }}>
           <div className="ch">
             <div className="ch-l">
               <div className="ch-ic" style={{ background: "var(--neutral-soft)", color: "var(--neutral)" }}>
@@ -289,20 +312,36 @@ export default async function DashPage() {
               </div>
               <h3>Phân bổ trạng thái</h3>
             </div>
-            <span id="status-trend-badge" style={{ background: "var(--green-soft)", color: "var(--green)", fontWeight: 600, padding: "3px 9px", borderRadius: 20, fontSize: 11, display: "inline-flex", alignItems: "center", gap: 4 }}><svg width="11" height="11" viewBox="0 0 24 24" fill="var(--green)" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>{doneTrendPct}% hoàn thành</span>
+            <span id="status-trend-badge" style={{ background: doneTrendPct >= 50 ? "var(--green-soft)" : "var(--red-soft)", color: doneTrendPct >= 50 ? "var(--green)" : "var(--red)", fontWeight: 600, padding: "3px 9px", borderRadius: 20, fontSize: 11, display: "inline-flex", alignItems: "center", gap: 4 }}>
+              {doneTrendPct >= 50
+                ? <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4l8 10H4l8-10z"/></svg>
+                : <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 20l-8-10h16l-8 10z"/></svg>
+              }
+              {doneTrendPct}% hoàn thành
+            </span>
           </div>
-          <div className="status-stackbar" id="status-mini-bars" style={{ display: "flex", gap: 8, alignItems: "flex-end", height: 90 }}>
-            <div className="ssb-item" id="mb-prog" style={{ flex: "1 1 0%" }}>
-              <div className="ssb-val" id="mb-prog-v">{pct(doing)}%</div>
-              <div className="ssb-tick" style={{ background: "var(--neutral2)", height: Math.max(6, pct(doing)), borderRadius: 4 }} />
+          <div className="status-stackbar" id="status-mini-bars" style={{ display: "flex", flexDirection: "column", gap: 6, margin: "10px 0 4px" }}>
+            {/* Horizontal segment bars per status */}
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ fontSize: 11.5, color: "var(--ink)", width: 70, flexShrink: 0 }}>Đang làm</div>
+              <div style={{ flex: 1, height: 9, borderRadius: 999, background: "var(--bg)", overflow: "hidden" }}>
+                <div style={{ width: `${pct(doing)}%`, height: "100%", background: "var(--neutral2)", borderRadius: 999 }} />
+              </div>
+              <div style={{ fontSize: 11.5, fontWeight: 700, color: "var(--ink)", width: 34, textAlign: "right" }}>{pct(doing)}%</div>
             </div>
-            <div className="ssb-item" id="mb-done" style={{ flex: "1 1 0%" }}>
-              <div className="ssb-val" id="mb-done-v">{pct(done)}%</div>
-              <div className="ssb-tick" style={{ background: "var(--muted)", height: Math.max(6, pct(done)), borderRadius: 4 }} />
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ fontSize: 11.5, color: "var(--ink)", width: 70, flexShrink: 0 }}>Hoàn thành</div>
+              <div style={{ flex: 1, height: 9, borderRadius: 999, background: "var(--bg)", overflow: "hidden" }}>
+                <div style={{ width: `${pct(done)}%`, height: "100%", background: "var(--muted)", borderRadius: 999 }} />
+              </div>
+              <div style={{ fontSize: 11.5, fontWeight: 700, color: "var(--ink)", width: 34, textAlign: "right" }}>{pct(done)}%</div>
             </div>
-            <div className="ssb-item" id="mb-over" style={{ flex: "1 1 0%" }}>
-              <div className="ssb-val" id="mb-over-v">{pct(overdueCount)}%</div>
-              <div className="ssb-tick" style={{ background: "var(--pri)", height: Math.max(6, pct(overdueCount)), borderRadius: 4 }} />
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ fontSize: 11.5, color: "var(--ink)", width: 70, flexShrink: 0 }}>Quá hạn</div>
+              <div style={{ flex: 1, height: 9, borderRadius: 999, background: "var(--bg)", overflow: "hidden" }}>
+                <div style={{ width: `${pct(overdueCount)}%`, height: "100%", background: "var(--pri)", borderRadius: 999 }} />
+              </div>
+              <div style={{ fontSize: 11.5, fontWeight: 700, color: "var(--red)", width: 34, textAlign: "right" }}>{pct(overdueCount)}%</div>
             </div>
           </div>
           <div className="ssb-legend">
@@ -317,7 +356,11 @@ export default async function DashPage() {
           </div>
         </div>
 
-        <div className="card clickable" data-detail="workload" style={{ marginBottom: 0 }}>
+        <div className="card clickable" data-detail="workload"
+          data-modal-title="Khối lượng công việc"
+          data-modal-wide="1"
+          data-modal-body={`<div class="mdl-kpi-row"><div class="mdl-kpi"><div class="mdl-kpi-v">${members.length}</div><div class="mdl-kpi-l">Thành viên</div></div><div class="mdl-kpi"><div class="mdl-kpi-v">${activeTasks.length}</div><div class="mdl-kpi-l">Đang làm</div></div><div class="mdl-kpi"><div class="mdl-kpi-v">${overdueTasks.length}</div><div class="mdl-kpi-l">Quá hạn</div></div></div><div class="mdl-sect">Phân công công việc theo thành viên</div><div class="rtable-wrap"><table class="rtable"><thead><tr><th>Thành viên</th><th>Đang làm</th><th>Quá hạn</th><th>Hoàn thành</th></tr></thead><tbody>${members.map(m=>{const mine=tasks.filter(t=>t.assigneeId===m.id);const a=mine.filter(t=>t.status!=='done').length;const o=mine.filter(t=>t.dueDate&&t.dueDate<now&&t.status!=='done').length;const d=mine.filter(t=>t.status==='done').length;return '<tr><td><div class="person"><span class="av" style="width:26px;height:26px;font-size:10px;background:'+dashAvColor(m.name)+';border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-weight:600;margin-right:7px;">'+dashInitials(m.name)+'</span>'+m.name+'</div></td><td><b>'+a+'</b></td><td><b style="color:var(--red)">'+o+'</b></td><td>'+d+'</td></tr>';}).join('')}</tbody></table></div>`}
+          style={{ marginBottom: 0 }}>
           <div className="ch">
             <div className="ch-l">
               <div className="ch-ic" style={{ background: "var(--neutral-soft)", color: "var(--neutral)" }}>
@@ -358,7 +401,11 @@ export default async function DashPage() {
           </div>
         </div>
 
-        <div className="card clickable" data-detail="priority" style={{ marginBottom: 0 }}>
+        <div className="card clickable" data-detail="priority"
+          data-modal-title="Mức độ ưu tiên công việc"
+          data-modal-wide="1"
+          data-modal-body={`<div class="mdl-kpi-row"><div class="mdl-kpi" style="background:var(--red-soft)"><div class="mdl-kpi-v" style="color:var(--red)">${pHigh}</div><div class="mdl-kpi-l">Ưu tiên cao</div></div><div class="mdl-kpi" style="background:var(--amber-soft)"><div class="mdl-kpi-v" style="color:var(--amber)">${pMed}</div><div class="mdl-kpi-l">Trung bình</div></div><div class="mdl-kpi" style="background:var(--green-soft)"><div class="mdl-kpi-v" style="color:var(--green)">${pLow}</div><div class="mdl-kpi-l">Thấp</div></div></div><div class="mdl-sect"><span class="dot" style="background:var(--red);margin-right:6px;vertical-align:middle"></span>Ưu tiên cao</div><div class="rtable-wrap"><table class="rtable"><thead><tr><th>Công việc</th><th>Dự án</th><th>Phụ trách</th><th>Hạn chốt</th><th>Trạng thái</th></tr></thead><tbody>${tasks.filter(t=>t.priority==='high').map(t=>{const s=t.status==='done'?'st-done':t.dueDate&&t.dueDate<now?'st-over':'st-doing';const sl={'st-done':'Hoàn thành','st-over':'Quá hạn','st-doing':'Đang làm'}[s]||'Chưa làm';const mem=memberName(t.assigneeId);return '<tr><td><b>'+t.title+'</b></td><td>'+(t.project?t.project.name:'Nội bộ')+'</td><td>'+mem+'</td><td style="'+(s==='st-over'?'color:var(--red)':'')+'">'+( t.dueDate?t.dueDate.toLocaleDateString('vi-VN'):'-')+'</td><td><span class="tag2 '+s+'">'+sl+'</span></td></tr>';}).join('')}</tbody></table></div><div class="mdl-sect"><span class="dot" style="background:var(--amber);margin-right:6px;vertical-align:middle"></span>Trung bình</div><div class="rtable-wrap"><table class="rtable"><thead><tr><th>Công việc</th><th>Dự án</th><th>Phụ trách</th><th>Hạn chốt</th><th>Trạng thái</th></tr></thead><tbody>${tasks.filter(t=>t.priority==='med').map(t=>{const s=t.status==='done'?'st-done':t.dueDate&&t.dueDate<now?'st-over':'st-doing';const sl={'st-done':'Hoàn thành','st-over':'Quá hạn','st-doing':'Đang làm'}[s]||'Chưa làm';const mem=memberName(t.assigneeId);return '<tr><td><b>'+t.title+'</b></td><td>'+(t.project?t.project.name:'Nội bộ')+'</td><td>'+mem+'</td><td style="'+(s==='st-over'?'color:var(--red)':'')+'">'+( t.dueDate?t.dueDate.toLocaleDateString('vi-VN'):'-')+'</td><td><span class="tag2 '+s+'">'+sl+'</span></td></tr>';}).join('')}</tbody></table></div><div class="mdl-sect"><span class="dot" style="background:var(--green);margin-right:6px;vertical-align:middle"></span>Ưu tiên thấp</div><div class="rtable-wrap"><table class="rtable"><thead><tr><th>Công việc</th><th>Dự án</th><th>Phụ trách</th><th>Hạn chốt</th><th>Trạng thái</th></tr></thead><tbody>${tasks.filter(t=>t.priority==='low').map(t=>{const s=t.status==='done'?'st-done':t.dueDate&&t.dueDate<now?'st-over':'st-doing';const sl={'st-done':'Hoàn thành','st-over':'Quá hạn','st-doing':'Đang làm'}[s]||'Chưa làm';const mem=memberName(t.assigneeId);return '<tr><td><b>'+t.title+'</b></td><td>'+(t.project?t.project.name:'Nội bộ')+'</td><td>'+mem+'</td><td style="'+(s==='st-over'?'color:var(--red)':'')+'">'+( t.dueDate?t.dueDate.toLocaleDateString('vi-VN'):'-')+'</td><td><span class="tag2 '+s+'">'+sl+'</span></td></tr>';}).join('')}</tbody></table></div>`}
+          style={{ marginBottom: 0 }}>
           <div className="ch">
             <div className="ch-l">
               <div className="ch-ic" style={{ background: "var(--neutral-soft)", color: "var(--neutral)" }}>

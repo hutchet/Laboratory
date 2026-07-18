@@ -118,7 +118,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
                         <input type="hidden" name="itemId" defaultValue={it.id} />
                         <input type="hidden" name="quoteId" defaultValue={quote.id} />
                         <input type="hidden" name="quantity" defaultValue={it.quantity ?? 1} />
-                        <input type="number" name="price" defaultValue={it.price ?? 0} style={{ width: 90, textAlign: "right" }} onBlur={(e) => e.currentTarget.form?.requestSubmit()} />
+                        <input type="number" name="price" defaultValue={it.price ?? 0} style={{ width: 90, textAlign: "right" }} />
                       </form>
                     ) : (it.price ?? 0).toLocaleString("vi-VN")}
                   </td>
@@ -128,7 +128,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ id
                         <input type="hidden" name="itemId" defaultValue={it.id} />
                         <input type="hidden" name="quoteId" defaultValue={quote.id} />
                         <input type="hidden" name="price" defaultValue={it.price ?? 0} />
-                        <input type="number" name="quantity" defaultValue={it.quantity ?? 1} min={1} style={{ width: 60 }} onBlur={(e) => e.currentTarget.form?.requestSubmit()} />
+                        <input type="number" name="quantity" defaultValue={it.quantity ?? 1} min={1} style={{ width: 60 }} />
                       </form>
                     ) : (it.quantity ?? 1)}
                   </td>

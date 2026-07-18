@@ -306,6 +306,17 @@
   .pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:5px 11px;border-radius:20px}
   .pill::before{content:'';width:7px;height:7px;border-radius:50%;background:currentColor}
   .tag2{font-size:12px;font-weight:600;padding:4px 11px;border-radius:8px}
+  .tag2.st-todo{background:var(--neutral-soft);color:var(--neutral)}
+  .tag2.st-doing{background:var(--pri-soft);color:var(--pri)}
+  .tag2.st-done{background:var(--green-soft);color:var(--green)}
+  .tag2.st-over{background:var(--red-soft);color:var(--red)}
+  .tag2.pri-high{background:var(--red-soft);color:var(--red)}
+  .tag2.pri-med{background:var(--amber-soft);color:var(--amber)}
+  .tag2.pri-low{background:var(--green-soft);color:var(--green)}
+  .gender.g-nam{background:var(--kblue);color:#4f6cf7}
+  .gender.g-nu{background:#fdeef4;color:#db2777}
+  .gender.g-khac{background:var(--neutral-soft);color:var(--neutral)}
+
   .hidden{display:none !important}
   .row{display:flex;flex-wrap:wrap;gap:12px;align-items:end}
   .field{display:flex;flex-direction:column;gap:5px}
@@ -3088,3 +3099,19 @@ html body .center-detail-card > .qs-box, html body .center-detail-card #pm-detai
 @media(max-width:820px){html body .center-detail-card{max-height:calc(100vh - 180px) !important}}
 /* end v119.3.6 */
 /* end v119.3 --- */
+
+  /* Modal detail popup content */
+  .mdl-kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}
+  .mdl-kpi{background:var(--bg);border-radius:14px;padding:16px 18px;text-align:center}
+  .mdl-kpi-v{font-size:26px;font-weight:700;color:var(--ink);line-height:1.2}
+  .mdl-kpi-l{font-size:12px;color:var(--muted);margin-top:4px;font-weight:500}
+  .mdl-sect{font-size:13px;font-weight:600;color:var(--ink);margin:10px 0 8px}
+  /* Status segment bars */
+  .ssb-legend{display:flex;gap:14px;margin:8px 0 4px}
+  .ssb-leg-item{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--muted)}
+  .ssb-count-row{display:flex;gap:0;border-top:1px solid var(--line);padding-top:10px;margin-top:8px}
+  .ssb-count-item{flex:1;text-align:center;border-right:1px solid var(--line)}
+  .ssb-count-item:last-child{border-right:0}
+  .ssb-count-val{font-size:20px;font-weight:700;color:var(--ink)}
+  .ssb-count-lab{font-size:10.5px;color:var(--muted);margin-top:2px}
+

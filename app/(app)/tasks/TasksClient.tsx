@@ -1,7 +1,8 @@
 "use client"
 
-import { useMemo, useState, useTransition } from "react"
+import { useMemo, useRef, useState, useTransition } from "react"
 import { saveTask, deleteTask } from "./actions"
+import { useColResize } from "../quote/useColResize"
 import { useEscapeClose } from "@/lib/useEscapeClose"
 import { CustomSelect } from "@/components/CustomSelect"
 
@@ -50,6 +51,8 @@ export default function TasksClient({ tasks, projects, members }: { tasks: TaskR
   const [chip, setChip] = useState("all")
   const [q, setQ] = useState("")
   const [editing, setEditing] = useState<TaskRow | null>(null)
+  const tableRef = useRef<HTMLTableElement>(null)
+  useColResize(tableRef, 8) // 8 cols
   const [showForm, setShowForm] = useState(false)
   useEscapeClose(showForm, () => { setShowForm(false); setEditing(null) })
   const [pending, startTransition] = useTransition()
@@ -165,7 +168,8 @@ export default function TasksClient({ tasks, projects, members }: { tasks: TaskR
         </div>
       </div>
       <div className="card" style={{ padding: 0, overflowX: "auto" }}>
-        <table>
+        <div className="qs-box">
+        <table className="rz-table tbl-editing" ref={tableRef}>
           <thead>
             <tr>
               <th data-sort="status">Tình trạng</th>
@@ -202,6 +206,7 @@ export default function TasksClient({ tasks, projects, members }: { tasks: TaskR
           </tbody>
         </table>
         {filtered.length === 0 && <div className="empty" id="empty">Chưa có task nào.</div>}
+      </div>
       </div>
     </section>
   )

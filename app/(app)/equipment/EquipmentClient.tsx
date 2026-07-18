@@ -4,8 +4,8 @@ import { useMemo, useRef, useState, useTransition } from "react"
 import { saveEquipment, deleteEquipment, deleteManyEquipment } from "./actions"
 import { useEscapeClose } from "@/lib/useEscapeClose"
 import { useColResize } from "../quote/useColResize"
-import { CustomSelect } from "@/components/CustomSelect"
 import { validateModalState, required, min } from "@/lib/validateModalState"
+import { CustomSelect } from "@/components/CustomSelect"
 
 type Row = {
   id: string; name: string; code: string | null; category: string | null; manufacturer: string | null; model: string | null
@@ -54,7 +54,7 @@ export default function EquipmentClient({ equipment, centers, canManage = true }
     const check = validateModalState(
       { name: formData.get("name"), qty: formData.get("qty"), area: formData.get("area"), power: formData.get("power"), calInterval: formData.get("calInterval") },
       {
-        name: [required("Ten thiet bi khong duoc de trong")],
+        name: [required("Ten thiet bi khong duoc de trong") as any],
         qty: [min(0, "So luong khong duoc am") as any],
         area: [min(0, "Dien tich khong duoc am") as any],
         power: [min(0, "Cong suat khong duoc am") as any],

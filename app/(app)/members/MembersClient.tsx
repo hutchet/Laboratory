@@ -1,7 +1,8 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useRef, useState, useTransition } from "react"
 import { saveMember, deleteMember } from "./actions"
+import { useColResize } from "../quote/useColResize"
 import { useEscapeClose } from "@/lib/useEscapeClose"
 import { CustomSelect } from "@/components/CustomSelect"
 
@@ -28,6 +29,8 @@ function memAvColor(name: string) { let h = 0; for (const c of name) h = (h*31 +
 
 export default function MembersClient({ members, canManage }: { members: MemberRow[]; canManage: boolean }) {
   const [editing, setEditing] = useState<MemberRow | null>(null)
+  const tableRef = useRef<HTMLTableElement>(null)
+  useColResize(tableRef, 8) // 8 cols
   useEscapeClose(!!editing, () => setEditing(null))
   const [pending, startTransition] = useTransition()
   const admin = members.find((m) => m.accessRole === "admin") ?? members[0]
@@ -77,7 +80,8 @@ export default function MembersClient({ members, canManage }: { members: MemberR
       </div>
       )}
       <div className="card" style={{ padding: 0, overflowX: "auto" }}>
-        <table className="mt">
+        <div className="qs-box">
+        <table className="rz-table tbl-editing" ref={tableRef}>
           <thead><tr><th>Số thứ tự</th><th>Họ và tên</th><th>Mã nhân viên</th><th>Email</th><th>Giới tính</th><th>Nhóm</th><th>Quyền</th><th>Thao tác</th></tr></thead>
           <tbody id="mbody">
             {members.map((m, i) => (
@@ -91,7 +95,9 @@ export default function MembersClient({ members, canManage }: { members: MemberR
                 </td>
                 <td>{m.code ?? "—"}</td>
                 <td>{m.email ?? "—"}</td>
-                <td>{m.gender ?? "—"}</td>
+                <td>
+                  <span className={`gender ${{ 'Nam': 'g-nam', 'Nữ': 'g-nu' }[m.gender ?? ''] ?? 'g-khac'}`}>{m.gender ?? '—'}</span>
+                </td>
                 <td>{m.team ?? "—"}</td>
                 <td>
                   <span className="adminbadge" style={{
@@ -118,6 +124,7 @@ export default function MembersClient({ members, canManage }: { members: MemberR
             ))}
           </tbody>
         </table>
+        </div>
         {members.length === 0 && <div className="empty" id="m-empty">Chưa có thành viên nào.</div>}
       </div>
     </section>
