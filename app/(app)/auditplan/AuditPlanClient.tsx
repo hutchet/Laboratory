@@ -471,8 +471,8 @@ export default function AuditPlanClient({ plans, canManage }: { plans: Plan[]; c
                   <td>
                     {canManage ? (
                       <>
-                        <button className="btn-line" onClick={() => { setEditing(it); setShowItemForm(true) }}>Sửa</button>
-                        <button className="btn-line" onClick={() => onDeleteItem(it.id)}>Xóa</button>
+                        <button type="button" className="icon-act pri" title="Sửa" onClick={() => { setEditing(it); setShowItemForm(true) }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+                        <button type="button" className="icon-act del" title="Xoá" onClick={() => onDeleteItem(it.id)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
                       </>
                     ) : (
                       <span style={{ color: "var(--muted)" }}>—</span>

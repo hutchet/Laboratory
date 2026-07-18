@@ -111,14 +111,14 @@ export default function GlobalDetailModal() {
       >
         <div className="modal-head">
           <h3 id="modal-title">{state.title}</h3>
-          <button type="button" className="modal-x" id="modal-close" aria-label="\u0110\u00f3ng" onClick={close}>\u2715</button>
+          <button type="button" className="modal-x" id="modal-close" aria-label="Đóng" onClick={close}>✕</button>
         </div>
         <div
           id="modal-body"
           className="modal-body"
           {...(state.body ? { dangerouslySetInnerHTML: { __html: state.body } } : {})}
         >
-          {!state.body && <div className="empty">Ch\u01b0a c\u00f3 d\u1eef li\u1ec7u chi ti\u1ebft.</div>}
+          {!state.body && <div className="empty">Chưa có dữ liệu chi tiết.</div>}
         </div>
       </div>
     </div>

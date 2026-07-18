@@ -14,7 +14,14 @@ type CustomerRow = {
   value: number | null
   notes: string | null
   projectCount: number
+  activeProjectCount: number
+  totalValue: number
 }
+
+const CU_AV_COLORS = ["#5b7bff","#e2665f","#2ab090","#e9963e","#9b6ff7","#3ba0c4"]
+function cuInitials(name: string) { const p = name.trim().split(/\s+/); return (p.length >= 2 ? p[0][0] + p[p.length-1][0] : name.slice(0,2)).toUpperCase() }
+function cuAvColor(name: string) { let h = 0; for (const c of name) h = (h*31 + c.charCodeAt(0)) & 0xffff; return CU_AV_COLORS[h % CU_AV_COLORS.length] }
+function fmtCuVal(n: number) { if (n >= 1e9) return (n/1e9).toFixed(1).replace(/\.0$/, '') + ' Tỷ'; if (n >= 1e6) return Math.round(n/1e6).toLocaleString('vi-VN') + ' Tr'; return n > 0 ? n.toLocaleString('vi-VN') + ' đ' : '0 đ' }
 
 function fmtVnd(n: number | null) {
   if (!n) return "0"
@@ -95,22 +102,51 @@ export default function CustomersClient({ customers, canManage }: { customers: C
         {filtered.map((c) => (
           <div className="cucard" key={c.id}>
             <div className="cucard-head">
-              <div className="cucard-title"><h4>{c.name}</h4><div className="cu-sub">{c.contact ?? "—"}</div></div>
+              <div className="cu-avatar" style={{ background: cuAvColor(c.name) }}>{cuInitials(c.name)}</div>
+              <div className="cucard-title">
+                <div className="nm">{c.name}</div>
+                <div className="cu-sub">{c.contact ?? "Chưa có liên hệ"}</div>
+              </div>
               {canManage && (
               <div className="cucard-acts">
-                <button className="btn-line" onClick={() => openEdit(c)}>Sửa</button>
-                <button className="btn-line" onClick={() => onDelete(c.id)}>Xoá</button>
+                <button type="button" className="icon-act pri" title="Sửa" onClick={() => openEdit(c)}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>
+                <button type="button" className="icon-act del" title="Xoá" onClick={() => onDelete(c.id)}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                </button>
               </div>
               )}
             </div>
             <div className="cucard-info">
-              <div>{c.email ?? "—"}</div>
-              <div>{c.phone ?? "—"}</div>
-              <div>{c.address ?? "—"}</div>
+              {c.email && (
+                <div className="cu-info-row">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="2,4 12,13 22,4"/></svg>
+                  <span>{c.email}</span>
+                </div>
+              )}
+              {c.phone && (
+                <div className="cu-info-row">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.79 19.79 0 0 1 3 12.11a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3.5a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                  <span>{c.phone}</span>
+                </div>
+              )}
+              {c.address && (
+                <div className="cu-info-row">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                  <span>{c.address}</span>
+                </div>
+              )}
+              {!c.email && !c.phone && !c.address && (
+                <div className="cu-info-row"><span style={{ fontStyle: "italic", fontSize: 12 }}>Chưa có thông tin liên hệ</span></div>
+              )}
             </div>
             <div className="cucard-footer">
-              <span>{c.projectCount} dự án</span>
-              <span>{fmtVnd(c.value)} đ</span>
+              <div className="cu-stat"><span className="cu-stat-v">{c.projectCount}</span><span className="cu-stat-l">Dự án</span></div>
+              <div className="cu-divider" />
+              <div className="cu-stat"><span className="cu-stat-v" style={{ color: "var(--green)" }}>{c.activeProjectCount}</span><span className="cu-stat-l">Đang chạy</span></div>
+              <div className="cu-divider" />
+              <div className="cu-stat"><span className="cu-stat-v" style={{ color: "var(--amber)" }}>{fmtCuVal(c.totalValue)}</span><span className="cu-stat-l">Giá trị HĐ</span></div>
             </div>
           </div>
         ))}

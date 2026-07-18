@@ -21,9 +21,21 @@ type ProjectRow = {
   hasPlan: boolean
   planTestCount: number
   planStaffCount: number
+  priority: string
+  dueDate: string | null
+  owners: string[]
 }
 
 type Option = { id: string; name: string }
+
+function projInitials(name: string) {
+  const p = name.trim().split(/\s+/)
+  return (p.length >= 2 ? p[0][0] + p[p.length - 1][0] : name.slice(0, 2)).toUpperCase()
+}
+const AV_COLORS2 = ["#5b7bff","#e2665f","#2ab090","#e9963e","#9b6ff7","#3ba0c4"]
+function projAvColor(id: string) { let h = 0; for (const c of id) h = (h * 31 + c.charCodeAt(0)) & 0xffff; return AV_COLORS2[h % AV_COLORS2.length] }
+const PRIORITY_COLOR: Record<string, string> = { Cao: "background:#fde8ea;color:#c0252d", "Trung bình": "background:#fff3de;color:#b45309", "Thấp": "background:#e8f5e9;color:#388e3c" }
+const STATUS_COLOR: Record<string, string> = { doing: "background:var(--pri-soft);color:var(--pri-d)", done: "background:#e8f5e9;color:#388e3c", risk: "background:#fde8ea;color:#c0252d" }
 
 const STATUS_LABEL: Record<string, string> = { doing: "Đang thực hiện", done: "Đã hoàn thành", risk: "Rủi ro" }
 const PAGE_SIZE = 6
@@ -125,13 +137,27 @@ export default function ProjectsClient({ projects, customers, centers, canManage
           <div className="pcard" key={p.id}>
             <div className="pt">
               <h4>{p.name}</h4>
-              <div className="tags"><span className={`tag2 st-${p.displayStatus}`}>{STATUS_LABEL[p.displayStatus]}</span></div>
+              {canManage && (
+              <div className="pacts">
+                <button type="button" className="icon-act pri" title="Sửa" onClick={() => openEdit(p)}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>
+                <button type="button" className="icon-act del" title="Xoá" onClick={() => onDelete(p.id)}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                </button>
+              </div>
+              )}
+            </div>
+            <div className="tags">
+              <span className="tag2" style={{ background: STATUS_COLOR[p.displayStatus]?.split(";")[0]?.split(":")[1] ?? "var(--pri-soft)", color: STATUS_COLOR[p.displayStatus]?.split(";")[1]?.split(":")[1] ?? "var(--pri-d)" }}>{STATUS_LABEL[p.displayStatus]}</span>
+              <span className="tag2" style={{ background: PRIORITY_COLOR[p.priority]?.split(";")[0]?.split(":")[1] ?? "#fff3de", color: PRIORITY_COLOR[p.priority]?.split(";")[1]?.split(":")[1] ?? "#b45309" }}>{p.priority}</span>
             </div>
             <div className="pbox">
-              <div className="prow"><span>Khách hàng</span><b>{p.customerName ?? "—"}</b></div>
-              <div className="prow"><span>Trung tâm</span><b>{p.centerName ?? "—"}</b></div>
-              <div className="prow"><span>Công việc</span><b>{p.doneCount}/{p.taskCount}</b></div>
-              <div className="prow"><span>Quá hạn</span><b>{p.overdueCount}</b></div>
+              <div className="prow"><span>Tiến độ</span><b>{p.taskCount ? Math.round((p.doneCount / p.taskCount) * 100) : 0}%</b></div>
+              <div className="pbar"><i style={{ width: `${p.taskCount ? Math.round((p.doneCount / p.taskCount) * 100) : 0}%` }} /></div>
+              <div className="prow" style={{ margin: "8px 0 0" }}>
+                <span>{p.doneCount}/{p.taskCount} công việc hoàn thành{p.overdueCount > 0 ? ` · ${p.overdueCount} quá hạn` : ""}</span>
+              </div>
               {p.hasPlan ? (
                 <Link href={`/plan?project=${p.id}`} className="pplan-link" style={{ marginTop: 8, cursor: "pointer" }}>
                   <span>Kế hoạch thử nghiệm</span>
@@ -142,13 +168,13 @@ export default function ProjectsClient({ projects, customers, centers, canManage
               )}
             </div>
             <div className="pfoot">
-              <span>{fmtVnd(p.value)}</span>
-              {canManage && (
-              <div className="pacts">
-                <button className="btn-line" onClick={() => openEdit(p)}>Sửa</button>
-                <button className="btn-line" onClick={() => onDelete(p.id)}>Xoá</button>
+              <div className="avstack">
+                {p.owners.slice(0, 3).map((id, i) => (
+                  <span key={id} className="a" style={{ background: projAvColor(id) }}>{projInitials(id)}</span>
+                ))}
+                {p.owners.length > 3 && <span className="a" style={{ background: "var(--line)", color: "var(--muted)" }}>+{p.owners.length - 3}</span>}
               </div>
-              )}
+              <span className="due">Hạn: {p.dueDate ?? "—"}</span>
             </div>
           </div>
         ))}

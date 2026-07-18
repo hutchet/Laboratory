@@ -67,7 +67,7 @@ export default function QualityClient({ checklist, calibration, auditEntries }: 
                 <input type="checkbox" checked={c.done} onChange={() => onToggle(c.id, c.done)} />
                 <span style={{ textDecoration: c.done ? "line-through" : "none", flex: 1 }}>{c.name}</span>
                 {c.dueDate && <span style={{ fontSize: 11, color: "var(--muted)" }}>{new Date(c.dueDate).toLocaleDateString("vi-VN")}</span>}
-                <button className="btn-line" onClick={() => onDelete(c.id)}>Xóa</button>
+                <button type="button" className="icon-act del" title="Xoá" onClick={() => onDelete(c.id)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
               </div>
             ))}
           </div>

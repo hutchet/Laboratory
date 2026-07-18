@@ -22,6 +22,10 @@ function initials(name: string) {
   return name.split(" ").filter(Boolean).slice(-2).map((w) => w[0]).join("").toUpperCase()
 }
 
+const MEM_AV_COLORS = ["#5b7bff","#e2665f","#2ab090","#e9963e","#9b6ff7","#3ba0c4"]
+function memInitials(name: string) { const p = name.trim().split(/\s+/); return (p.length >= 2 ? p[0][0] + p[p.length-1][0] : name.slice(0,2)).toUpperCase() }
+function memAvColor(name: string) { let h = 0; for (const c of name) h = (h*31 + c.charCodeAt(0)) & 0xffff; return MEM_AV_COLORS[h % MEM_AV_COLORS.length] }
+
 export default function MembersClient({ members, canManage }: { members: MemberRow[]; canManage: boolean }) {
   const [editing, setEditing] = useState<MemberRow | null>(null)
   useEscapeClose(!!editing, () => setEditing(null))
@@ -79,18 +83,33 @@ export default function MembersClient({ members, canManage }: { members: MemberR
             {members.map((m, i) => (
               <tr key={m.id}>
                 <td>{i + 1}</td>
-                <td>{m.name}</td>
+                <td>
+                  <div className="person" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span className="av" style={{ width: 30, height: 30, fontSize: 11, background: memAvColor(m.name), borderRadius: "50%", display: "grid", placeItems: "center", color: "#fff", fontWeight: 600, flexShrink: 0 }}>{memInitials(m.name)}</span>
+                    <b>{m.name}</b>
+                  </div>
+                </td>
                 <td>{m.code ?? "—"}</td>
                 <td>{m.email ?? "—"}</td>
                 <td>{m.gender ?? "—"}</td>
                 <td>{m.team ?? "—"}</td>
-                <td>{ROLE_LABEL[m.accessRole ?? "viewer"]}</td>
+                <td>
+                  <span className="adminbadge" style={{
+                    background: m.accessRole === 'admin' ? 'var(--pri-soft)' : m.accessRole === 'manager' ? 'var(--green-soft)' : m.accessRole === 'technician' ? 'var(--amber-soft)' : 'var(--neutral-soft)',
+                    color: m.accessRole === 'admin' ? 'var(--pri-d)' : m.accessRole === 'manager' ? 'var(--green)' : m.accessRole === 'technician' ? 'var(--amber)' : 'var(--muted)',
+                    padding: '2px 10px', borderRadius: 20, fontSize: 11.5, fontWeight: 600
+                  }}>{m.accessRole === 'admin' ? '★ ' : ''}{ROLE_LABEL[m.accessRole ?? "viewer"]}</span>
+                </td>
                 <td>
                   {canManage ? (
-                    <>
-                      <button className="btn-line" onClick={() => setEditing(m)}>Sửa</button>{" "}
-                      <button className="btn-line" onClick={() => onDelete(m.id)}>Xoá</button>
-                    </>
+                    <div className="acts">
+                      <button type="button" className="icon-act pri" title="Sửa" onClick={() => setEditing(m)}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                      </button>
+                      <button type="button" className="icon-act del" title="Xoá" onClick={() => onDelete(m.id)}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                      </button>
+                    </div>
                   ) : (
                     <span style={{ color: "var(--muted)" }}>—</span>
                   )}

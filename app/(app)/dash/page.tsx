@@ -62,9 +62,18 @@ export default async function DashPage() {
   const totalTasks = tasks.length
   const tasksWithProject = tasks.filter((t) => t.projectId).length
   const kUtil = totalTasks ? Math.round((tasksWithProject / totalTasks) * 100) : 0
+  const internalTaskCount = tasks.filter((t) => !t.projectId).length
+  // Week trend: tasks created in current week vs last week
+  const oneWeekAgo = new Date(now); oneWeekAgo.setDate(now.getDate() - 7)
+  const twoWeeksAgo = new Date(now); twoWeeksAgo.setDate(now.getDate() - 14)
+  const activeThisWeek = tasks.filter((t) => t.status !== "done" && t.createdAt >= oneWeekAgo).length
+  const activeLastWeek = tasks.filter((t) => t.status !== "done" && t.createdAt >= twoWeeksAgo && t.createdAt < oneWeekAgo).length
+  const activeDiff = activeThisWeek - activeLastWeek
   const activeTasks = tasks.filter((t) => t.status !== "done")
   const overdueTasks = tasks.filter((t) => t.dueDate && t.dueDate < now && t.status !== "done")
   const riskyProjects = projects.filter((p) => p.tasks.some((t) => t.dueDate && t.dueDate < now && t.status !== "done"))
+  const riskThisWeek = riskyProjects.length
+  const riskLastWeek = Math.max(0, riskThisWeek - Math.floor(Math.random() * 0)) // placeholder
   const spotlight = riskyProjects[0] ?? projects[0]
 
   // Cong viec/han chot 7 ngay toi (xap xi bieu do goc, khong co du lieu JS goc de phuc dung y het)
@@ -144,9 +153,11 @@ export default async function DashPage() {
               </div>
               <div className="kcard-val-row">
                 <div className="v" id="k-util">{kUtil}%</div>
-                <div className="kcard-trend" id="k-util-trend" />
+                <div className="kcard-trend" id="k-util-trend" style={activeDiff !== 0 ? { color: activeDiff > 0 ? 'var(--green)' : 'var(--red)', background: activeDiff > 0 ? 'var(--green-soft)' : 'var(--red-soft)', display: 'inline-flex', alignItems: 'center', gap: 3, padding: '3px 8px', borderRadius: 12, fontSize: 11, fontWeight: 600 } : { display: 'none' }}>
+                  {activeDiff > 0 ? '+' : ''}{activeDiff !== 0 ? <><span className="wk-chg">{activeDiff > 0 ? '+' : '−'}{Math.abs(activeDiff)}</span> so với tuần trước</> : null}
+                </div>
               </div>
-              <div className="s" id="k-util-t">theo dự án</div>
+              <div className="s" id="k-util-t">{internalTaskCount} nội bộ phát sinh · {tasksWithProject} theo dự án</div>
             </div>
             <div className="kcard kg kcard-hero pcard clickable" data-detail="kpi-active">
               <div className="kcard-top">
@@ -278,7 +289,7 @@ export default async function DashPage() {
               </div>
               <h3>Phân bổ trạng thái</h3>
             </div>
-            <span id="status-trend-badge" style={{ background: "var(--green-soft)", color: "var(--green)", fontWeight: 600, padding: "3px 9px", borderRadius: 20, fontSize: 11 }}>{doneTrendPct}%</span>
+            <span id="status-trend-badge" style={{ background: "var(--green-soft)", color: "var(--green)", fontWeight: 600, padding: "3px 9px", borderRadius: 20, fontSize: 11, display: "inline-flex", alignItems: "center", gap: 4 }}><svg width="11" height="11" viewBox="0 0 24 24" fill="var(--green)" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>{doneTrendPct}% hoàn thành</span>
           </div>
           <div className="status-stackbar" id="status-mini-bars" style={{ display: "flex", gap: 8, alignItems: "flex-end", height: 90 }}>
             <div className="ssb-item" id="mb-prog" style={{ flex: "1 1 0%" }}>
@@ -320,11 +331,30 @@ export default async function DashPage() {
               <h3>Khối lượng công việc</h3>
             </div>
           </div>
-          <div className="bubble-chart" id="team-bubbles" style={{ padding: "14px 0" }}>
-            <BubbleChart
-              data={workload.map(([name, count], i) => ({ label: name, value: count, color: PVD_COLORS[i % PVD_COLORS.length] }))}
-              emptyLabel="Chưa có công việc được phân công."
-            />
+          <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "14px 0" }}>
+            <div className="bubble-chart" id="team-bubbles" style={{ flex: "0 0 auto", width: 160 }}>
+              <BubbleChart
+                data={workload.map(([name, count], i) => ({ label: name, value: count, color: PVD_COLORS[i % PVD_COLORS.length] }))}
+                emptyLabel="Chưa có phân công."
+              />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              {workload.map(([name, count], i) => (
+                <div key={name} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 0", borderBottom: "1px solid var(--line)", fontSize: 12.5 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                    <span style={{ width: 10, height: 10, borderRadius: "50%", background: PVD_COLORS[i % PVD_COLORS.length], display: "inline-block", flexShrink: 0 }} />
+                    <span style={{ color: "var(--ink)", fontWeight: 500 }}>{name}</span>
+                  </div>
+                  <span style={{ fontWeight: 700, color: "var(--ink)" }}>{count}</span>
+                </div>
+              ))}
+              {workload.length > 0 && (
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0 0", fontSize: 12, color: "var(--muted)" }}>
+                  <span>Tổng đang làm</span>
+                  <span style={{ fontWeight: 700, color: "var(--ink)" }}>{activeTasks.length}</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
