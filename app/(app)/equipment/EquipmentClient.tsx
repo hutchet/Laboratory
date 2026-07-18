@@ -5,6 +5,7 @@ import { saveEquipment, deleteEquipment, deleteManyEquipment } from "./actions"
 import { useEscapeClose } from "@/lib/useEscapeClose"
 import { useColResize } from "../quote/useColResize"
 import { CustomSelect } from "@/components/CustomSelect"
+import { validateModalState, required, min } from "@/lib/validateModalState"
 
 type Row = {
   id: string; name: string; code: string | null; category: string | null; manufacturer: string | null; model: string | null
@@ -54,10 +55,10 @@ export default function EquipmentClient({ equipment, centers, canManage = true }
       { name: formData.get("name"), qty: formData.get("qty"), area: formData.get("area"), power: formData.get("power"), calInterval: formData.get("calInterval") },
       {
         name: [required("Ten thiet bi khong duoc de trong")],
-        qty: [min(0, "So luong khong duoc am")],
-        area: [min(0, "Dien tich khong duoc am")],
-        power: [min(0, "Cong suat khong duoc am")],
-        calInterval: [min(0, "Chu ky hieu chuan khong duoc am")],
+        qty: [min(0, "So luong khong duoc am") as any],
+        area: [min(0, "Dien tich khong duoc am") as any],
+        power: [min(0, "Cong suat khong duoc am") as any],
+        calInterval: [min(0, "Chu ky hieu chuan khong duoc am") as any],
       },
     )
     if (!check.valid) {
