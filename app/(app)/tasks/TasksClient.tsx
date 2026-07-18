@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react"
 import { saveTask, deleteTask } from "./actions"
+import { useEscapeClose } from "@/lib/useEscapeClose"
 
 type TaskRow = {
   id: string
@@ -41,6 +42,7 @@ export default function TasksClient({ tasks, projects, members }: { tasks: TaskR
   const [q, setQ] = useState("")
   const [editing, setEditing] = useState<TaskRow | null>(null)
   const [showForm, setShowForm] = useState(false)
+  useEscapeClose(showForm, () => { setShowForm(false); setEditing(null) })
   const [pending, startTransition] = useTransition()
 
   const memberName = (id: string | null) => members.find((m) => m.id === id)?.name ?? "—"

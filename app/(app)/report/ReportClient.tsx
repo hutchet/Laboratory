@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react"
 import { saveReport, deleteReport } from "./actions"
+import { useEscapeClose } from "@/lib/useEscapeClose"
 
 type ReportRow = { id: string; title: string; content: string | null; projectId: string | null; projectName: string | null; createdAt: string }
 type Option = { id: string; name: string }
@@ -10,6 +11,7 @@ export default function ReportClient({ reports, projects }: { reports: ReportRow
   const [q, setQ] = useState("")
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<ReportRow | null>(null)
+  useEscapeClose(showForm, () => { setShowForm(false); setEditing(null) })
   const [pending, startTransition] = useTransition()
 
   const filtered = useMemo(() => reports.filter((r) => !q || r.title.toLowerCase().includes(q.toLowerCase())), [reports, q])

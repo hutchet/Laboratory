@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState, useTransition } from "react"
 import { saveTestCatalogItem, deleteTestCatalogItems } from "./actions"
 import { useColResize } from "./useColResize"
+import { useEscapeClose } from "@/lib/useEscapeClose"
 
 type Row = { id: string; code: string | null; name: string; standard: string | null; sampleQty: string | null; leadTime: string | null; price: number | null }
 
@@ -14,6 +15,7 @@ export default function QuoteCatalogClient({ items, canManage = true }: { items:
   const [selected, setSelected] = useState<string[]>([])
   const [editing, setEditing] = useState<Row | null>(null)
   const [showForm, setShowForm] = useState(false)
+  useEscapeClose(showForm, () => { setShowForm(false); setEditing(null) })
   const [pending, startTransition] = useTransition()
   const tableRef = useRef<HTMLTableElement | null>(null)
   useColResize(tableRef, 8 + (editMode ? 1 : 0))

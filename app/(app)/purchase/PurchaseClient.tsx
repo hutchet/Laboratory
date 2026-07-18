@@ -1,8 +1,8 @@
 "use client"
 
-import { useMemo, useRef, useState, useTransition } from "react"
+import { useMemo, useState, useTransition } from "react"
 import { savePurchase, deletePurchase, deleteAllPurchase, deleteManyPurchase } from "./actions"
-import { useColResize } from "@/lib/useColResize"
+import { useEscapeClose } from "@/lib/useEscapeClose"
 
 type Item = { id: string; name: string; quantity: number | null; cost: number | null; status: string | null; note: string | null }
 
@@ -19,11 +19,10 @@ function statusLabel(s: string | null) {
 export default function PurchaseClient({ items, canManage = true }: { items: Item[]; canManage?: boolean }) {
   const [editing, setEditing] = useState<Item | null>(null)
   const [showForm, setShowForm] = useState(false)
+  useEscapeClose(showForm, () => { setShowForm(false); setEditing(null) })
   const [pending, startTransition] = useTransition()
   const [editMode, setEditMode] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
-  const tableRef = useRef<HTMLTableElement>(null)
-  useColResize(tableRef, 7 + (editMode ? 1 : 0))
 
   function toggleRow(id: string) {
     setSelected((prev) => {
@@ -109,7 +108,7 @@ export default function PurchaseClient({ items, canManage = true }: { items: Ite
           )}
 
           <div id="pm-overview-grid">
-            <table className="rz-table" ref={tableRef}>
+            <table>
               <thead><tr>{editMode && <th><input type="checkbox" className="selall-chk" data-tbl="pm" checked={selected.size === items.length && items.length > 0} onChange={toggleAll} aria-label="Chọn tất cả" /></th>}<th>Tên hạng mục</th><th>Số lượng</th><th>Chi phí (đ)</th><th>Thành tiền (đ)</th><th>Trạng thái</th><th>Ghi chú</th><th>Thao tác</th></tr></thead>
               <tbody>
                 {items.map((it) => (

@@ -1,8 +1,8 @@
 "use client"
 
-import { useMemo, useRef, useState, useTransition } from "react"
+import { useMemo, useState, useTransition } from "react"
 import { saveEquipment, deleteEquipment, deleteManyEquipment } from "./actions"
-import { useColResize } from "@/lib/useColResize"
+import { useEscapeClose } from "@/lib/useEscapeClose"
 
 type Row = {
   id: string; name: string; code: string | null; category: string | null; manufacturer: string | null; model: string | null
@@ -16,11 +16,10 @@ export default function EquipmentClient({ equipment, centers, canManage = true }
   const [activeCenter, setActiveCenter] = useState<string>("all")
   const [editing, setEditing] = useState<Row | null>(null)
   const [showForm, setShowForm] = useState(false)
+  useEscapeClose(showForm, () => { setShowForm(false); setEditing(null) })
   const [pending, startTransition] = useTransition()
   const [editMode, setEditMode] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
-  const tableRef = useRef<HTMLTableElement>(null)
-  useColResize(tableRef, 7 + (editMode ? 1 : 0))
 
   const total = equipment.length
   const ready = equipment.filter((e) => e.status === "ready").length
@@ -169,7 +168,7 @@ export default function EquipmentClient({ equipment, centers, canManage = true }
         ))}
       </div>
 
-      <table id="eq-mgmt-table" className="rz-table" ref={tableRef}>
+      <table id="eq-mgmt-table">
         <thead>
           <tr>{editMode && <th><input type="checkbox" className="selall-chk" data-tbl="eq" checked={selected.size === shown.length && shown.length > 0} onChange={toggleAll} aria-label="Chon tat ca" /></th>}<th>Ten</th><th>Ma</th><th>Loai</th><th>Trung tam</th><th>Trang thai</th><th>Han hieu chuan</th><th>Thao tac</th></tr>
         </thead>

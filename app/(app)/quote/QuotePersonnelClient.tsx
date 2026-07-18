@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState, useTransition } from "react"
 import { savePersonnelRateConfig, savePersonnelRouting, deletePersonnelRoutings } from "./actions"
 import { useColResize } from "./useColResize"
+import { useEscapeClose } from "@/lib/useEscapeClose"
 
 type RateConfig = { techRate: number; engRate: number; leadRate: number; mgrRate: number; overheadPct: number }
 type Row = { id: string; testCode: string | null; testName: string; prepHours: string | null; setupHours: string | null; testHours: string | null; reportHours: string | null }
@@ -15,6 +16,7 @@ export default function QuotePersonnelClient({ rateConfig, routings, canManage =
   const [selected, setSelected] = useState<string[]>([])
   const [editing, setEditing] = useState<Row | null>(null)
   const [showForm, setShowForm] = useState(false)
+  useEscapeClose(showForm, () => { setShowForm(false); setEditing(null) })
   const [pending, startTransition] = useTransition()
   const tableRef = useRef<HTMLTableElement | null>(null)
   useColResize(tableRef, 10 + (editMode ? 1 : 0))

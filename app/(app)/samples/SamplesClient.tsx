@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react"
 import { addSampleForProject, updateSampleTracking, deleteSample } from "./actions"
+import { useEscapeClose } from "@/lib/useEscapeClose"
 
 type Row = {
   id: string; code: string | null; serialNumber: string | null; qty: number
@@ -34,6 +35,8 @@ export default function SamplesClient({ samples, customers, projects }: { sample
   const [addingProjectId, setAddingProjectId] = useState<string | null>(null)
   const [editing, setEditing] = useState<Row | null>(null)
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
+  useEscapeClose(!!editing, () => setEditing(null))
+  useEscapeClose(!!addingProjectId, () => setAddingProjectId(null))
   const [pending, startTransition] = useTransition()
 
   const withStatus = useMemo(() => samples.map((s) => ({ s, status: autoStatus(s) })), [samples])

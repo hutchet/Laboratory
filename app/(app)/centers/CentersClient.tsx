@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react"
 import { saveCenter, deleteCenter } from "./actions"
-import { Perm } from "@/lib/rbac-client"
+import { useEscapeClose } from "@/lib/useEscapeClose"
 
 type CenterRow = {
   id: string
@@ -24,6 +24,7 @@ export default function CentersClient({ centers }: { centers: CenterRow[] }) {
   const [q, setQ] = useState("")
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<CenterRow | null>(null)
+  useEscapeClose(showForm, () => { setShowForm(false); setEditing(null) })
   const [pending, startTransition] = useTransition()
 
   const filtered = useMemo(() => centers.filter((c) => !q || c.name.toLowerCase().includes(q.toLowerCase())), [centers, q])
@@ -62,7 +63,7 @@ export default function CentersClient({ centers }: { centers: CenterRow[] }) {
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
             <input id="ctsearch" placeholder="Tìm trung tâm..." value={q} onChange={(e) => setQ(e.target.value)} />
           </div>
-          <Perm minPerm="manager"><button className="btn-pri" id="btn-newct" onClick={openNew}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg> Trung tâm mới</button></Perm>
+          <button className="btn-pri" id="btn-newct" onClick={openNew}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg> Trung tâm mới</button>
         </div>
       </div>
       <div className={showForm ? "card" : "card hidden"} id="ct-form" style={{ marginBottom: 18 }} data-perm="manager">
@@ -89,10 +90,8 @@ export default function CentersClient({ centers }: { centers: CenterRow[] }) {
             <div className="cucard-head">
               <div className="cucard-title"><h4>{c.name}</h4><div className="cu-sub">{c.manager ?? "—"}</div></div>
               <div className="cucard-acts">
-                <Perm minPerm="manager">
-                  <button className="btn-line" onClick={() => openEdit(c)}>Sửa</button>
-                  <button className="btn-line" onClick={() => onDelete(c.id)}>Xoá</button>
-                </Perm>
+                <button className="btn-line" onClick={() => openEdit(c)}>Sửa</button>
+                <button className="btn-line" onClick={() => onDelete(c.id)}>Xoá</button>
               </div>
             </div>
             <div className="cucard-info">

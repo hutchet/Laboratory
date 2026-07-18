@@ -2,6 +2,7 @@
 
 import { Fragment, useEffect, useState, useTransition } from "react"
 import { createPlan, deletePlan, addSample, saveItem, deleteItem } from "./actions"
+import { useEscapeClose } from "@/lib/useEscapeClose"
 
 type Item = {
   id: string; sampleId: string | null; sampleName: string | null; reportCode: string | null
@@ -117,6 +118,9 @@ export default function PlanClient({ plans, projects, samples, equipment, initia
   const [showForm, setShowForm] = useState(false)
   const [showCreate, setShowCreate] = useState(false)
   const [showAddSample, setShowAddSample] = useState(false)
+  useEscapeClose(showForm, () => { setShowForm(false); setEditing(null) })
+  useEscapeClose(showCreate, () => setShowCreate(false))
+  useEscapeClose(showAddSample, () => setShowAddSample(false))
   const [pending, startTransition] = useTransition()
   const [zoom, setZoom] = useState<ZoomLevel>("day")
   const [focusDate, setFocusDate] = useState<string>(() => isoDate(new Date()))

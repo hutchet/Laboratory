@@ -1,9 +1,8 @@
 "use client"
 
-import { Fragment, useMemo, useRef, useState, useTransition } from "react"
+import { Fragment, useMemo, useState, useTransition } from "react"
 import { createPlan, addPhase, saveItem, deleteItem, deletePlan } from "./actions"
-import { Perm } from "@/lib/rbac-client"
-import { useColResize } from "@/lib/useColResize"
+import { useEscapeClose } from "@/lib/useEscapeClose"
 
 type ItemRow = {
   id: string; name: string; phaseId: string | null; assignee: string | null
@@ -107,10 +106,10 @@ export default function AuditPlanClient({ plans }: { plans: Plan[] }) {
   const [search, setSearch] = useState("")
   const [showCreate, setShowCreate] = useState(false)
   const [showPhaseForm, setShowPhaseForm] = useState(false)
+  useEscapeClose(showPhaseForm, () => setShowPhaseForm(false))
   const [editing, setEditing] = useState<ItemRow | null>(null)
   const [showItemForm, setShowItemForm] = useState(false)
-  const apTableRef = useRef<HTMLTableElement>(null)
-  useColResize(apTableRef, 11)
+  useEscapeClose(showItemForm, () => setShowItemForm(false))
   const [pending, startTransition] = useTransition()
 
   const active = plans.find((p) => p.id === activeId) ?? null
@@ -174,6 +173,7 @@ export default function AuditPlanClient({ plans }: { plans: Plan[] }) {
     return localStorage.getItem("tf_auditplan_ovtitle_v1")
   })
   const [showOvTitleForm, setShowOvTitleForm] = useState(false)
+  useEscapeClose(showOvTitleForm, () => setShowOvTitleForm(false))
 
   const cols = useMemo(() => apBuildColumns(zoom, focusDate), [zoom, focusDate])
 
@@ -230,7 +230,7 @@ export default function AuditPlanClient({ plans }: { plans: Plan[] }) {
               <div className="search" style={{ maxWidth: 260 }}>
                 <input id="ap-plan-search" placeholder="Tìm kế hoạch..." value={search} onChange={(e) => setSearch(e.target.value)} />
               </div>
-              <Perm minPerm="manager"><button className="btn-pri" id="ap-plan-create-btn" onClick={() => setShowCreate(true)}>+ Tạo kế hoạch</button></Perm>
+              <button className="btn-pri" id="ap-plan-create-btn" onClick={() => setShowCreate(true)}>+ Tạo kế hoạch</button>
             </div>
           </div>
           {showCreate && (
@@ -265,7 +265,7 @@ export default function AuditPlanClient({ plans }: { plans: Plan[] }) {
       <div id="ap-plan-detail-shell">
         <div className="section-head">
           <button className="btn-line" onClick={() => setActiveId(null)}>← Danh sách kế hoạch</button>
-          <Perm minPerm="manager"><button className="txt-act del" onClick={() => onDeletePlan(active.id)}>Xóa kế hoạch audit</button></Perm>
+          <button className="txt-act del" onClick={() => onDeletePlan(active.id)}>Xóa kế hoạch audit</button>
         </div>
         <div className="grid kpis" style={{ marginBottom: 18 }}>
           <div className="kcard kb"><div className="v" id="ap-k-total">{stats.total}</div><div className="l">Tổng đầu việc</div><div className="s">Trong kế hoạch audit</div></div>
@@ -294,10 +294,8 @@ export default function AuditPlanClient({ plans }: { plans: Plan[] }) {
               <span>Toàn bộ kế hoạch audit theo file Excel</span>
             </div>
             <div style={{ display: "flex", gap: 8 }}>
-              <Perm minPerm="manager">
-                <button className="txt-act" id="ap-ov-edit-btn" onClick={() => setShowOvTitleForm(true)}>Sửa</button>
-                <button className="txt-act del" id="ap-ov-del-btn" onClick={onHideOverview}>Xóa</button>
-              </Perm>
+              <button className="txt-act" id="ap-ov-edit-btn" onClick={() => setShowOvTitleForm(true)}>Sửa</button>
+              <button className="txt-act del" id="ap-ov-del-btn" onClick={onHideOverview}>Xóa</button>
             </div>
           </div>
           <div className="pl-donut-wrap">
@@ -459,7 +457,7 @@ export default function AuditPlanClient({ plans }: { plans: Plan[] }) {
             </div>
           )}
 
-          <table style={{ marginTop: 12 }} className="rz-table" ref={apTableRef}>
+          <table style={{ marginTop: 12 }}>
             <thead><tr><th>No</th><th>Đầu việc</th><th>Người phụ trách</th><th>Bắt đầu KH</th><th>Kết thúc KH</th><th>Bắt đầu TT</th><th>Kết thúc TT</th><th>T.lượng (ngày)</th><th>Trạng thái</th><th>Ghi chú</th><th>Thao tác</th></tr></thead>
             <tbody id="ap-detail-body">
               {active.items.map((it, idx) => (

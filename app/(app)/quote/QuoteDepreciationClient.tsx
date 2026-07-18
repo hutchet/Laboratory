@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState, useTransition } from "react"
 import { saveDepreciationAsset, deleteDepreciationAssets } from "./actions"
 import { useColResize } from "./useColResize"
+import { useEscapeClose } from "@/lib/useEscapeClose"
 
 type Row = { id: string; assetName: string; assetGroup: string | null; totalValue: number | null; years: number | null }
 
@@ -19,6 +20,7 @@ export default function QuoteDepreciationClient({ items, canManage = true }: { i
   const [selected, setSelected] = useState<string[]>([])
   const [editing, setEditing] = useState<Row | null>(null)
   const [showForm, setShowForm] = useState(false)
+  useEscapeClose(showForm, () => { setShowForm(false); setEditing(null) })
   const [pending, startTransition] = useTransition()
   const tableRef = useRef<HTMLTableElement | null>(null)
   useColResize(tableRef, 7 + (editMode ? 1 : 0))

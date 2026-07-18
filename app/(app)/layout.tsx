@@ -6,8 +6,6 @@ import NavLink from "@/components/NavLink"
 import { logoutAction } from "./logout-action"
 import { VINFAST_LOGO } from "@/lib/vinfast-logo"
 import ResponsiveController from "@/components/ResponsiveController"
-import { RBACProvider, RoleBadge } from "@/lib/rbac-client"
-import { getUserRbacContext } from "@/lib/rbac"
 
 type NavItem = { href: string; label: string; dataPage: string; icon: ReactNode }
 type NavGroup = { heading: string; items: NavItem[] }
@@ -88,12 +86,8 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   const name = session?.user?.name || session?.user?.email || "Người dùng"
   const email = session?.user?.email || ""
   const initials = name.slice(0, 2).toUpperCase()
-  const rbac = session?.user?.id
-    ? await getUserRbacContext(session.user.id)
-    : { rank: "viewer" as const, roleNames: [], modulePerms: [] }
 
   return (
-    <RBACProvider value={rbac}>
     <div className="app">
       <ResponsiveController />
       <aside className="side">
@@ -132,7 +126,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
             <div className="me">
               <div className="av">{initials}</div>
               <div>
-                <div className="nm">{name} <RoleBadge className="tag2" /></div>
+                <div className="nm">{name}</div>
                 <div className="em">{email}</div>
               </div>
             </div>
@@ -141,6 +135,5 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         {children}
       </main>
     </div>
-    </RBACProvider>
   )
 }
