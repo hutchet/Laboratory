@@ -1,8 +1,9 @@
 "use client"
 
-import { Fragment, useMemo, useState, useTransition } from "react"
+import { Fragment, useMemo, useRef, useState, useTransition } from "react"
 import { createPlan, addPhase, saveItem, deleteItem, deletePlan } from "./actions"
 import { Perm } from "@/lib/rbac-client"
+import { useColResize } from "@/lib/useColResize"
 
 type ItemRow = {
   id: string; name: string; phaseId: string | null; assignee: string | null
@@ -108,6 +109,8 @@ export default function AuditPlanClient({ plans }: { plans: Plan[] }) {
   const [showPhaseForm, setShowPhaseForm] = useState(false)
   const [editing, setEditing] = useState<ItemRow | null>(null)
   const [showItemForm, setShowItemForm] = useState(false)
+  const apTableRef = useRef<HTMLTableElement>(null)
+  useColResize(apTableRef, 11)
   const [pending, startTransition] = useTransition()
 
   const active = plans.find((p) => p.id === activeId) ?? null
@@ -456,7 +459,7 @@ export default function AuditPlanClient({ plans }: { plans: Plan[] }) {
             </div>
           )}
 
-          <table style={{ marginTop: 12 }}>
+          <table style={{ marginTop: 12 }} className="rz-table" ref={apTableRef}>
             <thead><tr><th>No</th><th>Đầu việc</th><th>Người phụ trách</th><th>Bắt đầu KH</th><th>Kết thúc KH</th><th>Bắt đầu TT</th><th>Kết thúc TT</th><th>T.lượng (ngày)</th><th>Trạng thái</th><th>Ghi chú</th><th>Thao tác</th></tr></thead>
             <tbody id="ap-detail-body">
               {active.items.map((it, idx) => (
