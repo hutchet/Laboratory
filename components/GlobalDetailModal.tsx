@@ -109,7 +109,7 @@ export default function GlobalDetailModal() {
         onClick={e => e.stopPropagation()}
         style={{ maxHeight: "85vh", overflow: "auto", minWidth: 320, maxWidth: state.wide ? 900 : 520 }}
       >
-        <div className="modal-head">
+        <div className="modal-h">
           <h3 id="modal-title">{state.title}</h3>
           <button type="button" className="modal-x" id="modal-close" aria-label="Đóng" onClick={close}>✕</button>
         </div>

@@ -64,18 +64,18 @@ export default async function DashPage() {
   const tasksWithProject = tasks.filter((t) => t.projectId).length
   const kUtil = totalTasks ? Math.round((tasksWithProject / totalTasks) * 100) : 0
   const internalTaskCount = tasks.filter((t) => !t.projectId).length
-  const activeTasks = tasks.filter((t) => t.status !== "done")
-  const overdueTasks = tasks.filter((t) => t.dueDate && t.dueDate < now && t.status !== "done")
-  const riskyProjects = projects.filter((p) => p.tasks.some((t) => t.dueDate && t.dueDate < now && t.status !== "done"))
   // Week trend: tasks created in current week vs last week
   const oneWeekAgo = new Date(now); oneWeekAgo.setDate(now.getDate() - 7)
   const twoWeeksAgo = new Date(now); twoWeeksAgo.setDate(now.getDate() - 14)
   const activeThisWeek = tasks.filter((t) => t.status !== "done" && t.createdAt >= oneWeekAgo).length
   const activeLastWeek = tasks.filter((t) => t.status !== "done" && t.createdAt >= twoWeeksAgo && t.createdAt < oneWeekAgo).length
   const activeDiff = activeThisWeek - activeLastWeek
+  const activeTasks = tasks.filter((t) => t.status !== "done")
+  const overdueTasks = tasks.filter((t) => t.dueDate && t.dueDate < now && t.status !== "done")
+  const riskyProjects = projects.filter((p) => p.tasks.some((t) => t.dueDate && t.dueDate < now && t.status !== "done"))
+  const spotlight = riskyProjects[0] ?? projects[0]
   const riskThisWeek = riskyProjects.length
   const riskLastWeek = Math.max(0, riskThisWeek - Math.floor(Math.random() * 0)) // placeholder
-  const spotlight = riskyProjects[0] ?? projects[0]
 
   // Cong viec/han chot 7 ngay toi (xap xi bieu do goc, khong co du lieu JS goc de phuc dung y het)
   const dueBuckets: Array<{ label: string; count: number }> = []
