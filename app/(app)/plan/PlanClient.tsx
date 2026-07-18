@@ -472,7 +472,7 @@ export default function PlanClient({ plans, projects, samples, equipment, initia
             </div>
             <table id="plan-detail-table">
               <thead><tr>
-                <th>Số thứ tự</th><th>Mã báo cáo</th><th>Mẫu</th><th>Tên bài thử</th><th>Ưu tiên</th><th>Tiêu chuẩn</th><th>Thiết bị</th><th>Người phụ trách</th>
+                <th>Số thứ tự</th><th>Mã báo cáo</th><th>Mẫu</th><th>Tên bài thử</th><th>Ưu tiên</th><th>Tiêu chuẩn</th><th>Cấp mẫu</th><th>Nhóm</th><th>Thiết bị</th><th>Người phụ trách</th>
                 <th>Bắt đầu kế hoạch</th><th>Kết thúc kế hoạch</th><th>Thời lượng kế hoạch</th>
                 <th>Bắt đầu thực tế</th><th>Kết thúc thực tế</th><th>Thời lượng thực tế</th>
                 <th>Kết quả</th><th>% HT</th><th>Ghi chú</th><th>Thao tác</th>
@@ -486,6 +486,8 @@ export default function PlanClient({ plans, projects, samples, equipment, initia
                     <td>{i.name}</td>
                     <td>{PRIORITY_LABEL[i.priority ?? "med"]}</td>
                     <td>{i.standard ?? "-"}</td>
+                    <td>{(i as any).sampleLevel ?? "-"}</td>
+                    <td>{(i as any).groupName ?? "-"}</td>
                     <td>{i.equipmentName ?? "-"}</td>
                     <td>{i.assignee ?? "-"}</td>
                     <td>{i.planStart ? i.planStart.slice(0, 10) : "-"}</td>
