@@ -2,6 +2,7 @@
 
 import { db } from "@/lib/db"
 import { revalidatePath } from "next/cache"
+import { logAudit } from "@/lib/audit"
 
 export async function saveEquipment(formData: FormData) {
   const id = String(formData.get("id") || "")
@@ -25,15 +26,19 @@ export async function saveEquipment(formData: FormData) {
   }
   if (id) {
     await db.equipment.update({ where: { id }, data })
+    await logAudit("equipment", "update", data.name, `Cập nhật thiết bị “${data.name}”`)
   } else {
-    await db.equipment.create({ data })
+    const created = await db.equipment.create({ data })
+    await logAudit("equipment", "create", data.name, `Thêm thiết bị mới “${data.name}” (#${created.id})`)
   }
   revalidatePath("/equipment")
   revalidatePath("/dash")
 }
 
 export async function deleteEquipment(id: string) {
+  const existing = await db.equipment.findUnique({ where: { id } })
   await db.equipment.delete({ where: { id } })
+  await logAudit("equipment", "delete", existing?.name || id, `Xóa thiết bị “${existing?.name || id}”`)
   revalidatePath("/equipment")
   revalidatePath("/dash")
 }
@@ -41,6 +46,7 @@ export async function deleteEquipment(id: string) {
 export async function deleteManyEquipment(ids: string[]) {
   if (!ids.length) return
   await db.equipment.deleteMany({ where: { id: { in: ids } } })
+  await logAudit("equipment", "delete", `${ids.length} thiết bị`, `Xóa hàng loạt ${ids.length} thiết bị`)
   revalidatePath("/equipment")
   revalidatePath("/dash")
 }
@@ -60,10 +66,12 @@ export async function createBooking(formData: FormData) {
   await db.equipmentBooking.create({
     data: { equipmentId, centerId: equipment?.centerId ?? null, startTime, endTime, bookedBy, department, purpose },
   })
+  await logAudit("booking", "create", equipment?.name || equipmentId, `Đặt lịch thiết bị “${equipment?.name || equipmentId}” (${date} ${startHour}-${endHour})`)
   revalidatePath("/equipment")
 }
 
 export async function deleteBooking(id: string) {
   await db.equipmentBooking.delete({ where: { id } })
+  await logAudit("booking", "delete", id, `Hủy lịch đặt thiết bị`)
   revalidatePath("/equipment")
 }

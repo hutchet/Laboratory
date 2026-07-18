@@ -376,6 +376,15 @@ model AuditLog {
   note        String?
   createdAt   DateTime @default(now())
 
+  // Additive fields (rà soát lần 16) — nhật ký hành động người dùng chung toàn hệ thống,
+  // port từ hàm logAudit(entity, action, target, detail) trong bản gốc.
+  entity   String?
+  action   String?
+  target   String?
+  detail   String?
+  userId   String?
+  userName String?
+
   auditPlan AuditPlan? @relation(fields: [auditPlanId], references: [id])
 }
 
@@ -407,23 +416,12 @@ model AuditItem {
 }
 
 model PurchaseItem {
-  id        String  @id @default(cuid())
-  name      String
-  quantity  Int?
-  cost      Float?
-  status    String?
-  note      String?
-  // Additive columns (rà soát lần 11) — khớp dữ liệu mua hàng thật + phục vụ drill-down theo nhóm
-  lab       String? // Trung tâm / nhóm — dùng để gom nhóm ở khối xem chi tiết
-  supplier  String?
-  task      String?
-  jira      String?
-  pr        String?
-  po        String?
-  migo      String?
-  tinhtrang String?
-  pic       String?
-  tfslink   String?
+  id       String  @id @default(cuid())
+  name     String
+  quantity Int?
+  cost     Float?
+  status   String?
+  note     String?
 }
 
 // ================== SAMPLES (LIMS) ==================

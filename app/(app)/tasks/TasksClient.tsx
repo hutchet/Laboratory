@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from "react"
 import { saveTask, deleteTask } from "./actions"
 import { useEscapeClose } from "@/lib/useEscapeClose"
+import { CustomSelect } from "@/components/CustomSelect"
 
 type TaskRow = {
   id: string
@@ -108,17 +109,11 @@ export default function TasksClient({ tasks, projects, members }: { tasks: TaskR
             </div>
             <div className="field">
               <label>Dự án</label>
-              <select id="f-project" name="projectId" defaultValue={editing?.projectId ?? ""} key={`proj-${editing?.id ?? "new"}`}>
-                <option value="">— Nội bộ —</option>
-                {projects.map((p) => (<option key={p.id} value={p.id}>{p.name}</option>))}
-              </select>
+              <CustomSelect id="f-project" name="projectId" defaultValue={editing?.projectId ?? ""} key={`proj-${editing?.id ?? "new"}`} options={[{ value: "", label: "— Nội bộ —" }, ...projects.map((p) => ({ value: p.id, label: p.name }))]} />
             </div>
             <div className="field">
               <label>Phụ trách</label>
-              <select id="f-owner" name="assigneeId" defaultValue={editing?.assigneeId ?? ""} key={`own-${editing?.id ?? "new"}`}>
-                <option value="">— Chưa giao —</option>
-                {members.map((m) => (<option key={m.id} value={m.id}>{m.name}</option>))}
-              </select>
+              <CustomSelect id="f-owner" name="assigneeId" defaultValue={editing?.assigneeId ?? ""} key={`own-${editing?.id ?? "new"}`} options={[{ value: "", label: "— Chưa giao —" }, ...members.map((m) => ({ value: m.id, label: m.name }))]} />
             </div>
             <div className="field">
               <label>Hạn chốt</label>
@@ -126,19 +121,11 @@ export default function TasksClient({ tasks, projects, members }: { tasks: TaskR
             </div>
             <div className="field">
               <label>Ưu tiên</label>
-              <select id="f-priority" name="priority" defaultValue={editing?.priority ?? "med"} key={`pri-${editing?.id ?? "new"}`}>
-                <option value="high">Cao</option>
-                <option value="med">Trung bình</option>
-                <option value="low">Thấp</option>
-              </select>
+              <CustomSelect id="f-priority" name="priority" defaultValue={editing?.priority ?? "med"} key={`pri-${editing?.id ?? "new"}`} options={[{ value: "high", label: "Cao" }, { value: "med", label: "Trung bình" }, { value: "low", label: "Thấp" }]} />
             </div>
             <div className="field">
               <label>Trạng thái</label>
-              <select id="f-status" name="status" defaultValue={editing?.status ?? "doing"} key={`st-${editing?.id ?? "new"}`}>
-                <option value="todo">Chưa làm</option>
-                <option value="doing">Đang làm</option>
-                <option value="done">Hoàn thành</option>
-              </select>
+              <CustomSelect id="f-status" name="status" defaultValue={editing?.status ?? "doing"} key={`st-${editing?.id ?? "new"}`} options={[{ value: "todo", label: "Chưa làm" }, { value: "doing", label: "Đang làm" }, { value: "done", label: "Hoàn thành" }]} />
             </div>
           </div>
           <div className="row" style={{ marginTop: 10 }}>

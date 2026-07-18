@@ -2,6 +2,7 @@
 
 import { db } from "@/lib/db"
 import { revalidatePath } from "next/cache"
+import { logAudit } from "@/lib/audit"
 
 // Creates a new sample ("pack") scoped to a project — mirrors the original
 // "+ Thêm mẫu" flow: code, serial, qty, received date, storage location.
@@ -22,6 +23,7 @@ export async function addSampleForProject(formData: FormData) {
       status: "received",
     },
   })
+  await logAudit("sample", "create", code, `Thêm mẫu mới “${code}”`)
   revalidatePath("/samples")
   revalidatePath("/plan")
   revalidatePath("/dash")
@@ -46,7 +48,9 @@ export async function updateSampleTracking(formData: FormData) {
 }
 
 export async function deleteSample(id: string) {
+  const existing = await db.sample.findUnique({ where: { id } })
   await db.sample.delete({ where: { id } })
+  await logAudit("sample", "delete", existing?.code || id, `Xóa mẫu “${existing?.code || id}”`)
   revalidatePath("/samples")
   revalidatePath("/plan")
 }
