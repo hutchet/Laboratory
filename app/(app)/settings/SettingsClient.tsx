@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { exportAllData } from "./actions"
+import { CustomSelect } from "@/components/CustomSelect"
 
 const ROLE_OPTIONS = [
   { value: "", label: "Theo Quản trị viên mặc định" },
@@ -195,9 +196,7 @@ export default function SettingsClient({ roleLabel }: { roleLabel: string }) {
         <div className="ch"><h3>Vai trò & phân quyền</h3><span>Chọn vai trò bạn đang thao tác trong phiên này</span></div>
         <div className="th-row">
           <label>Vai trò hiện tại của bạn</label>
-          <select id="set-active-role" value={activeRole} onChange={(e) => changeRole(e.target.value)}>
-            {ROLE_OPTIONS.map((r) => (<option key={r.value} value={r.value}>{r.label}</option>))}
-          </select>
+          <CustomSelect id="set-active-role" value={activeRole} onChange={(v) => changeRole(v)} options={ROLE_OPTIONS} />
         </div>
         <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 6, lineHeight: 1.6 }}>
           Vai trò hiện tại: <b id="active-role-badge" style={{ color: "var(--ink)" }}>{activeRole ? ROLE_LABELS[activeRole] : roleLabel}</b><br />
@@ -217,9 +216,7 @@ export default function SettingsClient({ roleLabel }: { roleLabel: string }) {
         </div>
         <div className="th-row">
           <label>Phông chữ</label>
-          <select id="set-font" value={font} onChange={(e) => changeFont(e.target.value)}>
-            {FONT_OPTIONS.map((f) => (<option key={f.key} value={f.key}>{f.label}</option>))}
-          </select>
+          <CustomSelect id="set-font" value={font} onChange={(v) => changeFont(v)} options={FONT_OPTIONS.map((f) => ({ value: f.key, label: f.label }))} />
         </div>
         <div className="note" style={{ marginTop: 12 }}>Bảng màu Material được khóa theo chế độ Sáng/Tối để bảo đảm độ tương phản. Nền thẻ luôn đặc 100%; hiệu ứng trong suốt, kính mờ và ảnh nền đã được loại bỏ.</div>
         <div style={{ marginTop: 16 }}><button className="btn-line" id="set-theme-reset" onClick={resetTheme}>↺ Khôi phục mặc định</button></div>
@@ -232,7 +229,7 @@ export default function SettingsClient({ roleLabel }: { roleLabel: string }) {
           <div>Dữ liệu chính (task, dự án, thành viên, báo cáo, thiết bị, lịch đặt, kế hoạch thử nghiệm) đã được lưu trong cơ sở dữ liệu chung (PostgreSQL/Neon) — không còn phụ thuộc vào localStorage trình duyệt như bản gốc. Nút bên dưới xuất toàn bộ dữ liệu nghiệp vụ hiện có thành 1 file JSON.</div>
         </div>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-          <button className="btn-pri" id="set-backup-btn" onClick={backupData}>⬇ Sao lưu toàn bộ dữ liệu</button>
+          <button className="btn-pri" id="set-backup-btn" onClick={backupData}>�� Sao lưu toàn bộ dữ liệu</button>
           <button className="btn-line" id="set-clear-btn" style={{ marginLeft: 8, color: "var(--red)" }} onClick={clearLocal}>🗑 Xóa cài đặt cục bộ</button>
           <button className="btn-line" id="set-restore-btn" onClick={restoreData}>⬆ Khôi phục dữ liệu</button>
           <input type="file" id="set-file-restore" accept=".json" style={{ display: "none" }} onChange={onRestoreFile} />

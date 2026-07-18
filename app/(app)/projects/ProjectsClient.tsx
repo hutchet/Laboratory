@@ -4,6 +4,7 @@ import Link from "next/link"
 import { useMemo, useState, useTransition } from "react"
 import { saveProject, deleteProject } from "./actions"
 import { useEscapeClose } from "@/lib/useEscapeClose"
+import { CustomSelect } from "@/components/CustomSelect"
 
 type ProjectRow = {
   id: string
@@ -32,7 +33,7 @@ function fmtVnd(n: number | null) {
   return n.toLocaleString("vi-VN") + " đ"
 }
 
-export default function ProjectsClient({ projects, customers, centers }: { projects: ProjectRow[]; customers: Option[]; centers: Option[] }) {
+export default function ProjectsClient({ projects, customers, centers, canManage }: { projects: ProjectRow[]; customers: Option[]; centers: Option[]; canManage: boolean }) {
   const [q, setQ] = useState("")
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<ProjectRow | null>(null)
@@ -88,9 +89,12 @@ export default function ProjectsClient({ projects, customers, centers }: { proje
             <input id="psearch" placeholder="Tìm dự án..." value={q} onChange={(e) => { setQ(e.target.value); setPage(1) }} />
           </div>
           <button className="btn-line" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" /></svg> Bộ lọc</button>
+          {canManage && (
           <button className="btn-pri" id="btn-newproj" onClick={openNew}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg> Dự án mới</button>
+          )}
         </div>
       </div>
+      {canManage && (
       <div className={showForm ? "card" : "card hidden"} id="proj-form" style={{ marginBottom: 18 }}>
         <form action={onSubmit}>
           <input type="hidden" id="pf-id" name="id" defaultValue={editing?.id ?? ""} />
@@ -101,17 +105,11 @@ export default function ProjectsClient({ projects, customers, centers }: { proje
             </div>
             <div className="field" style={{ flex: 1, minWidth: 200 }}>
               <label>Khách hàng</label>
-              <select id="pf-customer" name="customerId" defaultValue={editing?.customerId ?? ""} key={`c-${editing?.id ?? "new"}`}>
-                <option value="">—</option>
-                {customers.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
-              </select>
+              <CustomSelect id="pf-customer" name="customerId" defaultValue={editing?.customerId ?? ""} key={`c-${editing?.id ?? "new"}`} options={[{ value: "", label: "—" }, ...customers.map((c) => ({ value: c.id, label: c.name }))]} />
             </div>
             <div className="field" style={{ flex: 1, minWidth: 200 }}>
               <label>Trung tâm thử nghiệm</label>
-              <select id="pf-center" name="centerId" defaultValue={editing?.centerId ?? ""} key={`ce-${editing?.id ?? "new"}`}>
-                <option value="">—</option>
-                {centers.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
-              </select>
+              <CustomSelect id="pf-center" name="centerId" defaultValue={editing?.centerId ?? ""} key={`ce-${editing?.id ?? "new"}`} options={[{ value: "", label: "—" }, ...centers.map((c) => ({ value: c.id, label: c.name }))]} />
             </div>
           </div>
           <p style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 10 }}>Trạng thái, ưu tiên, tiến độ và deadline được tự động tổng hợp từ các công việc có cùng tên dự án này.</p>
@@ -121,6 +119,7 @@ export default function ProjectsClient({ projects, customers, centers }: { proje
           </div>
         </form>
       </div>
+      )}
       <div className="proj-grid" id="proj-grid">
         {paged.map((p) => (
           <div className="pcard" key={p.id}>
@@ -144,10 +143,12 @@ export default function ProjectsClient({ projects, customers, centers }: { proje
             </div>
             <div className="pfoot">
               <span>{fmtVnd(p.value)}</span>
+              {canManage && (
               <div className="pacts">
                 <button className="btn-line" onClick={() => openEdit(p)}>Sửa</button>
                 <button className="btn-line" onClick={() => onDelete(p.id)}>Xoá</button>
               </div>
+              )}
             </div>
           </div>
         ))}

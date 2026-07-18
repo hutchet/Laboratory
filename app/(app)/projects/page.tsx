@@ -1,7 +1,12 @@
 import { db } from "@/lib/db"
+import { auth } from "@/lib/auth"
+import { can } from "@/lib/rbac"
 import ProjectsClient from "./ProjectsClient"
 
 export default async function ProjectsPage() {
+  const session = await auth()
+  const userId = session?.user?.id
+  const canManage = userId ? await can(userId, "projects", "edit") : false
   const projects = await db.project.findMany({ include: { tasks: true, customer: true, center: true, plans: { include: { items: true } } }, orderBy: { createdAt: "desc" } })
   const customers = await db.customer.findMany({ select: { id: true, name: true } })
   const centers = await db.center.findMany({ select: { id: true, name: true } })
@@ -35,5 +40,5 @@ export default async function ProjectsPage() {
     }
   })
 
-  return <ProjectsClient projects={rows} customers={customers} centers={centers} />
+  return <ProjectsClient projects={rows} customers={customers} centers={centers} canManage={canManage} />
 }

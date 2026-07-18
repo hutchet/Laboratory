@@ -21,7 +21,7 @@ function fmtVnd(n: number | null) {
   return n.toLocaleString("vi-VN")
 }
 
-export default function CustomersClient({ customers }: { customers: CustomerRow[] }) {
+export default function CustomersClient({ customers, canManage }: { customers: CustomerRow[]; canManage: boolean }) {
   const [q, setQ] = useState("")
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<CustomerRow | null>(null)
@@ -64,9 +64,12 @@ export default function CustomersClient({ customers }: { customers: CustomerRow[
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
             <input id="cusearch" placeholder="Tìm khách hàng..." value={q} onChange={(e) => setQ(e.target.value)} />
           </div>
+          {canManage && (
           <button className="btn-pri" id="btn-newcu" onClick={openNew}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg> Khách hàng mới</button>
+          )}
         </div>
       </div>
+      {canManage && (
       <div className={showForm ? "card" : "card hidden"} id="cu-form" style={{ marginBottom: 18 }} data-perm="manager">
         <form action={onSubmit}>
           <input type="hidden" id="cu-id" name="id" defaultValue={editing?.id ?? ""} />
@@ -87,15 +90,18 @@ export default function CustomersClient({ customers }: { customers: CustomerRow[
           </div>
         </form>
       </div>
+      )}
       <div className="cu-grid" id="cu-grid">
         {filtered.map((c) => (
           <div className="cucard" key={c.id}>
             <div className="cucard-head">
               <div className="cucard-title"><h4>{c.name}</h4><div className="cu-sub">{c.contact ?? "—"}</div></div>
+              {canManage && (
               <div className="cucard-acts">
                 <button className="btn-line" onClick={() => openEdit(c)}>Sửa</button>
                 <button className="btn-line" onClick={() => onDelete(c.id)}>Xoá</button>
               </div>
+              )}
             </div>
             <div className="cucard-info">
               <div>{c.email ?? "—"}</div>

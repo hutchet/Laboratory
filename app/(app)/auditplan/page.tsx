@@ -1,7 +1,12 @@
 import { db } from "@/lib/db"
+import { auth } from "@/lib/auth"
+import { can } from "@/lib/rbac"
 import AuditPlanClient from "./AuditPlanClient"
 
 export default async function AuditPlanPage() {
+  const session = await auth()
+  const userId = session?.user?.id
+  const canManage = userId ? await can(userId, "auditplan", "edit") : false
   const plans = await db.auditPlan.findMany({ include: { phases: true, items: true } })
   const rows = plans.map((p) => ({
     id: p.id,
@@ -18,5 +23,5 @@ export default async function AuditPlanPage() {
       note: i.note,
     })),
   }))
-  return <AuditPlanClient plans={rows} />
+  return <AuditPlanClient plans={rows} canManage={canManage} />
 }

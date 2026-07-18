@@ -3,6 +3,7 @@
 import { Fragment, useEffect, useState, useTransition } from "react"
 import { createPlan, deletePlan, addSample, saveItem, deleteItem } from "./actions"
 import { useEscapeClose } from "@/lib/useEscapeClose"
+import { CustomSelect } from "@/components/CustomSelect"
 
 type Item = {
   id: string; sampleId: string | null; sampleName: string | null; reportCode: string | null
@@ -191,10 +192,7 @@ export default function PlanClient({ plans, projects, samples, equipment, initia
                 <div className="row">
                   <div className="field">
                     <label>Dự án</label>
-                    <select name="projectId" required>
-                      <option value="">-- Chọn dự án --</option>
-                      {projects.map((p) => (<option key={p.id} value={p.id}>{p.name}</option>))}
-                    </select>
+                    <CustomSelect name="projectId" required options={[{ value: "", label: "-- Chọn dự án --" }, ...projects.map((p) => ({ value: p.id, label: p.name }))]} />
                   </div>
                   <div className="field"><label>Tên kế hoạch</label><input name="title" placeholder="Tên kế hoạch" required /></div>
                 </div>
@@ -425,39 +423,25 @@ export default function PlanClient({ plans, projects, samples, equipment, initia
                       <div className="field"><label>Mã báo cáo</label><input name="reportCode" defaultValue={editing?.reportCode ?? ""} /></div>
                       <div className="field">
                         <label>Mẫu</label>
-                        <select name="sampleId" defaultValue={editing?.sampleId ?? ""}>
-                          <option value="">-- Không --</option>
-                          {samples.map((s) => (<option key={s.id} value={s.id}>{s.name}</option>))}
-                        </select>
+                        <CustomSelect name="sampleId" defaultValue={editing?.sampleId ?? ""} options={[{ value: "", label: "-- Không --" }, ...samples.map((s) => ({ value: s.id, label: s.name }))]} />
                       </div>
                     </div>
                     <div className="row">
                       <div className="field">
                         <label>Ưu tiên</label>
-                        <select name="priority" defaultValue={editing?.priority ?? "med"}>
-                          <option value="high">Cao</option>
-                          <option value="med">Trung bình</option>
-                          <option value="low">Thấp</option>
-                        </select>
+                        <CustomSelect name="priority" defaultValue={editing?.priority ?? "med"} options={[{ value: "high", label: "Cao" }, { value: "med", label: "Trung bình" }, { value: "low", label: "Thấp" }]} />
                       </div>
                       <div className="field"><label>Tiêu chuẩn</label><input name="standard" defaultValue={editing?.standard ?? ""} /></div>
                       <div className="field">
                         <label>Thiết bị</label>
-                        <select name="equipmentId" defaultValue={editing?.equipmentId ?? ""}>
-                          <option value="">-- Không --</option>
-                          {equipment.map((e) => (<option key={e.id} value={e.id}>{e.name}</option>))}
-                        </select>
+                        <CustomSelect name="equipmentId" defaultValue={editing?.equipmentId ?? ""} options={[{ value: "", label: "-- Không --" }, ...equipment.map((e) => ({ value: e.id, label: e.name }))]} />
                       </div>
                     </div>
                     <div className="row">
                       <div className="field"><label>Phụ trách</label><input name="assignee" defaultValue={editing?.assignee ?? ""} /></div>
                       <div className="field">
                         <label>Kết quả</label>
-                        <select name="result" defaultValue={editing?.result ?? "pending"}>
-                          <option value="pending">Đang chạy</option>
-                          <option value="pass">Đạt</option>
-                          <option value="fail">Không đạt</option>
-                        </select>
+                        <CustomSelect name="result" defaultValue={editing?.result ?? "pending"} options={[{ value: "pending", label: "Đang chạy" }, { value: "pass", label: "Đạt" }, { value: "fail", label: "Không đạt" }]} />
                       </div>
                       <div className="field"><label>Tiến độ (%)</label><input type="number" name="progress" defaultValue={editing?.progress ?? 0} /></div>
                     </div>

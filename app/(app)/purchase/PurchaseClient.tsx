@@ -1,8 +1,10 @@
 "use client"
 
-import { useMemo, useState, useTransition } from "react"
+import { useMemo, useRef, useState, useTransition } from "react"
 import { savePurchase, deletePurchase, deleteAllPurchase, deleteManyPurchase } from "./actions"
 import { useEscapeClose } from "@/lib/useEscapeClose"
+import { useColResize } from "../quote/useColResize"
+import { CustomSelect } from "@/components/CustomSelect"
 
 type Item = { id: string; name: string; quantity: number | null; cost: number | null; status: string | null; note: string | null }
 
@@ -41,6 +43,9 @@ export default function PurchaseClient({ items, canManage = true }: { items: Ite
     const ids = Array.from(selected)
     startTransition(async () => { await deleteManyPurchase(ids); setSelected(new Set()) })
   }
+
+  const tableRef = useRef<HTMLTableElement>(null)
+  useColResize(tableRef, 7 + (editMode ? 1 : 0))
 
   const total = items.length
   const totalValue = useMemo(() => items.reduce((sum, it) => sum + (it.cost ?? 0) * (it.quantity ?? 1), 0), [items])
@@ -89,11 +94,7 @@ export default function PurchaseClient({ items, canManage = true }: { items: Ite
                   <div className="field"><label>Chi phí (đ/1 đơn vị)</label><input type="number" name="cost" min={0} defaultValue={editing?.cost ?? 0} /></div>
                   <div className="field">
                     <label>Trạng thái</label>
-                    <select name="status" defaultValue={editing?.status ?? "ongoing"}>
-                      <option value="todo">Chưa bắt đầu</option>
-                      <option value="ongoing">Đang triển khai</option>
-                      <option value="done">Hoàn thành</option>
-                    </select>
+                    <CustomSelect name="status" defaultValue={editing?.status ?? "ongoing"} options={[{ value: "todo", label: "Chưa bắt đầu" }, { value: "ongoing", label: "Đang triển khai" }, { value: "done", label: "Hoàn thành" }]} />
                   </div>
                 </div>
                 <div className="row" style={{ marginTop: 10 }}>
@@ -108,7 +109,7 @@ export default function PurchaseClient({ items, canManage = true }: { items: Ite
           )}
 
           <div id="pm-overview-grid">
-            <table>
+            <table ref={tableRef}>
               <thead><tr>{editMode && <th><input type="checkbox" className="selall-chk" data-tbl="pm" checked={selected.size === items.length && items.length > 0} onChange={toggleAll} aria-label="Chọn tất cả" /></th>}<th>Tên hạng mục</th><th>Số lượng</th><th>Chi phí (đ)</th><th>Thành tiền (đ)</th><th>Trạng thái</th><th>Ghi chú</th><th>Thao tác</th></tr></thead>
               <tbody>
                 {items.map((it) => (

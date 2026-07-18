@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from "react"
 import { addSampleForProject, updateSampleTracking, deleteSample } from "./actions"
 import { useEscapeClose } from "@/lib/useEscapeClose"
+import { CustomSelect } from "@/components/CustomSelect"
 
 type Row = {
   id: string; code: string | null; serialNumber: string | null; qty: number
@@ -121,10 +122,7 @@ export default function SamplesClient({ samples, customers, projects }: { sample
           ))}
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <select id="sm-filter-customer" style={{ minWidth: 180 }} value={customerId} onChange={(e) => setCustomerId(e.target.value)}>
-            <option value="">Tất cả khách hàng</option>
-            {customers.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
-          </select>
+          <CustomSelect id="sm-filter-customer" value={customerId} onChange={(v) => setCustomerId(v)} options={[{ value: "", label: "Tất cả khách hàng" }, ...customers.map((c) => ({ value: c.id, label: c.name }))]} />
           <input id="sm-search" placeholder="Tìm mã mẫu, S/N, dự án..." style={{ width: 220 }} value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
       </div>
@@ -188,10 +186,7 @@ export default function SamplesClient({ samples, customers, projects }: { sample
                                 <div className="field" style={{ margin: 0 }}><label>Vị trí lưu trữ</label><input name="storageLocation" defaultValue={s.storageLocation ?? ""} placeholder="VĐ: Tủ A - Kệ 2" /></div>
                                 <div className="field" style={{ margin: 0 }}>
                                   <label>Trạng thái mẫu</label>
-                                  <select name="status" defaultValue={s.status ?? ""}>
-                                    <option value="">— Tự động —</option>
-                                    {SAMPLE_STATUS.map((st) => (<option key={st} value={st}>{STATUS_LABEL[st]}</option>))}
-                                  </select>
+                                  <CustomSelect name="status" defaultValue={s.status ?? ""} options={[{ value: "", label: "— Tự động —" }, ...SAMPLE_STATUS.map((st) => ({ value: st, label: STATUS_LABEL[st] }))]} />
                                 </div>
                                 <button type="button" className="btn-line" onClick={() => setEditing(null)}>Hủy</button>
                                 <button type="submit" className="btn-pri" disabled={pending}>Lưu</button>

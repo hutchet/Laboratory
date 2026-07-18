@@ -20,7 +20,7 @@ function fmtVnd(n: number) {
   return n.toLocaleString("vi-VN")
 }
 
-export default function CentersClient({ centers }: { centers: CenterRow[] }) {
+export default function CentersClient({ centers, canManage }: { centers: CenterRow[]; canManage: boolean }) {
   const [q, setQ] = useState("")
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<CenterRow | null>(null)
@@ -63,9 +63,12 @@ export default function CentersClient({ centers }: { centers: CenterRow[] }) {
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
             <input id="ctsearch" placeholder="Tìm trung tâm..." value={q} onChange={(e) => setQ(e.target.value)} />
           </div>
+          {canManage && (
           <button className="btn-pri" id="btn-newct" onClick={openNew}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg> Trung tâm mới</button>
+          )}
         </div>
       </div>
+      {canManage && (
       <div className={showForm ? "card" : "card hidden"} id="ct-form" style={{ marginBottom: 18 }} data-perm="manager">
         <form action={onSubmit}>
           <input type="hidden" id="ct-id" name="id" defaultValue={editing?.id ?? ""} />
@@ -84,15 +87,18 @@ export default function CentersClient({ centers }: { centers: CenterRow[] }) {
           </div>
         </form>
       </div>
+      )}
       <div className="cu-grid" id="ct-grid">
         {filtered.map((c) => (
           <div className="cucard" key={c.id}>
             <div className="cucard-head">
               <div className="cucard-title"><h4>{c.name}</h4><div className="cu-sub">{c.manager ?? "—"}</div></div>
+              {canManage && (
               <div className="cucard-acts">
                 <button className="btn-line" onClick={() => openEdit(c)}>Sửa</button>
                 <button className="btn-line" onClick={() => onDelete(c.id)}>Xoá</button>
               </div>
+              )}
             </div>
             <div className="cucard-info">
               <div>{c.phone ?? "—"}</div>

@@ -1,8 +1,10 @@
 "use client"
 
-import { useMemo, useState, useTransition } from "react"
+import { useMemo, useRef, useState, useTransition } from "react"
 import { saveEquipment, deleteEquipment, deleteManyEquipment } from "./actions"
 import { useEscapeClose } from "@/lib/useEscapeClose"
+import { useColResize } from "../quote/useColResize"
+import { CustomSelect } from "@/components/CustomSelect"
 
 type Row = {
   id: string; name: string; code: string | null; category: string | null; manufacturer: string | null; model: string | null
@@ -43,6 +45,8 @@ export default function EquipmentClient({ equipment, centers, canManage = true }
   }, [equipment])
 
   const shown = activeCenter === "all" ? equipment : (byCenter[activeCenter] ?? [])
+  const tableRef = useRef<HTMLTableElement>(null)
+  useColResize(tableRef, 7 + (editMode ? 1 : 0))
 
   function onSubmit(formData: FormData) {
     if (editing) formData.set("id", editing.id)
@@ -123,18 +127,11 @@ export default function EquipmentClient({ equipment, centers, canManage = true }
                 <div className="row">
                   <div className="field">
                     <label>Trang thai</label>
-                    <select name="status" defaultValue={editing?.status ?? "ready"}>
-                      <option value="ready">San sang</option>
-                      <option value="in_use">Dang dung</option>
-                      <option value="maintenance">Bao tri</option>
-                    </select>
+                    <CustomSelect name="status" defaultValue={editing?.status ?? "ready"} options={[{ value: "ready", label: "San sang" }, { value: "in_use", label: "Dang dung" }, { value: "maintenance", label: "Bao tri" }]} />
                   </div>
                   <div className="field">
                     <label>Trung tam *</label>
-                    <select name="centerId" defaultValue={editing?.centerId ?? ""}>
-                      <option value="">-- Khong --</option>
-                      {centers.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
-                    </select>
+                    <CustomSelect name="centerId" defaultValue={editing?.centerId ?? ""} options={[{ value: "", label: "-- Khong --" }, ...centers.map((c) => ({ value: c.id, label: c.name }))]} />
                   </div>
                   <div className="field"><label>Phong</label><input name="room" defaultValue={editing?.room ?? ""} /></div>
                 </div>
@@ -168,7 +165,7 @@ export default function EquipmentClient({ equipment, centers, canManage = true }
         ))}
       </div>
 
-      <table id="eq-mgmt-table">
+      <table ref={tableRef} id="eq-mgmt-table">
         <thead>
           <tr>{editMode && <th><input type="checkbox" className="selall-chk" data-tbl="eq" checked={selected.size === shown.length && shown.length > 0} onChange={toggleAll} aria-label="Chon tat ca" /></th>}<th>Ten</th><th>Ma</th><th>Loai</th><th>Trung tam</th><th>Trang thai</th><th>Han hieu chuan</th><th>Thao tac</th></tr>
         </thead>

@@ -1,8 +1,9 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useRef, useState, useTransition } from "react"
 import { updateEquipmentRate, clearEquipmentRates } from "./actions"
 import { useEscapeClose } from "@/lib/useEscapeClose"
+import { useColResize } from "./useColResize"
 
 type Eq = { id: string; name: string; code: string | null; category: string | null; hourlyRate: number | null }
 type CenterGroup = { id: string; name: string; equipment: Eq[] }
@@ -15,8 +16,10 @@ export default function QuoteMatrixClient({ centers, canManage = true }: { cente
   const [pending, startTransition] = useTransition()
   const [editMode, setEditMode] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
+  const tableRef = useRef<HTMLTableElement>(null)
 
   const currentEq = centers.find((c) => c.id === openCenter)?.equipment ?? []
+  useColResize(tableRef, 6 + (editMode ? 1 : 0))
 
   function toggleRow(id: string) {
     setSelected((prev) => {
@@ -83,7 +86,7 @@ export default function QuoteMatrixClient({ centers, canManage = true }: { cente
               </div>
             )}
           </div>
-          <table className={"rz-table" + (editMode ? " tbl-editing" : "")} id="qtm-table">
+          <table ref={tableRef} className={"rz-table" + (editMode ? " tbl-editing" : "")} id="qtm-table">
             <thead><tr>{editMode && <th style={{ width: 34, textAlign: "center" }}><input type="checkbox" className="selall-chk" data-tbl="qtm" checked={currentEq.length > 0 && selected.size === currentEq.length} onChange={(ev) => toggleAll(ev.target.checked)} /></th>}<th>Số thứ tự</th><th>Mã</th><th>Tên thiết bị</th><th>Nhóm</th><th>Đơn giá (VNĐ/giờ)</th><th>Thao tác</th></tr></thead>
             <tbody id="qtm-body">
               {currentEq.map((e, idx) => (

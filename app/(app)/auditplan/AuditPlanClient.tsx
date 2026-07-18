@@ -1,8 +1,10 @@
 "use client"
 
-import { Fragment, useMemo, useState, useTransition } from "react"
+import { Fragment, useMemo, useRef, useState, useTransition } from "react"
 import { createPlan, addPhase, saveItem, deleteItem, deletePlan } from "./actions"
 import { useEscapeClose } from "@/lib/useEscapeClose"
+import { useColResize } from "../quote/useColResize"
+import { CustomSelect } from "@/components/CustomSelect"
 
 type ItemRow = {
   id: string; name: string; phaseId: string | null; assignee: string | null
@@ -101,7 +103,7 @@ function apEffectiveStatus(it: ItemRow): "done" | "doing" | "overdue" | "todo" {
   return "todo"
 }
 
-export default function AuditPlanClient({ plans }: { plans: Plan[] }) {
+export default function AuditPlanClient({ plans, canManage }: { plans: Plan[]; canManage: boolean }) {
   const [activeId, setActiveId] = useState<string | null>(null)
   const [search, setSearch] = useState("")
   const [showCreate, setShowCreate] = useState(false)
@@ -113,6 +115,8 @@ export default function AuditPlanClient({ plans }: { plans: Plan[] }) {
   const [pending, startTransition] = useTransition()
 
   const active = plans.find((p) => p.id === activeId) ?? null
+  const tableRef = useRef<HTMLTableElement>(null)
+  useColResize(tableRef, 11)
   const shownPlans = plans.filter((p) => p.title.toLowerCase().includes(search.toLowerCase()))
 
   const stats = useMemo(() => {
@@ -265,7 +269,7 @@ export default function AuditPlanClient({ plans }: { plans: Plan[] }) {
       <div id="ap-plan-detail-shell">
         <div className="section-head">
           <button className="btn-line" onClick={() => setActiveId(null)}>← Danh sách kế hoạch</button>
-          <button className="txt-act del" onClick={() => onDeletePlan(active.id)}>Xóa kế hoạch audit</button>
+          {canManage && <button className="txt-act del" onClick={() => onDeletePlan(active.id)}>Xóa kế hoạch audit</button>}
         </div>
         <div className="grid kpis" style={{ marginBottom: 18 }}>
           <div className="kcard kb"><div className="v" id="ap-k-total">{stats.total}</div><div className="l">Tổng đầu việc</div><div className="s">Trong kế hoạch audit</div></div>
@@ -390,7 +394,7 @@ export default function AuditPlanClient({ plans }: { plans: Plan[] }) {
         <div className="card" style={{ marginBottom: 18 }}>
           <div className="ch"><h3>Kế hoạch theo hạng mục</h3><span id="ap-phase-count">{active.phases.length} hạng mục</span></div>
           <div style={{ marginBottom: 12 }}>
-            {!showPhaseForm && <button className="btn-pri" id="ap-add-phase-btn" onClick={() => setShowPhaseForm(true)}>+ Thêm hạng mục</button>}
+            {!showPhaseForm && canManage && <button className="btn-pri" id="ap-add-phase-btn" onClick={() => setShowPhaseForm(true)}>+ Thêm hạng mục</button>}
             {showPhaseForm && (
               <form action={onAddPhase} style={{ display: "flex", gap: 8 }}>
                 <input name="name" placeholder="Tên hạng mục" required />
@@ -414,7 +418,7 @@ export default function AuditPlanClient({ plans }: { plans: Plan[] }) {
             <div><h3>Chi tiết đầu việc kế hoạch audit ISO 17025</h3><span id="ap-detail-count">{active.items.length} đầu việc</span></div>
             <div style={{ display: "flex", gap: 8 }}>
               <button type="button" className="btn-line" onClick={exportCsv}>⤓ Xuất Excel</button>
-              <button type="button" className="btn-pri" onClick={() => { setEditing(null); setShowItemForm(true) }}>+ Thêm đầu việc</button>
+              {canManage && <button type="button" className="btn-pri" onClick={() => { setEditing(null); setShowItemForm(true) }}>+ Thêm đầu việc</button>}
             </div>
           </div>
 
@@ -427,10 +431,7 @@ export default function AuditPlanClient({ plans }: { plans: Plan[] }) {
                   <div className="field"><label>Người phụ trách</label><input name="assignee" defaultValue={editing?.assignee ?? ""} /></div>
                   <div className="field">
                     <label>Hạng mục</label>
-                    <select name="phaseId" defaultValue={editing?.phaseId ?? ""}>
-                      <option value="">-- Không thuộc hạng mục --</option>
-                      {active.phases.map((ph) => (<option key={ph.id} value={ph.id}>{ph.name}</option>))}
-                    </select>
+                    <CustomSelect name="phaseId" defaultValue={editing?.phaseId ?? ""} options={[{ value: "", label: "-- Không thuộc hạng mục --" }, ...active.phases.map((ph) => ({ value: ph.id, label: ph.name }))]} />
                   </div>
                 </div>
                 <div className="row" style={{ marginTop: 10 }}>
@@ -438,12 +439,7 @@ export default function AuditPlanClient({ plans }: { plans: Plan[] }) {
                   <div className="field"><label>Kết thúc KH</label><input type="date" name="planEnd" defaultValue={editing?.planEnd ? editing.planEnd.slice(0, 10) : ""} /></div>
                   <div className="field">
                     <label>Trạng thái</label>
-                    <select name="status" defaultValue={editing?.status ?? "todo"}>
-                      <option value="todo">Chưa bắt đầu</option>
-                      <option value="doing">Đang triển khai</option>
-                      <option value="done">Hoàn thành</option>
-                      <option value="overdue">Quá hạn</option>
-                    </select>
+                    <CustomSelect name="status" defaultValue={editing?.status ?? "todo"} options={[{ value: "todo", label: "Chưa bắt đầu" }, { value: "doing", label: "Đang triển khai" }, { value: "done", label: "Hoàn thành" }, { value: "overdue", label: "Quá hạn" }]} />
                   </div>
                 </div>
                 <div className="row" style={{ marginTop: 10 }}>
@@ -457,7 +453,7 @@ export default function AuditPlanClient({ plans }: { plans: Plan[] }) {
             </div>
           )}
 
-          <table style={{ marginTop: 12 }}>
+          <table ref={tableRef} style={{ marginTop: 12 }}>
             <thead><tr><th>No</th><th>Đầu việc</th><th>Người phụ trách</th><th>Bắt đầu KH</th><th>Kết thúc KH</th><th>Bắt đầu TT</th><th>Kết thúc TT</th><th>T.lượng (ngày)</th><th>Trạng thái</th><th>Ghi chú</th><th>Thao tác</th></tr></thead>
             <tbody id="ap-detail-body">
               {active.items.map((it, idx) => (
@@ -473,8 +469,14 @@ export default function AuditPlanClient({ plans }: { plans: Plan[] }) {
                   <td>{statusLabel(it.status)}</td>
                   <td>{it.note ?? "-"}</td>
                   <td>
-                    <button className="btn-line" onClick={() => { setEditing(it); setShowItemForm(true) }}>Sửa</button>
-                    <button className="btn-line" onClick={() => onDeleteItem(it.id)}>Xóa</button>
+                    {canManage ? (
+                      <>
+                        <button className="btn-line" onClick={() => { setEditing(it); setShowItemForm(true) }}>Sửa</button>
+                        <button className="btn-line" onClick={() => onDeleteItem(it.id)}>Xóa</button>
+                      </>
+                    ) : (
+                      <span style={{ color: "var(--muted)" }}>—</span>
+                    )}
                   </td>
                 </tr>
               ))}

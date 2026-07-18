@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react"
 import { addChecklistItem, toggleChecklistItem, deleteChecklistItem } from "./actions"
+import { CustomSelect } from "@/components/CustomSelect"
 
 type Checklist = { id: string; name: string; done: boolean; dueDate: string | null }
 type Calibration = { id: string; name: string; code: string | null; calLast: string | null; calInterval: number | null; calVendor: string | null; calCert: string | null; dueLabel: string; dueDate: string }
@@ -102,10 +103,7 @@ export default function QualityClient({ checklist, calibration, auditEntries }: 
         <div className="ch ch-toolbar" style={{ padding: "16px 18px 0" }}>
           <div><h3>Nhật ký thao tác (Audit trail)</h3><span>Ghi nhận ai đã làm gì, vào lúc nào</span></div>
           <div style={{ display: "flex", gap: 8 }}>
-            <select id="ql-filter-entity" style={{ minWidth: 160 }} value={entityFilter} onChange={(e) => setEntityFilter(e.target.value)}>
-              <option value="all">Tất cả khu vực</option>
-              {entities.map((e) => (<option key={e} value={e}>{e}</option>))}
-            </select>
+            <CustomSelect id="ql-filter-entity" className="sys-cs-inline" value={entityFilter} onChange={(v) => setEntityFilter(v)} options={[{ value: "all", label: "Tất cả khu vực" }, ...entities.map((e) => ({ value: e, label: e }))]} />
             <input id="ql-search" placeholder="Tìm theo nội dung..." style={{ width: 200, maxWidth: "100%" }} value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
         </div>

@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react"
 import { saveMember, deleteMember } from "./actions"
 import { useEscapeClose } from "@/lib/useEscapeClose"
+import { CustomSelect } from "@/components/CustomSelect"
 
 type MemberRow = {
   id: string
@@ -21,7 +22,7 @@ function initials(name: string) {
   return name.split(" ").filter(Boolean).slice(-2).map((w) => w[0]).join("").toUpperCase()
 }
 
-export default function MembersClient({ members }: { members: MemberRow[] }) {
+export default function MembersClient({ members, canManage }: { members: MemberRow[]; canManage: boolean }) {
   const [editing, setEditing] = useState<MemberRow | null>(null)
   useEscapeClose(!!editing, () => setEditing(null))
   const [pending, startTransition] = useTransition()
@@ -43,6 +44,7 @@ export default function MembersClient({ members }: { members: MemberRow[] }) {
         <div><div style={{ fontWeight: 600, fontSize: 14 }} id="adminbar-nm">{admin?.name ?? "—"}</div><div style={{ fontSize: 12, color: "var(--muted)" }} id="adminbar-em">{admin?.email ?? "—"}</div></div>
         <span className="role">★ Quản trị viên</span>
       </div>
+      {canManage && (
       <div className="card" style={{ marginBottom: 18 }}>
         <form action={onSubmit}>
           <input type="hidden" id="m-id" name="id" defaultValue={editing?.id ?? ""} />
@@ -51,9 +53,7 @@ export default function MembersClient({ members }: { members: MemberRow[] }) {
             <div className="field"><label>Mã nhân viên</label><input id="m-code" name="code" placeholder="VD: NV006" defaultValue={editing?.code ?? ""} key={`c-${editing?.id ?? "new"}`} /></div>
             <div className="field" style={{ flex: 1, minWidth: 180 }}><label>Email</label><input id="m-email" name="email" type="email" placeholder="name@taskflow.com" defaultValue={editing?.email ?? ""} key={`e-${editing?.id ?? "new"}`} /></div>
             <div className="field"><label>Giới tính</label>
-              <select id="m-gender" name="gender" defaultValue={editing?.gender ?? "Nam"} key={`g-${editing?.id ?? "new"}`}>
-                <option value="Nam">Nam</option><option value="Nữ">Nữ</option><option value="Khác">Khác</option>
-              </select>
+              <CustomSelect id="m-gender" name="gender" defaultValue={editing?.gender ?? "Nam"} key={`g-${editing?.id ?? "new"}`} options={[{ value: "Nam", label: "Nam" }, { value: "Nữ", label: "Nữ" }, { value: "Khác", label: "Khác" }]} />
             </div>
             <div className="field">
               <label>Nhóm</label>
@@ -62,12 +62,7 @@ export default function MembersClient({ members }: { members: MemberRow[] }) {
             </div>
             <div className="field">
               <label>Vai trò truy cập</label>
-              <select id="m-admin" name="accessRole" defaultValue={editing?.accessRole ?? "viewer"} key={`r-${editing?.id ?? "new"}`}>
-                <option value="viewer">Người xem</option>
-                <option value="technician">Kỹ thuật viên</option>
-                <option value="manager">Quản lý</option>
-                <option value="admin">Quản trị</option>
-              </select>
+              <CustomSelect id="m-admin" name="accessRole" defaultValue={editing?.accessRole ?? "viewer"} key={`r-${editing?.id ?? "new"}`} options={[{ value: "viewer", label: "Người xem" }, { value: "technician", label: "Kỹ thuật viên" }, { value: "manager", label: "Quản lý" }, { value: "admin", label: "Quản trị" }]} />
             </div>
           </div>
           <div className="row" style={{ marginTop: 12 }} data-perm="admin">
@@ -76,6 +71,7 @@ export default function MembersClient({ members }: { members: MemberRow[] }) {
           </div>
         </form>
       </div>
+      )}
       <div className="card" style={{ padding: 0, overflowX: "auto" }}>
         <table className="mt">
           <thead><tr><th>Số thứ tự</th><th>Họ và tên</th><th>Mã nhân viên</th><th>Email</th><th>Giới tính</th><th>Nhóm</th><th>Quyền</th><th>Thao tác</th></tr></thead>
@@ -90,8 +86,14 @@ export default function MembersClient({ members }: { members: MemberRow[] }) {
                 <td>{m.team ?? "—"}</td>
                 <td>{ROLE_LABEL[m.accessRole ?? "viewer"]}</td>
                 <td>
-                  <button className="btn-line" onClick={() => setEditing(m)}>Sửa</button>{" "}
-                  <button className="btn-line" onClick={() => onDelete(m.id)}>Xoá</button>
+                  {canManage ? (
+                    <>
+                      <button className="btn-line" onClick={() => setEditing(m)}>Sửa</button>{" "}
+                      <button className="btn-line" onClick={() => onDelete(m.id)}>Xoá</button>
+                    </>
+                  ) : (
+                    <span style={{ color: "var(--muted)" }}>—</span>
+                  )}
                 </td>
               </tr>
             ))}
