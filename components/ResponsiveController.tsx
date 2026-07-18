@@ -56,22 +56,27 @@ export default function ResponsiveController() {
       const t = e.touches[0]
       touchStartX = t.clientX
       touchStartY = t.clientY
-      tracking = (!side!.classList.contains("v106-open") && touchStartX <= 24) || side!.classList.contains("v106-open")
+      // Chi bat dau tracking neu vuot tu canh trai (mo sidebar) hoac sidebar dang mo (dong sidebar)
+      tracking = (!side!.classList.contains("v106-open") && touchStartX <= 30) || side!.classList.contains("v106-open")
     }
     function onTouchMove(e: TouchEvent) {
       if (!tracking || !isMobile()) return
       const t = e.touches[0]
       const dx = t.clientX - touchStartX
       const dy = t.clientY - touchStartY
+      // Bo qua neu vuot doc
       if (Math.abs(dy) > Math.abs(dx)) return
-      if (!side!.classList.contains("v106-open") && dx > 60) openSide()
-      if (side!.classList.contains("v106-open") && dx < -60) closeSide()
+      // Ngan browser back gesture khi dang xu ly sidebar swipe
+      e.preventDefault()
+      if (!side!.classList.contains("v106-open") && dx > 50) openSide()
+      if (side!.classList.contains("v106-open") && dx < -50) closeSide()
     }
     function onTouchEnd() {
       tracking = false
     }
+    // passive: false de co the goi preventDefault() trong onTouchMove
     document.addEventListener("touchstart", onTouchStart, { passive: true })
-    document.addEventListener("touchmove", onTouchMove, { passive: true })
+    document.addEventListener("touchmove", onTouchMove, { passive: false })
     document.addEventListener("touchend", onTouchEnd)
 
     function onResize() {
