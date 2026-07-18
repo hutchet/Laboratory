@@ -2,12 +2,16 @@
 // sidebar/topbar cua file index.html goc: .app / .side / .brand / .nav-h / .nav / .top / .me
 import type { ReactNode } from "react"
 import { auth } from "@/lib/auth"
+import { db } from "@/lib/db"
 import NavLink from "@/components/NavLink"
 import { logoutAction } from "./logout-action"
 import { VINFAST_LOGO } from "@/lib/vinfast-logo"
 import ResponsiveController from "@/components/ResponsiveController"
 import CommandPalette from "@/components/CommandPalette"
 import ToolbarEnforcer from "@/components/ToolbarEnforcer"
+import GlobalDetailModal from "@/components/GlobalDetailModal"
+import PageHeaderTitle from "@/components/PageHeaderTitle"
+import NotificationBell, { type NotifTask } from "@/components/NotificationBell"
 
 type NavItem = { href: string; label: string; dataPage: string; icon: ReactNode }
 type NavGroup = { heading: string; items: NavItem[] }
@@ -89,11 +93,28 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   const email = session?.user?.email || ""
   const initials = name.slice(0, 2).toUpperCase()
 
+  const now = new Date()
+  const overdueRaw = await db.task.findMany({
+    where: { status: { not: "done" }, dueDate: { lt: now } },
+    include: { project: true },
+    orderBy: { dueDate: "asc" },
+  })
+  const members = await db.member.findMany()
+  const memberName = (id: string | null) => members.find((m) => m.id === id)?.name ?? "Chưa gán"
+  const overdueTasks: NotifTask[] = overdueRaw.map((t) => ({
+    id: t.id,
+    title: t.title,
+    projectName: t.project?.name ?? null,
+    assigneeName: memberName(t.assigneeId),
+    dueDateLabel: t.dueDate ? t.dueDate.toLocaleDateString("vi-VN") : "-",
+  }))
+
   return (
     <div className="app">
       <ResponsiveController />
       <CommandPalette />
       <ToolbarEnforcer />
+      <GlobalDetailModal />
       <aside className="side">
         <div className="brand">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -122,11 +143,22 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       </aside>
       <main className="main">
         <div className="top">
-          <div className="hello">
-            <h2>{"Xin chào"}</h2>
-            <p>{"Chúc một ngày làm việc hiệu quả"}</p>
-          </div>
+          <PageHeaderTitle />
           <div className="top-r">
+            <div className="search" style={{ minWidth: 0, maxWidth: 260 }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+              <input
+                id="topsearch"
+                placeholder="Tìm kiếm..."
+                style={{ fontSize: 13 }}
+                readOnly
+                onFocus={(e) => {
+                  e.currentTarget.blur()
+                  window.dispatchEvent(new Event("tf-open-search"))
+                }}
+              />
+            </div>
+            <NotificationBell tasks={overdueTasks} />
             <div className="me">
               <div className="av">{initials}</div>
               <div>

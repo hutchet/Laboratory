@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useKeyboardShortcuts } from "@/lib/useKeyboardShortcuts"
 import { useEscapeClose } from "@/lib/useEscapeClose"
@@ -52,6 +52,20 @@ export default function CommandPalette() {
     },
   ])
   useEscapeClose(open, () => setOpen(false))
+
+  // Thanh tim kiem tren header (topsearch) phuc dung tu ban goc kich hoat
+  // Command Palette nay qua 1 custom event, thay vi tu viet lai logic tim
+  // kiem rieng lan 2.
+  useEffect(() => {
+    function onOpenSearch() {
+      setOpen(true)
+      setQuery("")
+      setActiveIdx(0)
+      setTimeout(() => inputRef.current?.focus(), 0)
+    }
+    window.addEventListener("tf-open-search", onOpenSearch)
+    return () => window.removeEventListener("tf-open-search", onOpenSearch)
+  }, [])
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()

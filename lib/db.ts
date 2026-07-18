@@ -1,5 +1,4 @@
 // Prisma client dung chung — chuẩn cho Vercel Node.js runtime
-// KHÔNG dùng PrismaNeonHTTP adapter (lỗi type, không cần thiết)
 import { PrismaClient } from "@prisma/client"
 
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient }

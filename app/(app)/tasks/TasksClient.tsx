@@ -5,6 +5,14 @@ import { saveTask, deleteTask } from "./actions"
 import { useEscapeClose } from "@/lib/useEscapeClose"
 import { CustomSelect } from "@/components/CustomSelect"
 
+function initials(name: string) {
+  const parts = name.trim().split(/\s+/)
+  if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+  return name.slice(0, 2).toUpperCase()
+}
+const AV_COLORS = ["#5b7bff","#e2665f","#2ab090","#e9963e","#9b6ff7","#3ba0c4"]
+function avColor(name: string) { let h = 0; for (let c of name) h = (h * 31 + c.charCodeAt(0)) & 0xffff; return AV_COLORS[h % AV_COLORS.length] }
+
 type TaskRow = {
   id: string
   title: string
@@ -176,7 +184,12 @@ export default function TasksClient({ tasks, projects, members }: { tasks: TaskR
                 <td><span className={`tag2 st-${t.status ?? "todo"}`}>{STATUS_LABEL[t.status ?? "todo"]}</span></td>
                 <td>{t.title}</td>
                 <td>{t.project?.name ?? "Nội bộ"}</td>
-                <td>{memberName(t.assigneeId)}</td>
+                <td>
+                  <span style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                    {(() => { const n = memberName(t.assigneeId); return n !== "—" ? <span className="av" style={{ width: 26, height: 26, fontSize: 10, borderRadius: 6, background: avColor(n), color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center", fontWeight: 600, flexShrink: 0 }}>{initials(n)}</span> : null })()}
+                    {memberName(t.assigneeId)}
+                  </span>
+                </td>
                 <td>{t.dueDate ? t.dueDate.slice(0, 10) : "—"}</td>
                 <td>{remainingLabel(t.dueDate, t.status)}</td>
                 <td><span className={`tag2 pri-${t.priority ?? "med"}`}>{PRIORITY_LABEL[t.priority ?? "med"]}</span></td>

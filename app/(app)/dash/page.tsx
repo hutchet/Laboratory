@@ -40,6 +40,13 @@ function DonutCircles({ segments }: { segments: Array<{ value: number; color: st
 const WEEKDAY_VN = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"]
 const PVD_COLORS = ["var(--pri)", "var(--pri-d)", "var(--neutral)", "var(--green)", "var(--amber)", "var(--red)"]
 
+
+function dashInitials(name: string) {
+  const p = name.trim().split(/\s+/)
+  return (p.length >= 2 ? p[0][0] + p[p.length - 1][0] : name.slice(0, 2)).toUpperCase()
+}
+const AV_PAL = ["#5b7bff","#e2665f","#2ab090","#e9963e","#9b6ff7","#3ba0c4"]
+function dashAvColor(n: string) { let h = 0; for (const c of n) h = (h * 31 + c.charCodeAt(0)) & 0xffff; return AV_PAL[h % AV_PAL.length] }
 export default async function DashPage() {
   const tasks = await db.task.findMany({ include: { project: true } })
   const projects = await db.project.findMany({ include: { tasks: true } })
@@ -125,7 +132,7 @@ export default async function DashPage() {
       <div className="grid" style={{ gridTemplateColumns: "1.6fr 1fr", marginBottom: 18, alignItems: "stretch" }} id="dash-top-grid">
         <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
           <div className="grid kpis" style={{ gridTemplateColumns: "repeat(3,1fr)" }}>
-            <div className="kcard kb kcard-hero pcard">
+            <div className="kcard kb kcard-hero pcard clickable" data-detail="kpi-util">
               <div className="kcard-top">
                 <div className="kcard-icon">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -141,7 +148,7 @@ export default async function DashPage() {
               </div>
               <div className="s" id="k-util-t">theo dự án</div>
             </div>
-            <div className="kcard kg kcard-hero pcard">
+            <div className="kcard kg kcard-hero pcard clickable" data-detail="kpi-active">
               <div className="kcard-top">
                 <div className="kcard-icon">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -156,7 +163,7 @@ export default async function DashPage() {
               </div>
               <div className="s" id="k-active-t">chưa hoàn thành</div>
             </div>
-            <div className="kcard kr kcard-hero pcard">
+            <div className="kcard kr kcard-hero pcard clickable" data-detail="kpi-risk">
               <div className="kcard-top">
                 <div className="kcard-icon">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -174,7 +181,7 @@ export default async function DashPage() {
               <div className="s" id="k-risk-t" />
             </div>
           </div>
-          <div className="card" style={{ marginBottom: 0, flex: 1 }}>
+          <div className="card clickable" data-detail="due-bars" style={{ marginBottom: 0, flex: 1 }}>
             <div className="ch">
               <div className="ch-l">
                 <div className="ch-ic" style={{ background: "var(--pri-soft)", color: "var(--pri-d)" }}>
@@ -199,7 +206,7 @@ export default async function DashPage() {
           </div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-          <div className="spotlight" id="dash-spotlight" style={{ marginBottom: 0 }}>
+          <div className="spotlight clickable" id="dash-spotlight" data-detail="dash-projects" style={{ marginBottom: 0 }}>
             <div>
               <div className="spotlight-lab" id="spot-lab">Dự án cần chú ý nhất</div>
               <div className="spotlight-name" id="spot-name">{spotlight ? spotlight.name : "Chưa có dự án"}</div>
@@ -212,7 +219,7 @@ export default async function DashPage() {
               <span className="spotlight-btn">Tất cả cảnh báo</span>
             </div>
           </div>
-          <div className="card" style={{ marginBottom: 0, flex: 1 }}>
+          <div className="card clickable" data-detail="proj-value" style={{ marginBottom: 0, flex: 1 }}>
             <div className="ch">
               <div className="ch-l">
                 <div className="ch-ic" style={{ background: "var(--neutral-soft)", color: "var(--neutral)" }}>
@@ -260,7 +267,7 @@ export default async function DashPage() {
       </div>
 
       <div className="grid" style={{ gridTemplateColumns: "repeat(3,1fr)", marginBottom: 18, alignItems: "stretch" }}>
-        <div className="card" style={{ marginBottom: 0, display: "flex", flexDirection: "column" }}>
+        <div className="card clickable" data-detail="status" style={{ marginBottom: 0, display: "flex", flexDirection: "column" }}>
           <div className="ch">
             <div className="ch-l">
               <div className="ch-ic" style={{ background: "var(--neutral-soft)", color: "var(--neutral)" }}>
@@ -299,7 +306,7 @@ export default async function DashPage() {
           </div>
         </div>
 
-        <div className="card" style={{ marginBottom: 0 }}>
+        <div className="card clickable" data-detail="workload" style={{ marginBottom: 0 }}>
           <div className="ch">
             <div className="ch-l">
               <div className="ch-ic" style={{ background: "var(--neutral-soft)", color: "var(--neutral)" }}>
@@ -321,7 +328,7 @@ export default async function DashPage() {
           </div>
         </div>
 
-        <div className="card" style={{ marginBottom: 0 }}>
+        <div className="card clickable" data-detail="priority" style={{ marginBottom: 0 }}>
           <div className="ch">
             <div className="ch-l">
               <div className="ch-ic" style={{ background: "var(--neutral-soft)", color: "var(--neutral)" }}>
@@ -429,7 +436,7 @@ export default async function DashPage() {
               <tr key={t.id}>
                 <td>{t.title}</td>
                 <td>{t.project ? t.project.name : "-"}</td>
-                <td>{memberName(t.assigneeId)}</td>
+                <td><span style={{ display: "flex", alignItems: "center", gap: 7 }}>{(() => { const n = memberName(t.assigneeId); return n !== "Chưa gán" ? <span style={{ width: 24, height: 24, fontSize: 9, borderRadius: 5, background: dashAvColor(n), color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center", fontWeight: 600, flexShrink: 0 }}>{dashInitials(n)}</span> : null })()}{memberName(t.assigneeId)}</span></td>
                 <td>{t.dueDate ? t.dueDate.toLocaleDateString("vi-VN") : "-"}</td>
                 <td>{Math.ceil((now.getTime() - t.dueDate!.getTime()) / 86400000)}</td>
               </tr>
