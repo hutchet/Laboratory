@@ -12,6 +12,7 @@ import ToolbarEnforcer from "@/components/ToolbarEnforcer"
 import GlobalDetailModal from "@/components/GlobalDetailModal"
 import PageHeaderTitle from "@/components/PageHeaderTitle"
 import NotificationBell, { type NotifTask } from "@/components/NotificationBell"
+import SearchInput from "@/components/SearchInput"
 
 type NavItem = { href: string; label: string; dataPage: string; icon: ReactNode }
 type NavGroup = { heading: string; items: NavItem[] }
@@ -147,16 +148,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           <div className="top-r">
             <div className="search" style={{ minWidth: 0, maxWidth: 260 }}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
-              <input
-                id="topsearch"
-                placeholder="Tìm kiếm..."
-                style={{ fontSize: 13 }}
-                readOnly
-                onFocus={(e) => {
-                  e.currentTarget.blur()
-                  window.dispatchEvent(new Event("tf-open-search"))
-                }}
-              />
+              <SearchInput />
             </div>
             <NotificationBell tasks={overdueTasks} />
             <div className="me">
