@@ -56,6 +56,8 @@ export function BookingsView({
   const [activeCategory, setActiveCategory] = useState<string>("all")
   const [editing, setEditing] = useState<BookingRow | null>(null)
   const [slotPrefill, setSlotPrefill] = useState<SlotPrefill>(null)
+  const [formError, setFormError] = useState<string | null>(null)
+  const readyEquipment = equipment.filter((e) => e.status !== "maintenance")
   const [showForm, setShowForm] = useState(false)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
