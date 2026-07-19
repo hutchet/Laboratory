@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client"
+import bcrypt from "bcryptjs"
 
 const prisma = new PrismaClient()
 
@@ -40,6 +41,7 @@ const ROLE_PERMISSIONS: Record<string, Array<{ module: string; action: string }>
 }
 
 async function main() {
+  // 1. Seed roles + permissions
   for (const [roleName, perms] of Object.entries(ROLE_PERMISSIONS)) {
     const role = await prisma.role.upsert({
       where: { name: roleName },
@@ -63,6 +65,33 @@ async function main() {
   }
 
   console.log("Seed RBAC hoan tat: 5 vai tro da duoc tao.")
+
+  // 2. Seed admin user (Auth.js User model — separate from Member)
+  const hash = await bcrypt.hash("admin123", 10)
+  const adminUser = await prisma.user.upsert({
+    where: { email: "okashi1993@gmail.com" },
+    update: { passwordHash: hash, name: "Nguyễn Hà" },
+    create: {
+      email: "okashi1993@gmail.com",
+      passwordHash: hash,
+      name: "Nguyễn Hà",
+    },
+  })
+  console.log(`Admin user: ${adminUser.email} (${adminUser.id})`)
+
+  // 3. Seed Member record (for sidebar/display — separate from Auth.js User)
+  await prisma.member.upsert({
+    where: { email: "okashi1993@gmail.com" },
+    update: { name: "Nguyễn Hà", role: "admin", accessRole: "admin" },
+    create: {
+      email: "okashi1993@gmail.com",
+      name: "Nguyễn Hà",
+      code: "ADMIN",
+      role: "admin",
+      accessRole: "admin",
+    },
+  })
+  console.log("Member record created for admin.")
 }
 
 main()
