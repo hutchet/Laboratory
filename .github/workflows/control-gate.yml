@@ -1,0 +1,19 @@
+name: Control Gate
+
+on:
+  pull_request:
+    branches: [main, v2]
+  push:
+    branches: [main, v2]
+
+jobs:
+  control-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm run control:check
+      - run: npm run lint --if-present

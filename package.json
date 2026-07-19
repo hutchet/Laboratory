@@ -1,10 +1,10 @@
 {
-  "name": "taskflow-nextjs",
+  "name": "taskflow-v2",
   "private": true,
   "version": "0.1.0",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "npm run control:check && next build",
     "start": "next start",
     "pages:build": "npx @cloudflare/next-on-pages",
     "pages:deploy": "npx wrangler pages deploy .vercel/output/static --project-name taskflow",
@@ -13,7 +13,12 @@
     "postinstall": "prisma generate",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:seed": "tsx prisma/seed.ts"
+    "prisma:push": "prisma db push",
+    "prisma:seed": "tsx prisma/seed.ts",
+    "control:check": "tsx scripts/control-check.ts",
+    "control:status": "tsx scripts/control-status.ts",
+    "control:parity": "tsx scripts/control-parity.ts",
+    "gate:module": "tsx scripts/gate-module.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.2",

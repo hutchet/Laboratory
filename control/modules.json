@@ -1,0 +1,473 @@
+{
+  "$schema": "./modules.schema.json",
+  "version": 1,
+  "strategy": "A-big-bang",
+  "cutoverRule": "No production cutover until gate:core PASS and data-migrate PASS",
+  "importRules": {
+    "direction": [
+      "shared -> features -> app"
+    ],
+    "forbidFeatureToFeature": true,
+    "forbidSharedImportFeatures": true,
+    "forbidFeaturesImportApp": true
+  },
+  "requiredSharedKit": [
+    "page-shell",
+    "data-table",
+    "form-modal",
+    "filter-bar",
+    "avatar-initials",
+    "kpi-card",
+    "status-badge",
+    "empty-state",
+    "confirm-dialog"
+  ],
+  "phases": [
+    {
+      "id": "P0",
+      "name": "Skeleton + Control",
+      "status": "done",
+      "modules": [
+        "_platform"
+      ]
+    },
+    {
+      "id": "P1",
+      "name": "UI Kit contracts",
+      "status": "done",
+      "modules": [
+        "_kit"
+      ]
+    },
+    {
+      "id": "P2",
+      "name": "Vertical slice",
+      "status": "done",
+      "modules": [
+        "tasks"
+      ]
+    },
+    {
+      "id": "P3",
+      "name": "Core ops",
+      "status": "done",
+      "modules": [
+        "projects",
+        "members",
+        "customers",
+        "centers",
+        "samples"
+      ]
+    },
+    {
+      "id": "P4",
+      "name": "Equipment + Quotes",
+      "status": "done",
+      "modules": [
+        "equipment",
+        "bookings",
+        "quotes"
+      ]
+    },
+    {
+      "id": "P5",
+      "name": "Planning + System",
+      "status": "done",
+      "modules": [
+        "plan",
+        "auditplan",
+        "purchase",
+        "quality",
+        "dashboard",
+        "report",
+        "settings"
+      ]
+    },
+    {
+      "id": "P6",
+      "name": "Data + Cutover",
+      "status": "pending",
+      "modules": [
+        "_data",
+        "_cutover"
+      ]
+    }
+  ],
+  "modules": [
+    {
+      "id": "_platform",
+      "title": "Platform (auth, layout, rbac, prisma)",
+      "route": null,
+      "htmlPages": [],
+      "featureDir": null,
+      "status": "done",
+      "phase": "P0",
+      "acceptance": [
+        "login works",
+        "middleware protects routes",
+        "prisma schema present",
+        "rbac helpers present"
+      ]
+    },
+    {
+      "id": "_kit",
+      "title": "Shared UI Kit",
+      "route": null,
+      "htmlPages": [],
+      "featureDir": null,
+      "status": "done",
+      "phase": "P1",
+      "acceptance": [
+        "all requiredSharedKit components exist",
+        "no page-specific markup inside kit"
+      ]
+    },
+    {
+      "id": "dashboard",
+      "title": "Tổng quan",
+      "route": "/dash",
+      "htmlPages": [
+        "page-dash"
+      ],
+      "featureDir": "src/features/dashboard",
+      "status": "done",
+      "phase": "P5",
+      "priority": 2,
+      "acceptance": [
+        "KPI cards",
+        "charts render with real data",
+        "detail open via shared detail pattern",
+        "no hardcoded seed-only UI"
+      ]
+    },
+    {
+      "id": "tasks",
+      "title": "Công việc",
+      "route": "/tasks",
+      "htmlPages": [
+        "page-tasks"
+      ],
+      "featureDir": "src/features/tasks",
+      "status": "done",
+      "phase": "P2",
+      "priority": 1,
+      "acceptance": [
+        "list + filter + search",
+        "create/edit/delete",
+        "assignee avatar initials",
+        "status workflow",
+        "rbac enforced on actions",
+        "uses DataTable + FormModal + FilterBar"
+      ]
+    },
+    {
+      "id": "projects",
+      "title": "Dự án",
+      "route": "/projects",
+      "htmlPages": [
+        "page-projects"
+      ],
+      "featureDir": "src/features/projects",
+      "status": "done",
+      "phase": "P3",
+      "priority": 1,
+      "acceptance": [
+        "list + pagination",
+        "create/edit",
+        "uses shared kit"
+      ]
+    },
+    {
+      "id": "customers",
+      "title": "Khách hàng",
+      "route": "/customers",
+      "htmlPages": [
+        "page-customers"
+      ],
+      "featureDir": "src/features/customers",
+      "status": "done",
+      "phase": "P3",
+      "priority": 1,
+      "acceptance": [
+        "CRUD",
+        "uses shared kit"
+      ]
+    },
+    {
+      "id": "centers",
+      "title": "Trung tâm thử nghiệm",
+      "route": "/centers",
+      "htmlPages": [
+        "page-centers"
+      ],
+      "featureDir": "src/features/centers",
+      "status": "done",
+      "phase": "P3",
+      "priority": 1,
+      "acceptance": [
+        "CRUD",
+        "uses shared kit"
+      ]
+    },
+    {
+      "id": "samples",
+      "title": "Quản lý mẫu",
+      "route": "/samples",
+      "htmlPages": [
+        "page-samples"
+      ],
+      "featureDir": "src/features/samples",
+      "status": "done",
+      "phase": "P3",
+      "priority": 1,
+      "acceptance": [
+        "list/filter/CRUD",
+        "uses shared kit"
+      ]
+    },
+    {
+      "id": "members",
+      "title": "Thành viên",
+      "route": "/members",
+      "htmlPages": [
+        "page-members"
+      ],
+      "featureDir": "src/features/members",
+      "status": "done",
+      "phase": "P3",
+      "priority": 1,
+      "acceptance": [
+        "list + roles display",
+        "CRUD",
+        "avatar initials",
+        "uses shared kit"
+      ]
+    },
+    {
+      "id": "equipment",
+      "title": "Thiết bị",
+      "route": "/equipment",
+      "htmlPages": [
+        "page-equipment"
+      ],
+      "featureDir": "src/features/equipment",
+      "status": "done",
+      "phase": "P4",
+      "priority": 1,
+      "acceptance": [
+        "table columns parity functional",
+        "add/edit via FormModal",
+        "category filter",
+        "uses shared kit"
+      ]
+    },
+    {
+      "id": "bookings",
+      "title": "Đặt lịch thiết bị",
+      "route": "/equipment?tab=analytics",
+      "htmlPages": [
+        "page-analytics"
+      ],
+      "featureDir": "src/features/equipment",
+      "note": "Shares equipment featureDir/RBAC module; no separate bookings ModuleName in rbac.ts",
+      "status": "done",
+      "phase": "P4",
+      "priority": 2,
+      "acceptance": [
+        "booking slots UI",
+        "status labels",
+        "create/cancel booking"
+      ]
+    },
+    {
+      "id": "quotes",
+      "title": "Báo giá (5 tab)",
+      "route": "/quote",
+      "htmlPages": [
+        "page-quote-overview",
+        "page-quote-catalog",
+        "page-quote-matrix",
+        "page-quote-personnel",
+        "page-quote-variable",
+        "page-quote-depreciation"
+      ],
+      "featureDir": "src/features/quotes",
+      "status": "done",
+      "phase": "P4",
+      "priority": 1,
+      "acceptance": [
+        "all tabs routeable",
+        "catalog/matrix/personnel/variable/depreciation CRUD",
+        "overview aggregates",
+        "uses shared kit"
+      ]
+    },
+    {
+      "id": "plan",
+      "title": "Kế hoạch thử nghiệm",
+      "route": "/plan",
+      "htmlPages": [
+        "page-plan"
+      ],
+      "featureDir": "src/features/plan",
+      "status": "done",
+      "phase": "P5",
+      "priority": 2,
+      "acceptance": [
+        "plan list/create",
+        "status/result summary",
+        "timeline basic (drag optional phase2)"
+      ]
+    },
+    {
+      "id": "auditplan",
+      "title": "Kế hoạch kiểm toán",
+      "route": "/auditplan",
+      "htmlPages": [
+        "page-auditplan"
+      ],
+      "featureDir": "src/features/auditplan",
+      "status": "done",
+      "phase": "P5",
+      "priority": 2,
+      "acceptance": [
+        "phases/items CRUD",
+        "overview",
+        "export placeholder ok if labeled"
+      ]
+    },
+    {
+      "id": "purchase",
+      "title": "Theo dõi mua hàng",
+      "route": "/purchase",
+      "htmlPages": [
+        "page-purchase"
+      ],
+      "featureDir": "src/features/purchase",
+      "status": "done",
+      "phase": "P5",
+      "priority": 2,
+      "acceptance": [
+        "list + group detail",
+        "CRUD",
+        "uses shared kit"
+      ]
+    },
+    {
+      "id": "quality",
+      "title": "QLCL",
+      "route": "/quality",
+      "htmlPages": [
+        "page-quality"
+      ],
+      "featureDir": "src/features/quality",
+      "status": "done",
+      "phase": "P5",
+      "priority": 2,
+      "acceptance": [
+        "checklist + audit entries",
+        "uses shared kit"
+      ]
+    },
+    {
+      "id": "report",
+      "title": "Báo cáo",
+      "route": "/report",
+      "htmlPages": [
+        "page-report"
+      ],
+      "featureDir": "src/features/report",
+      "status": "done",
+      "phase": "P5",
+      "priority": 2,
+      "acceptance": [
+        "report list/create",
+        "uses shared kit"
+      ]
+    },
+    {
+      "id": "settings",
+      "title": "Cài đặt",
+      "route": "/settings",
+      "htmlPages": [
+        "page-settings"
+      ],
+      "featureDir": "src/features/settings",
+      "status": "done",
+      "phase": "P5",
+      "priority": 2,
+      "acceptance": [
+        "theme/display settings",
+        "backup note for server-side data model"
+      ]
+    },
+    {
+      "id": "_data",
+      "title": "Data migrate + db push",
+      "route": null,
+      "htmlPages": [],
+      "featureDir": null,
+      "status": "pending",
+      "phase": "P6",
+      "acceptance": [
+        "prisma db push on Neon",
+        "localStorage migrate script verified",
+        "seed roles"
+      ]
+    },
+    {
+      "id": "_cutover",
+      "title": "Production cutover",
+      "route": null,
+      "htmlPages": [],
+      "featureDir": null,
+      "status": "pending",
+      "phase": "P6",
+      "acceptance": [
+        "gate:core PASS",
+        "preview QA signed",
+        "Vercel prod points to v2",
+        "v1 archived tag"
+      ]
+    }
+  ],
+  "gates": {
+    "core": {
+      "description": "Minimum modules before any production cutover",
+      "requiredModuleIds": [
+        "_platform",
+        "_kit",
+        "tasks",
+        "projects",
+        "members",
+        "customers",
+        "equipment",
+        "dashboard"
+      ]
+    },
+    "full": {
+      "description": "All product modules done",
+      "requiredModuleIds": [
+        "_platform",
+        "_kit",
+        "dashboard",
+        "tasks",
+        "projects",
+        "customers",
+        "centers",
+        "samples",
+        "members",
+        "equipment",
+        "bookings",
+        "quotes",
+        "plan",
+        "auditplan",
+        "purchase",
+        "quality",
+        "report",
+        "settings",
+        "_data"
+      ]
+    }
+  }
+}

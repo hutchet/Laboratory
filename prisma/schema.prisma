@@ -107,9 +107,9 @@ model Project {
 
   customer Customer? @relation(fields: [customerId], references: [id])
   center   Center?   @relation(fields: [centerId], references: [id])
-  tasks    Task[]
-  reports  Report[]
-  plans    TestPlan[]
+  tasks      Task[]
+  reportRows ReportRow[]
+  plans      TestPlan[]
   quotes   Quote[]
   samples  Sample[]
 
@@ -144,19 +144,30 @@ model Member {
   email      String?  @unique
   phone      String?
 
+  testItems TestItem[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-model Report {
-  id        String   @id @default(cuid())
-  title     String
-  content   String?
-  projectId String?
+// Viết lại theo bản gốc (renderReports/openReport/drawEdit, dòng 5433-5443 taskflow_original.html):
+// trang Report KHONG co model title/content tu do - moi du an co 1 bang bao cao thu nghiem
+// voi 6 cot CO DINH (khong phai cot tu dinh nghia - checklist truoc day ghi nham "cot tu dinh nghia", da sua lai cho dung voi COLS ban goc).
+model ReportRow {
+  id          String   @id @default(cuid())
+  projectId   String
+  position    Int      @default(0)
+  testName    String?
+  standard    String?
+  steps       String?
+  criteria    String?
+  equipment   String?
+  calibration String?
 
-  project Project? @relation(fields: [projectId], references: [id])
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Center {
@@ -384,6 +395,10 @@ model AuditLog {
   detail   String?
   userId   String?
   userName String?
+  // Additive (module Quality, rà soát lần 17) — vai trò của người thực hiện tại
+  // thời điểm ghi log, port từ trường a.role trong bản gốc (ql-audit-body hiển thị
+  // cột riêng cho vai trò, không gộp vào detail).
+  role     String?
 
   auditPlan AuditPlan? @relation(fields: [auditPlanId], references: [id])
 }
@@ -416,12 +431,30 @@ model AuditItem {
 }
 
 model PurchaseItem {
-  id       String  @id @default(cuid())
-  name     String
-  quantity Int?
-  cost     Float?
-  status   String?
-  note     String?
+  id        String  @id @default(cuid())
+  name      String
+  quantity  Int?
+  cost      Float?
+  status    String?
+  note      String?
+
+  // Ported from the original app's purchaseItems fields (openPmForm / renderPurchase,
+  // 19-column detail table). amount/price kept as free-text like the original (formatted
+  // Vietnamese currency strings such as "120.000.000"), not Float, to match source behavior.
+  amount    String? // Giá trị (VNĐ)
+  price     String? // Đơn giá
+  supplier  String? // Nhà cung cấp
+  task      String? // Loại task
+  tfs       String?
+  jira      String?
+  pr        String? // Mã PR
+  po        String? // Mã PO
+  migo      String?
+  tinhtrang String? // Tình trạng chi tiết (textarea)
+  pic       String? // Phòng mua hàng (nhóm ngoài lab)
+  owner     String? // Người phụ trách (tên thành viên)
+  lab       String? // Trung tâm
+  tfslink   String? // Liên kết TFS
 }
 
 // ================== SAMPLES (LIMS) ==================
@@ -456,6 +489,21 @@ model TestPlan {
 
   project Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
   items   TestItem[]
+  packs   TestPack[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model TestPack {
+  id         String  @id @default(cuid())
+  testPlanId String
+  code       String
+  serial     String?
+  qty        Int?    @default(1)
+
+  testPlan TestPlan   @relation(fields: [testPlanId], references: [id], onDelete: Cascade)
+  items    TestItem[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -464,6 +512,7 @@ model TestPlan {
 model TestItem {
   id          String    @id @default(cuid())
   testPlanId  String
+  packId      String?
   sampleId    String?
   reportCode  String?
   equipmentId String?
@@ -471,17 +520,20 @@ model TestItem {
   priority    String?
   standard    String?
   assignee    String?
+  picId       String?
   planStart   DateTime?
   planEnd     DateTime?
   actualStart DateTime?
   actualEnd   DateTime?
-  result      String? // pass | fail | pending
+  result      String? // pass | fail | delay | queuing | ongoing | cancel
   progress    Int?
   note        String?
 
   testPlan  TestPlan   @relation(fields: [testPlanId], references: [id], onDelete: Cascade)
+  pack      TestPack?  @relation(fields: [packId], references: [id])
   sample    Sample?    @relation(fields: [sampleId], references: [id])
   equipment Equipment? @relation(fields: [equipmentId], references: [id])
+  pic       Member?    @relation(fields: [picId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -489,20 +541,16 @@ model TestItem {
 
 // ================== QUALITY (ISO 17025) ==================
 
-model QualityChecklistItem {
-  id      String   @id @default(cuid())
-  name    String
-  done    Boolean  @default(false)
-  dueDate DateTime?
-}
-
-model QualityAuditEntry {
-  id        String   @id @default(cuid())
-  entity    String?
-  actor     String?
-  role      String?
-  area      String?
-  action    String?
-  note      String?
-  createdAt DateTime @default(now())
+// Thay thế QualityChecklistItem/QualityAuditEntry (rà soát lần 17) — bản gốc không
+// có "tạo hạng mục checklist tự do" hay "tạo nhật ký kiểm toán tay" trong trang Quality.
+// renderQuality() dùng QL_CHECKLIST_GROUPS cố định (17 hạng mục theo mục 4/5/6/7/8 ISO
+// 17025) — 1 số hạng mục tự tính từ dữ liệu thật (qlChecklistAutoState), còn lại là
+// checkbox tay lưu localStorage (tf_ql_checklist_v1). Model dưới đây chỉ lưu trạng thái
+// tay theo từng key cố định đó. Nhật ký kiểm toán (audit trail) trong trang Quality là
+// VIEW CHỈ ĐỌC trên bảng AuditLog chung toàn hệ thống (do logAudit() ở các module khác
+// ghi vào) — không có form tạo/xoá nhật ký riêng trong trang Quality của bản gốc.
+model QualityChecklistState {
+  id      String  @id @default(cuid())
+  key     String  @unique
+  checked Boolean @default(false)
 }
