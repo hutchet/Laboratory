@@ -171,12 +171,15 @@ model ReportRow {
 }
 
 model Center {
-  id      String  @id @default(cuid())
-  name    String
-  address String?
-  manager String?
-  phone   String?
-  notes   String?
+  id        String  @id @default(cuid())
+  name      String
+  address   String?
+  manager   String?
+  phone     String?
+  notes     String?
+  // Dùng cho tính chi phí điện/nhà xưởng trong Quote Matrix (ported từ qtMachineElec/qtMachineNX).
+  elecPrice Float?
+  rentPrice Float?
 
   equipment         Equipment[]
   equipmentBookings EquipmentBooking[]

@@ -19,6 +19,19 @@ import { RESULT_LABEL, RESULT_COLOR, autoStatus, isOverdue, type TestItemRow, ty
 const PLAN_STATUS_DONUT_KEYS = ["ongoing", "queuing", "delay", "cancel"] as const
 const PLAN_RESULT_DONUT_KEYS = ["pass", "fail"] as const
 
+// Port cua downloadCsv() dung o AuditPlanView/TasksView/PurchaseView (nut
+// "Xuat Excel" ban goc thuc chat la xuat .csv qua Blob, giu dung ky thuat).
+function downloadCsv(filename: string, rows: Array<Array<string | number | null>>) {
+  const csv = rows.map((r) => r.map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",")).join("\n")
+  const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 function resultTone(status: string): "neutral" | "success" | "danger" | "warning" {
   if (status === "pass") return "success"
   if (status === "fail" || status === "delay") return "danger"
@@ -27,12 +40,14 @@ function resultTone(status: string): "neutral" | "success" | "danger" | "warning
 }
 
 export function PlanView({
-  items, packs, plans, projects, samples, equipmentOptions, memberOptions,
+  items, packs, plans, projects, samples, equipmentOptions, memberOptions, initialProjectFilter,
 }: {
-  items: TestItemRow[]; packs: TestPackRow[]; plans: TestPlanRow[]; projects: Option[]; samples: Option[]; equipmentOptions: Option[]; memberOptions: Option[]
+  items: TestItemRow[]; packs: TestPackRow[]; plans: TestPlanRow[]; projects: Option[]; samples: Option[]; equipmentOptions: Option[]; memberOptions: Option[]; initialProjectFilter?: string
 }) {
   const [q, setQ] = useState("")
-  const [projectFilter, setProjectFilter] = useState("")
+  // Port cua data-goto-plan ban goc (dong 6493-6495): cho phep nhay toi day
+  // tu trang Du an da loc san theo ?project=<id>.
+  const [projectFilter, setProjectFilter] = useState(initialProjectFilter || "")
   const [editing, setEditing] = useState<TestItemRow | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
@@ -73,6 +88,36 @@ export function PlanView({
     () => PLAN_RESULT_DONUT_KEYS.map((k) => ({ key: k, value: kpi.byStatus[k] || 0, color: RESULT_COLOR[k] })).filter((s) => s.value > 0),
     [kpi.byStatus],
   )
+
+  // Muc con thieu theo checklist: "bieu do khoi luong theo PIC dang bar rieng",
+  // port dung mau voi workload cua AuditPlanView (Khoi luong theo phu trach).
+  const workload = useMemo(() => {
+    const map = new Map<string, number>()
+    scopedItems.forEach((it) => {
+      const key = it.pic?.name || it.assignee || "Chưa gán"
+      map.set(key, (map.get(key) || 0) + 1)
+    })
+    return Array.from(map.entries()).sort((a, b) => b[1] - a[1])
+  }, [scopedItems])
+  const maxWorkload = Math.max(1, ...workload.map(([, n]) => n))
+
+  function exportCsv() {
+    const header = ["Bài thử", "Dự án", "Mẫu", "Tiêu chuẩn", "Phụ trách", "KH bắt đầu", "KH kết thúc", "TT bắt đầu", "TT kết thúc", "Tiến độ", "Kết quả"]
+    const rows = filtered.map((it) => [
+      it.name,
+      it.testPlan?.project?.name ?? "",
+      packs.find((p) => p.id === it.packId)?.code ?? "",
+      it.standard ?? "",
+      it.pic?.name ?? it.assignee ?? "",
+      it.planStart ? it.planStart.slice(0, 10) : "",
+      it.planEnd ? it.planEnd.slice(0, 10) : "",
+      it.actualStart ? it.actualStart.slice(0, 10) : "",
+      it.actualEnd ? it.actualEnd.slice(0, 10) : "",
+      it.progress != null ? `${it.progress}%` : "",
+      RESULT_LABEL[autoStatus(it)] ?? "",
+    ])
+    downloadCsv("ke-hoach-thu-nghiem.csv", [header, ...rows])
+  }
 
   function openNew() { setEditing(null); setShowForm(true) }
   function openEdit(it: TestItemRow) { setEditing(it); setShowForm(true) }
@@ -144,6 +189,8 @@ export function PlanView({
       actions={(
         <span style={{ display: "flex", gap: 8 }}>
           <Perm minPerm="manager"><button type="button" onClick={() => setShowPackForm(true)} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #1d5fd6", background: "#fff", color: "#1d5fd6" }}>+ Mẫu</button></Perm>
+          <button type="button" onClick={exportCsv} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #dfe3e8", background: "#fff", color: "#1b1f24" }}>Xuất Excel</button>
+          <button type="button" onClick={() => window.print()} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #dfe3e8", background: "#fff", color: "#1b1f24" }}>Xuất PDF</button>
           <button type="button" onClick={openNew} style={{ padding: "8px 14px", borderRadius: 8, border: "none", background: "#1d5fd6", color: "#fff" }}>+ Thêm bài thử</button>
         </span>
       )}
@@ -190,9 +237,27 @@ export function PlanView({
         </div>
       </div>
 
-      <div style={{ marginBottom: 20 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8, color: "#444" }}>Biểu đồ Gantt</div>
-        <GanttChart items={filtered} packs={scopedPacks} />
+      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 16, marginBottom: 20 }}>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8, color: "#444" }}>Biểu đồ Gantt</div>
+          <GanttChart items={filtered} packs={scopedPacks} />
+        </div>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8, color: "#444" }}>Khối lượng theo PIC</div>
+          <div style={{ border: "1px solid #e6e9ee", borderRadius: 10, padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+            {workload.length === 0 && <div style={{ color: "#8a8f98", fontSize: 13 }}>Chưa có dữ liệu.</div>}
+            {workload.map(([name, count]) => (
+              <div key={name}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 3 }}>
+                  <span>{name}</span><span style={{ fontWeight: 600 }}>{count}</span>
+                </div>
+                <div style={{ background: "#eef1f5", borderRadius: 4, height: 6 }}>
+                  <div style={{ background: "#1d5fd6", borderRadius: 4, height: 6, width: `${(count / maxWorkload) * 100}%` }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       <DataTable columns={columns} rows={filtered} rowKey={(it) => it.id} loading={pending} emptyTitle="Chưa có bài thử nào" />

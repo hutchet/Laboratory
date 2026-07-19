@@ -7,9 +7,36 @@ import { FormModal } from "@/shared/ui/form-modal"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { Perm } from "@/shared/lib/rbac-client"
 import { saveTestCatalogItem, deleteTestCatalogItem, bulkDeleteTestCatalogItems } from "../actions"
-import type { TestCatalogRow } from "../types"
+import type { TestCatalogRow, PersonnelRateConfigRow, PersonnelRoutingRow } from "../types"
 
-export function CatalogView({ items }: { items: TestCatalogRow[] }) {
+function fmtVND(n: number) {
+  return Math.round(n).toLocaleString("vi-VN")
+}
+
+function parseHours(v: string | null | undefined): number {
+  const n = Number(v)
+  return Number.isFinite(n) ? n : 0
+}
+
+// Ported (partial) from openQuoteBreakdown(): tính chi phí nhân công từ giờ công
+// định tuyến (PersonnelRouting) khớp theo mã bài thử, nhân với đơn giá KTV và
+// cộng phụ phí chung. Phần khấu hao thiết bị/điện/nhà xưởng (qtMachineKH/
+// qtMachineElec/qtMachineNX trong bản gốc) cần ma trận thiết bị theo mã bài
+// thử (đợt sau) nên chưa tính ở đây — được ghi rõ trong modal.
+function computeCatalogBreakdown(item: TestCatalogRow, routing: PersonnelRoutingRow[], config: PersonnelRateConfigRow) {
+  const match = routing.find((r) => !!item.code && !!r.testCode && r.testCode.trim().toLowerCase() === item.code!.trim().toLowerCase())
+  const prepHours = parseHours(match?.prepHours)
+  const setupHours = parseHours(match?.setupHours)
+  const testHours = parseHours(match?.testHours)
+  const reportHours = parseHours(match?.reportHours)
+  const totalHours = prepHours + setupHours + testHours + reportHours
+  const laborCost = totalHours * config.techRate
+  const overhead = laborCost * (config.overheadPct / 100)
+  const computedTotal = laborCost + overhead
+  return { match, prepHours, setupHours, testHours, reportHours, totalHours, laborCost, overhead, computedTotal }
+}
+
+export function CatalogView({ items, personnelConfig, routing }: { items: TestCatalogRow[]; personnelConfig: PersonnelRateConfigRow; routing: PersonnelRoutingRow[] }) {
   const [q, setQ] = useState("")
   const [editing, setEditing] = useState<TestCatalogRow | null>(null)
   const [showForm, setShowForm] = useState(false)
@@ -17,6 +44,7 @@ export function CatalogView({ items }: { items: TestCatalogRow[] }) {
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [bulkConfirm, setBulkConfirm] = useState(false)
   const [editMode, setEditMode] = useState(false)
+  const [breakdownItem, setBreakdownItem] = useState<TestCatalogRow | null>(null)
   const [pending, startTransition] = useTransition()
 
   const filtered = useMemo(() => items.filter((it) => !q || it.name.toLowerCase().includes(q.toLowerCase())), [items, q])
@@ -73,6 +101,7 @@ export function CatalogView({ items }: { items: TestCatalogRow[] }) {
       key: "actions", header: "", align: "right",
       render: (it) => (
         <span style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+          <button type="button" onClick={() => setBreakdownItem(it)} style={{ border: "none", background: "none", color: "#1d5fd6", cursor: "pointer" }}>Cấu thành giá</button>
           <Perm minPerm="manager"><button type="button" onClick={() => openEdit(it)} style={{ border: "none", background: "none", color: "#1d5fd6", cursor: "pointer" }}>Sửa</button>
           <button type="button" onClick={() => setConfirmDeleteId(it.id)} style={{ border: "none", background: "none", color: "#c62828", cursor: "pointer" }}>Xoá</button></Perm>
         </span>
@@ -131,6 +160,51 @@ export function CatalogView({ items }: { items: TestCatalogRow[] }) {
 
       <ConfirmDialog open={!!confirmDeleteId} title="Xoá bài thử?" description="Hành động này không thể hoàn tác." danger onConfirm={confirmDelete} onCancel={() => setConfirmDeleteId(null)} />
       <ConfirmDialog open={bulkConfirm} title={`Xoá ${selected.size} bài thử đã chọn?`} description="Hành động này không thể hoàn tác." danger onConfirm={confirmBulkDelete} onCancel={() => setBulkConfirm(false)} />
+
+      {breakdownItem && (() => {
+        const b = computeCatalogBreakdown(breakdownItem, routing, personnelConfig)
+        const rows: Array<[string, string]> = [
+          ["Giờ chuẩn bị (prep)", `${b.prepHours} giờ`],
+          ["Giờ chuẩn bị máy (setup)", `${b.setupHours} giờ`],
+          ["Giờ thử nghiệm (test)", `${b.testHours} giờ`],
+          ["Giờ báo cáo (report)", `${b.reportHours} giờ`],
+          ["Tổng giờ công", `${b.totalHours} giờ`],
+          ["Định mức KTV", `${fmtVND(personnelConfig.techRate)} đ/giờ`],
+          ["Chi phí nhân công", `${fmtVND(b.laborCost)} đ`],
+          ["Phụ phí chung", `${personnelConfig.overheadPct}% = ${fmtVND(b.overhead)} đ`],
+          ["Tổng chi phí tính toán (nhân công)", `${fmtVND(b.computedTotal)} đ`],
+          ["Đơn giá đã nhập", breakdownItem.price != null ? `${fmtVND(breakdownItem.price)} đ` : "—"],
+        ]
+        return (
+          <div
+            style={{ position: "fixed", inset: 0, background: "rgba(15,18,22,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}
+            onClick={() => setBreakdownItem(null)}
+          >
+            <div onClick={(e) => e.stopPropagation()} style={{ background: "#fff", borderRadius: 12, padding: 20, width: 460, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 12px 40px rgba(0,0,0,0.2)" }}>
+              <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>Cấu thành giá: {breakdownItem.name}</div>
+              <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 12 }}>
+                {b.match ? `Khớp giờ công theo mã “${breakdownItem.code}” từ Định tuyến nhân sự.` : "Chưa có định tuyến giờ công khớp mã này — giờ công = 0."}
+              </div>
+              <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse" }}>
+                <tbody>
+                  {rows.map(([label, val]) => (
+                    <tr key={label} style={{ borderBottom: "1px solid #f0f1f3" }}>
+                      <td style={{ padding: "6px 0", opacity: 0.75 }}>{label}</td>
+                      <td style={{ padding: "6px 0", textAlign: "right", fontWeight: 600 }}>{val}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div style={{ marginTop: 12, padding: 10, borderRadius: 8, background: "#fff7e6", fontSize: 12, color: "#7a5c00" }}>
+                Chú ý: chi phí khấu hao thiết bị, điện và nhà xưởng (qtMachineKH/qtMachineElec/qtMachineNX trong bản gốc) chưa được tính vào đây vì cần cấu hình ma trận thiết bị theo mã bài thử (đợt sau).
+              </div>
+              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
+                <button type="button" onClick={() => setBreakdownItem(null)} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #dfe3e8", background: "#fff" }}>Đóng</button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
     </PageShell>
   )
 }

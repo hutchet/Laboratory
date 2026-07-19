@@ -244,7 +244,7 @@ export function BookingsView({
       <FormModal
         open={showForm}
         title={editing ? "Sửa lịch đặt" : "Đặt lịch thiết bị"}
-        onClose={() => { setShowForm(false); setEditing(null); setSlotPrefill(null) }}
+        onClose={() => { setShowForm(false); setEditing(null); setSlotPrefill(null); setFormError(null) }}
         onSubmit={() => {
           const form = document.getElementById("tf-booking-form") as HTMLFormElement | null
           if (form) handleSubmit(new FormData(form))
@@ -252,10 +252,15 @@ export function BookingsView({
         submitting={pending}
       >
         <form id="tf-booking-form" onSubmit={(e) => e.preventDefault()} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {formError && (
+            <div style={{ background: "#fdecea", color: "#c62828", border: "1px solid #f4c7c3", borderRadius: 8, padding: "8px 12px", fontSize: 12.5 }}>
+              {formError}
+            </div>
+          )}
           <label style={{ fontSize: 12, fontWeight: 600 }}>Thiết bị *
             <select name="equipmentId" required defaultValue={editing?.equipmentId ?? slotPrefill?.equipmentId ?? ""} style={fieldStyle}>
               <option value="">—</option>
-              {equipment.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+              {readyEquipment.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
             </select>
           </label>
           <div style={{ display: "flex", gap: 12 }}>
@@ -273,8 +278,8 @@ export function BookingsView({
             </select>
           </label>
           <div style={{ display: "flex", gap: 12 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Người đặt
-              <input name="bookedBy" defaultValue={editing?.bookedBy ?? ""} style={fieldStyle} />
+            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Người đặt *
+              <input name="bookedBy" required defaultValue={editing?.bookedBy ?? ""} style={fieldStyle} />
             </label>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Bộ phận
               <input name="department" defaultValue={editing?.department ?? ""} style={fieldStyle} />

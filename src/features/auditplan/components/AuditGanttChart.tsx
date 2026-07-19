@@ -171,6 +171,16 @@ export function AuditGanttChart({ items, phases }: { items: AuditItemRow[]; phas
             {AUDIT_STATUS_LABEL[k]}
           </span>
         ))}
+        {/* Port cua 2 muc legend con thieu (dong 3905-3906 ban goc): thanh ke
+            hoach nhat + thanh vuot ke hoach co soc, khop du 6 muc legend goc. */}
+        <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+          <span style={{ display: "inline-block", width: 14, height: 10, borderRadius: 3, background: "#1d5fd6", opacity: 0.45 }} />
+          Kế hoạch (nhạt)
+        </span>
+        <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+          <span style={{ display: "inline-block", width: 14, height: 10, borderRadius: 3, background: "#c62828", backgroundImage: "repeating-linear-gradient(45deg, rgba(255,255,255,.5) 0, rgba(255,255,255,.5) 3px, transparent 3px, transparent 6px)" }} />
+          Vượt so với kế hoạch (thực tế trễ hơn)
+        </span>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
@@ -256,21 +266,45 @@ export function AuditGanttChart({ items, phases }: { items: AuditItemRow[]; phas
                     }}
                   />
                 )}
-                {actS && (
-                  <div
-                    title={`Thực tế: ${actS} → ${actE}`}
-                    style={{
-                      gridColumn: `${colIndexForDate(cols, actS) + 2} / span ${colSpan(cols, actS, actE || actS)}`,
-                      gridRow: row,
-                      margin: "6px 2px",
-                      borderRadius: 5,
-                      background: color,
-                      height: 14,
-                      position: "relative",
-                      top: -20,
-                    }}
-                  />
-                )}
+                {actS && (() => {
+                  // Port cua ap-legend-dot.stripe ban goc (dong 1852, 3906): phan
+                  // thuc te vuot qua ngay ket thuc ke hoach duoc ve co soc rieng.
+                  const overrunStart = planE && actE && actE > planE ? addDays(planE, 1) : null
+                  const normalEnd = overrunStart ? planE! : actE || actS
+                  return (
+                    <>
+                      <div
+                        title={`Thực tế: ${actS} → ${actE}`}
+                        style={{
+                          gridColumn: `${colIndexForDate(cols, actS) + 2} / span ${colSpan(cols, actS, normalEnd)}`,
+                          gridRow: row,
+                          margin: overrunStart ? "6px 0 6px 2px" : "6px 2px",
+                          borderRadius: overrunStart ? "5px 0 0 5px" : 5,
+                          background: color,
+                          height: 14,
+                          position: "relative",
+                          top: -20,
+                        }}
+                      />
+                      {overrunStart && actE && (
+                        <div
+                          title={`Vượt kế hoạch: ${overrunStart} → ${actE}`}
+                          style={{
+                            gridColumn: `${colIndexForDate(cols, overrunStart) + 2} / span ${colSpan(cols, overrunStart, actE)}`,
+                            gridRow: row,
+                            margin: "6px 2px 6px 0",
+                            borderRadius: "0 5px 5px 0",
+                            background: color,
+                            backgroundImage: "repeating-linear-gradient(45deg, rgba(255,255,255,.5) 0, rgba(255,255,255,.5) 3px, transparent 3px, transparent 6px)",
+                            height: 14,
+                            position: "relative",
+                            top: -20,
+                          }}
+                        />
+                      )}
+                    </>
+                  )
+                })()}
               </div>
             )
           })}

@@ -20,6 +20,8 @@ export type SaveCenterInput = {
   manager?: string | null
   phone?: string | null
   notes?: string | null
+  elecPrice?: number | null
+  rentPrice?: number | null
 }
 
 export async function saveCenter(input: SaveCenterInput) {
@@ -30,6 +32,8 @@ export async function saveCenter(input: SaveCenterInput) {
     manager: input.manager || null,
     phone: input.phone || null,
     notes: input.notes || null,
+    elecPrice: input.elecPrice ?? null,
+    rentPrice: input.rentPrice ?? null,
   }
   if (input.id) {
     await db.center.update({ where: { id: input.id }, data })

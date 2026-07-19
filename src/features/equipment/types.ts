@@ -18,14 +18,18 @@ export type EquipmentRow = {
 }
 
 // Ported from the original app's calStatus(e): due = calLast + calInterval*30 days.
+// Both dates are normalized to midnight before diffing (matches quality/types.ts::calcCalStatus
+// and the original's plDayDiff/todayStrEq2 day-boundary comparison), not a raw millisecond diff.
 export type CalStatus = { due: string; state: "overdue" | "soon" | "ok" } | null
 export function equipmentCalStatus(e: { calLast: string | null; calInterval: number | null }): CalStatus {
   if (!e.calLast || !e.calInterval) return null
   const last = new Date(e.calLast)
   const due = new Date(last)
   due.setDate(due.getDate() + e.calInterval * 30)
+  const dueMidnight = new Date(due.getFullYear(), due.getMonth(), due.getDate())
   const now = new Date()
-  const daysLeft = Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+  const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const daysLeft = Math.round((dueMidnight.getTime() - todayMidnight.getTime()) / (1000 * 60 * 60 * 24))
   const state = daysLeft < 0 ? "overdue" : daysLeft <= 30 ? "soon" : "ok"
   return { due: due.toISOString(), state }
 }
