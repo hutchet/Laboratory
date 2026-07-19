@@ -72,7 +72,6 @@ export const VF_DICT: Record<string, string> = {
   "Quản lý và theo dõi toàn bộ công việc": "Manage and track all tasks",
   "Tổng quan tất cả dự án của nhóm": "Overview of all team projects",
   "Quản lý thông tin khách hàng gửi mẫu thử nghiệm": "Manage customer information for test samples",
-  "Chất lượng & Hệ thống": "Quality & System",
   "Quote overview": "Quote overview",
   "Danh mục bài thử nghiệm ": "Test item catalog",
   "Đơn giá thiết bị ": "Equipment unit price",

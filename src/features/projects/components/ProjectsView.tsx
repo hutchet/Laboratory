@@ -39,6 +39,7 @@ export function ProjectsView({ projects, customers, centers }: { projects: Proje
   const [editing, setEditing] = useState<ProjectRow | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [detailType, setDetailType] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
   const kpis = useMemo(() => {

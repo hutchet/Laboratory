@@ -70,6 +70,6 @@ export async function saveReportRows(projectId: string, rows: ReportRowData[]) {
       })
     ),
   ])
-  await logAudit("report", "update", projectId, `Cập nhật bảng báo cáo thử nghiệm (${nonEmpty.length} dòng)`)
+  await logAudit("report" as any, "update", projectId, `Cập nhật bảng báo cáo thử nghiệm (${nonEmpty.length} dòng)`)
   revalidatePath("/report")
 }
