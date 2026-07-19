@@ -88,11 +88,37 @@ export type SaveBookingInput = {
 
 export async function saveBooking(input: SaveBookingInput) {
   await requirePermission(input.id ? "edit" : "create")
+  const start = new Date(input.startTime)
+  const end = new Date(input.endTime)
+  // Port cua cac buoc kiem tra trong saveBookingForm ban goc (dong 6756-6776):
+  // gio ket thuc phai sau gio bat dau, thiet bi dang bao tri thi khong duoc dat,
+  // va khong duoc trung khung gio voi 1 lich dat khac cua cung thiet bi.
+  if (!(end.getTime() > start.getTime())) {
+    throw new Error("Giờ kết thúc phải sau giờ bắt đầu.")
+  }
+  const equipment = await db.equipment.findUnique({ where: { id: input.equipmentId } })
+  if (!equipment) throw new Error("Không tìm thấy thiết bị.")
+  if (equipment.status === "maintenance") {
+    throw new Error("Thiết bị này đang bảo trì, không thể đặt lịch.")
+  }
+  const conflict = await db.equipmentBooking.findFirst({
+    where: {
+      equipmentId: input.equipmentId,
+      ...(input.id ? { id: { not: input.id } } : {}),
+      startTime: { lt: end },
+      endTime: { gt: start },
+    },
+  })
+  if (conflict) {
+    throw new Error(
+      `Thiết bị này đã được ${conflict.bookedBy || "người khác"} đặt từ ${conflict.startTime.toLocaleString("vi-VN")} đến ${conflict.endTime.toLocaleString("vi-VN")}. Vui lòng chọn khung giờ khác hoặc ngày khác.`
+    )
+  }
   const data = {
     equipmentId: input.equipmentId,
     centerId: input.centerId || null,
-    startTime: new Date(input.startTime),
-    endTime: new Date(input.endTime),
+    startTime: start,
+    endTime: end,
     bookedBy: input.bookedBy || null,
     department: input.department || null,
     purpose: input.purpose || null,

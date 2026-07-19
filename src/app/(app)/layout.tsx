@@ -7,7 +7,7 @@ import { auth } from "@/shared/lib/auth"
 import { NavLink } from "@/shared/ui/nav-link"
 import { NAV_GROUPS } from "@/shared/config/nav"
 import { VINFAST_LOGO } from "@/shared/lib/vinfast-logo"
-import { getUserRbacContext, type RankName } from "@/shared/lib/rbac"
+import { getUserRbacContext } from "@/shared/lib/rbac"
 import { RBACProvider } from "@/shared/lib/rbac-client"
 import { getSimRole } from "@/features/settings/role-sim"
 import { logoutAction } from "./logout-action"
@@ -25,11 +25,11 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   // trong trang Cài đặt (tf_active_role_v1, xem features/settings/role-sim.ts), CHỈ ghi
   // đè trường rank hiển thị UI — modulePerms dùng cho canModule()/Server Action vẫn giữ
   // đúng quyền thật, không bị giả lập chi phối.
-  let rbacValue: { rank: RankName; roleNames: string[]; modulePerms: string[] } = { rank: "viewer", roleNames: [], modulePerms: [] }
+  let rbacValue = { rank: "viewer" as const, roleNames: [] as string[], modulePerms: [] as string[] }
   if (session?.user?.id) {
     const ctx = await getUserRbacContext(session.user.id)
     const simRole = await getSimRole()
-    rbacValue = { ...ctx, rank: (simRole || ctx.rank) as RankName }
+    rbacValue = { ...ctx, rank: simRole || ctx.rank }
   }
   const overdueTasks = await listOverdueTasksForNotif()
 

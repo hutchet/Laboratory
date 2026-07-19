@@ -9,11 +9,24 @@ export async function listProjects(): Promise<ProjectRow[]> {
       customer: true,
       center: true,
       tasks: { select: { status: true, priority: true, dueDate: true } },
+      plans: { include: { items: { select: { picId: true } } } },
     },
     orderBy: { createdAt: "desc" },
   })
   const now = Date.now()
   return projects.map((p) => {
+    // Port cua projPlanStats() ban goc (dong 5154-5162): lay ke hoach thu
+    // nghiem dau tien gan voi du an (ban goc gia dinh 1 du an <-> 1 plan),
+    // tinh so bai thu + so nhan vien (pic) duy nhat.
+    const plan = p.plans[0] ?? null
+    const planStats = plan
+      ? {
+          hasPlan: true,
+          planId: plan.id,
+          testCount: plan.items.length,
+          staffCount: new Set(plan.items.map((it) => it.picId).filter((id): id is string => !!id)).size,
+        }
+      : { hasPlan: false, planId: null, testCount: 0, staffCount: 0 }
     const ts = p.tasks
     const total = ts.length
     const done = ts.filter((t) => t.status === "done").length
@@ -44,6 +57,7 @@ export async function listProjects(): Promise<ProjectRow[]> {
       centerId: p.centerId,
       customer: p.customer ? { id: p.customer.id, name: p.customer.name } : null,
       center: p.center ? { id: p.center.id, name: p.center.name } : null,
+      planStats,
       taskTotal: total,
       taskDone: done,
       taskOverdue: overdue,

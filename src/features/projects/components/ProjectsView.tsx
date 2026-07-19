@@ -8,6 +8,7 @@ import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { StatusBadge } from "@/shared/ui/status-badge"
 import { KpiCard } from "@/shared/ui/kpi-card"
 import { Pagination } from "@/shared/ui/pagination"
+import { useRouter } from "next/navigation"
 import { saveProject, deleteProject } from "../actions"
 import { PROJECT_STATUS_LABEL, PROJECT_PRIORITY_LABEL, type ProjectRow, type Option } from "../types"
 
@@ -32,14 +33,20 @@ function priorityTone(priority: ProjectRow["derivedPriority"]): "neutral" | "war
   return "neutral"
 }
 
+type ProjectDetailType = "pk-active" | "pk-prog" | "pk-done" | "pk-risk"
+
 export function ProjectsView({ projects, customers, centers }: { projects: ProjectRow[]; customers: Option[]; centers: Option[] }) {
+  const router = useRouter()
   const [chip, setChip] = useState("all")
   const [q, setQ] = useState("")
   const [page, setPage] = useState(1)
   const [editing, setEditing] = useState<ProjectRow | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
-  const [detailType, setDetailType] = useState<string | null>(null)
+  // Bug fix (rà soát lần này): state nay bi thieu hoan toan du 4 KPI card da
+  // goi setDetailType/detailType nhung chua tung duoc khai bao - gay loi bien
+  // chua dinh nghia, lam crash trang khi bam vao KPI card.
+  const [detailType, setDetailType] = useState<ProjectDetailType | null>(null)
   const [pending, startTransition] = useTransition()
 
   const kpis = useMemo(() => {
@@ -108,6 +115,22 @@ export function ProjectsView({ projects, customers, centers }: { projects: Proje
     { key: "priority", header: "Ưu tiên", render: (p) => <StatusBadge label={PROJECT_PRIORITY_LABEL[p.derivedPriority]} tone={priorityTone(p.derivedPriority)} /> },
     { key: "dueDate", header: "Hạn", render: (p) => (p.dueDate ? new Date(p.dueDate).toLocaleDateString("vi-VN") : "—") },
     { key: "status", header: "Trạng thái", render: (p) => <StatusBadge label={PROJECT_STATUS_LABEL[p.derivedStatus]} tone={statusTone(p.derivedStatus)} /> },
+    {
+      // Port cua "pplan-link" ban goc (dong 5184, projPlanStats()): bam vao de
+      // nhay sang trang Ke hoach thu nghiem da loc theo du an nay.
+      key: "plan", header: "Kế hoạch thử nghiệm",
+      render: (p) => p.planStats?.hasPlan ? (
+        <button
+          type="button"
+          onClick={() => router.push(`/plan?project=${p.id}`)}
+          style={{ border: "none", background: "none", color: "#1d5fd6", cursor: "pointer", padding: 0, textAlign: "left", fontSize: 12.5 }}
+        >
+          {p.planStats.testCount} bài · {p.planStats.staffCount} nhân viên ›
+        </button>
+      ) : (
+        <span style={{ color: "#9aa1ab", fontSize: 12.5 }}>Chưa có kế hoạch</span>
+      ),
+    },
     {
       key: "actions", header: "", align: "right",
       render: (p) => (

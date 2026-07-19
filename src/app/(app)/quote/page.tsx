@@ -16,8 +16,8 @@ export default async function QuotePage({ searchParams }: { searchParams: Promis
 
   switch (activeTab) {
     case "quote-catalog": {
-      const items = await listTestCatalog()
-      return <CatalogView items={items} />
+      const [items, config, routing] = await Promise.all([listTestCatalog(), getPersonnelRateConfig(), listPersonnelRouting()])
+      return <CatalogView items={items} personnelConfig={config} routing={routing} />
     }
     case "quote-matrix": {
       const items = await listEquipmentPricing()

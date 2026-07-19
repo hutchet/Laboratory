@@ -26,6 +26,8 @@ export async function listCenters(): Promise<CenterRow[]> {
       manager: c.manager,
       phone: c.phone,
       notes: c.notes,
+      elecPrice: c.elecPrice,
+      rentPrice: c.rentPrice,
       projectCount,
       activeProjectCount,
       customerCount: customerIds.size,

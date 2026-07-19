@@ -46,6 +46,8 @@ export function CentersView({ centers }: { centers: CenterRow[] }) {
       manager: String(formData.get("manager") || ""),
       phone: String(formData.get("phone") || ""),
       notes: String(formData.get("notes") || ""),
+      elecPrice: formData.get("elecPrice") ? Number(formData.get("elecPrice")) : null,
+      rentPrice: formData.get("rentPrice") ? Number(formData.get("rentPrice")) : null,
     }
     startTransition(async () => { await saveCenter(input); setShowForm(false); setEditing(null) })
   }
@@ -60,6 +62,8 @@ export function CentersView({ centers }: { centers: CenterRow[] }) {
     { key: "manager", header: "Phụ trách", render: (c) => c.manager ?? "—" },
     { key: "phone", header: "Sđt", render: (c) => c.phone ?? "—" },
     { key: "address", header: "Địa chỉ", render: (c) => c.address ?? "—" },
+    { key: "elecPrice", header: "Giá điện", align: "right", render: (c) => (c.elecPrice != null ? `${c.elecPrice.toLocaleString("vi-VN")} đ/kWh` : "—") },
+    { key: "rentPrice", header: "Giá thuê nhà xưởng", align: "right", render: (c) => (c.rentPrice != null ? `${c.rentPrice.toLocaleString("vi-VN")} đ/m²/giờ` : "—") },
     { key: "projects", header: "Dự án", align: "right", render: (c) => `${c.projectCount}` },
     { key: "value", header: "Giá trị", align: "right", render: (c) => fmtValue(c.totalValue) },
     {
@@ -113,6 +117,14 @@ export function CentersView({ centers }: { centers: CenterRow[] }) {
           <label style={{ fontSize: 12, fontWeight: 600 }}>Địa chỉ
             <input name="address" defaultValue={editing?.address ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
           </label>
+          <div style={{ display: "flex", gap: 12 }}>
+            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Giá điện (đ/kWh)
+              <input type="number" name="elecPrice" defaultValue={editing?.elecPrice ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+            </label>
+            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Giá thuê nhà xưởng (đ/m²/giờ)
+              <input type="number" name="rentPrice" defaultValue={editing?.rentPrice ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+            </label>
+          </div>
           <label style={{ fontSize: 12, fontWeight: 600 }}>Ghi chú
             <textarea name="notes" defaultValue={editing?.notes ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
           </label>

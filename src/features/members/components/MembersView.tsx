@@ -55,8 +55,17 @@ export function MembersView({ members, currentMember }: { members: MemberRow[]; 
         </span>
       ),
     },
-    { key: "team", header: "Nhóm", render: (m) => m.team ?? "—" },
+    { key: "code", header: "Mã", render: (m) => m.code ?? "—" },
     { key: "email", header: "Email", render: (m) => m.email ?? "—" },
+    {
+      // Ported from renderMembers() (dòng 5204-5214): huy hiệu giới tính màu theo Nam/Nữ.
+      key: "gender", header: "Giới tính",
+      render: (m) => {
+        const tone = m.gender === "Nam" ? { background: "#eaf1ff", color: "#4f6cf7" } : m.gender === "Nữ" ? { background: "#fdeef4", color: "#db2777" } : { background: "#f1f3f5", color: "#6b7280" }
+        return <span style={{ ...tone, fontSize: 11, fontWeight: 600, borderRadius: 999, padding: "3px 10px" }}>{m.gender || "—"}</span>
+      },
+    },
+    { key: "team", header: "Nhóm", render: (m) => m.team ?? "—" },
     { key: "accessRole", header: "Quyền", render: (m) => <StatusBadge label={ACCESS_ROLE_LABEL[m.accessRole ?? "viewer"] ?? m.accessRole ?? "—"} tone="info" /> },
     {
       key: "actions", header: "", align: "right",
@@ -117,6 +126,13 @@ export function MembersView({ members, currentMember }: { members: MemberRow[]; 
           </div>
           <label style={{ fontSize: 12, fontWeight: 600 }}>Email
             <input name="email" type="email" defaultValue={editing?.email ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+          </label>
+          <label style={{ fontSize: 12, fontWeight: 600 }}>Giới tính
+            <select name="gender" defaultValue={editing?.gender ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
+              <option value="">—</option>
+              <option value="Nam">Nam</option>
+              <option value="Nữ">Nữ</option>
+            </select>
           </label>
           <label style={{ fontSize: 12, fontWeight: 600 }}>Phân quyền
             <select name="accessRole" defaultValue={editing?.accessRole ?? "viewer"} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
