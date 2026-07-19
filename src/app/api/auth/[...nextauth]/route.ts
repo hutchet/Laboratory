@@ -1,5 +1,5 @@
 import { handlers } from "@/shared/lib/auth"
 
-export const runtime = 'edge'
+// Must NOT be edge — authorize uses bcryptjs (Node.js crypto)
 
 export const { GET, POST } = handlers
