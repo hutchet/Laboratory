@@ -92,6 +92,41 @@ export function computeKpi(tasks: DashTaskRaw[]): DashboardKpi {
   }
 }
 
+// Port kcard-trend ("so voi tuan truoc", dong ~4905-4920 ban goc): so sanh gia
+// tri KPI hien tai voi gia tri se co cach 7 ngay truoc (chi tinh tren cac task
+// da ton tai luc do, dua vao createdAt) - dung cho 3 the KPI hero tren Tong quan.
+export type KpiTrend = { pct: number; up: boolean } | null
+export type DashboardKpiTrend = { util: KpiTrend; active: KpiTrend; risk: KpiTrend }
+
+function kpiSnapshot(tasks: DashTaskRaw[], asOfMs: number) {
+  const list = tasks.filter((t) => new Date(t.createdAt).getTime() <= asOfMs)
+  const total = list.length
+  const activeN = list.filter((t) => t.status !== "done").length
+  const riskProjects = new Set(list.filter((t) => stateOf(t) === "over" && t.projectName).map((t) => t.projectName))
+  const projTaskN = list.filter((t) => !!t.projectId).length
+  const util = total ? Math.round((projTaskN / total) * 100) : 0
+  return { util, active: activeN, risk: riskProjects.size }
+}
+
+function pctChg(curr: number, prev: number): KpiTrend {
+  if (prev === 0) return curr === 0 ? null : { pct: 100, up: true }
+  const pct = Math.round(((curr - prev) / prev) * 100)
+  if (pct === 0) return { pct: 0, up: true }
+  return { pct: Math.abs(pct), up: pct >= 0 }
+}
+
+export function computeKpiTrend(tasks: DashTaskRaw[]): DashboardKpiTrend {
+  const now = Date.now()
+  const weekAgo = now - 7 * 86400000
+  const curr = kpiSnapshot(tasks, now)
+  const prev = kpiSnapshot(tasks, weekAgo)
+  return {
+    util: pctChg(curr.util, prev.util),
+    active: pctChg(curr.active, prev.active),
+    risk: pctChg(curr.risk, prev.risk),
+  }
+}
+
 export type StatusBar = { pr: number; pd: number; po: number; inprogN: number; doneN: number; overdueN: number; up: boolean }
 
 export function computeStatusBar(tasks: DashTaskRaw[]): StatusBar {
@@ -201,7 +236,11 @@ export function computeSpotlight(tasks: DashTaskRaw[], members: DashMemberRaw[])
   const shown = ownerIds.slice(0, 5)
   const overflow = ownerIds.length - shown.length
   return {
-    label: top.od > 0 ? "Dự án cần chú ý nhất" : "Dự án nởi bật",
+    // Ban goc (id="spot-lab", dong 3166) luon hien thi nhan tinh "Dự án cần chú ý
+    // nhất" bat ke du an top co qua han hay khong - KHONG doi nhan dong theo du
+    // lieu (day la bug da duoc phat hien va sua: nhan tung bi doi thanh "Dự án
+    // nổi bật" khi khong co qua han).
+    label: "Dự án cần chú ý nhất",
     name: top.name,
     meta:
       top.od > 0

@@ -5,4 +5,3 @@ node_modules
 prisma/dev.db
 .vercel
 .env.production
-src/.next

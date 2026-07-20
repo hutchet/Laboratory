@@ -28,6 +28,7 @@ export async function getDashboardRawData(): Promise<DashboardRawData> {
       projectName: t.project?.name ?? null,
       assigneeId: t.assigneeId,
       dueDate: t.dueDate ? t.dueDate.toISOString() : null,
+      createdAt: t.createdAt.toISOString(),
     })),
     projects: projects.map((p) => ({
       id: p.id,

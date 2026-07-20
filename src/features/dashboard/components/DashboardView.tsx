@@ -82,6 +82,17 @@ export function DashboardView({ data }: { data: DashboardRawData }) {
   const duePoints = dueBars[dueBarsMode]
   const dueTitleSuffix = dueBarsMode === "day" ? "(7 ngày tới)" : dueBarsMode === "week" ? "(6 tuần tới)" : "(6 tháng tới)"
 
+  // Port .kcard-trend (so voi tuan truoc) - xem computeKpiTrend trong compute.ts.
+  const renderTrend = (t: KpiTrend) => {
+    if (!t) return null
+    return (
+      <div className={t.up ? "kcard-trend" : "kcard-trend dn"}>
+        <span className="tri">{t.up ? "▲" : "▼"}</span>
+        {t.pct}%
+      </div>
+    )
+  }
+
   return (
     <PageShell title="Tổng quan" subtitle={bannerDate()}>
       <section id="page-dash">
@@ -95,7 +106,7 @@ export function DashboardView({ data }: { data: DashboardRawData }) {
                   </div>
                   <div className="l">Dự án/nội bộ</div>
                 </div>
-                <div className="kcard-val-row"><div className="v">{kpi.util}%</div></div>
+                <div className="kcard-val-row"><div className="v">{kpi.util}%</div>{renderTrend(kpiTrend.util)}</div>
                 <div className="s">theo dự án</div>
               </div>
               <div className="kcard kg kcard-hero pcard clickable" onClick={() => setDetailType("kpi-active")}>
@@ -105,7 +116,7 @@ export function DashboardView({ data }: { data: DashboardRawData }) {
                   </div>
                   <div className="l">Công việc đang hoạt động</div>
                 </div>
-                <div className="kcard-val-row"><div className="v">{kpi.active}</div></div>
+                <div className="kcard-val-row"><div className="v">{kpi.active}</div>{renderTrend(kpiTrend.active)}</div>
                 <div className="s">{kpi.activeOverdueLabel}</div>
               </div>
               <div className="kcard kr kcard-hero pcard clickable" onClick={() => setDetailType("kpi-risk")}>
@@ -115,7 +126,7 @@ export function DashboardView({ data }: { data: DashboardRawData }) {
                   </div>
                   <div className="l">Dự án có rủi ro</div>
                 </div>
-                <div className="kcard-val-row"><div className="v">{kpi.risk}</div></div>
+                <div className="kcard-val-row"><div className="v">{kpi.risk}</div>{renderTrend(kpiTrend.risk)}</div>
                 <div className="s" />
               </div>
             </div>
@@ -152,6 +163,26 @@ export function DashboardView({ data }: { data: DashboardRawData }) {
                     {spotlight.overflow > 0 && <span className="av-more">+{spotlight.overflow}</span>}
                   </div>
                 )}
+              </div>
+              <div className="spotlight-actions">
+                <span
+                  className="spotlight-btn pri"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    if (spotlight) setDetailType("spot-project")
+                  }}
+                >
+                  Xem dự án
+                </span>
+                <span
+                  className="spotlight-btn"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setDetailType("spot-all")
+                  }}
+                >
+                  Tất cả cảnh báo
+                </span>
               </div>
             </div>
             <div className="card" style={{ marginBottom: 0, flex: 1 }}>
