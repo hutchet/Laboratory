@@ -21,9 +21,16 @@ const CHIPS = [
 ]
 const STATUS_BG: Record<string,string> = { doing:"#e8f0fe", done:"#e8f5e9", not_started:"#f3f4f6" }
 const STATUS_COLOR: Record<string,string> = { doing:"#1d5fd6", done:"#2e7d32", not_started:"#5b637a" }
-const PRI_COLOR: Record<string,string> = { high:"#c62828", med:"#e37c13", low:"#2e7d32" }
+const PRI_COLOR: Record<string,string> = { high:"var(--red)", med:"var(--amber)", low:"var(--green)" }
+const PRI_BG: Record<string,string> = { high:"var(--red-soft)", med:"var(--amber-soft)", low:"var(--green-soft)" }
 const AV_COLORS = ["#5b7bff","#e37c13","#2e7d32","#c62828","#7c3aed"]
 function initials(name:string){ return name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase() }
+// Khớp chính xác hàm fmtDate() trong taskflow_original.html (dd-mm-yyyy, nối bằng '-')
+function fmtDate(s?: string | null){
+  if(!s) return undefined
+  const p = s.slice(0,10).split("-")
+  return p.length===3 ? `${p[2]}-${p[1]}-${p[0]}` : s
+}
 
 export function ProjectsView({ projects, customers, centers }:{ projects:ProjectRow[]; customers:Option[]; centers:Option[] }) {
   const router = useRouter()
@@ -94,7 +101,8 @@ export function ProjectsView({ projects, customers, centers }:{ projects:Project
                 statusBg={STATUS_BG[p.derivedStatus]??"#f3f4f6"}
                 statusColor={STATUS_COLOR[p.derivedStatus]??"#5b637a"}
                 priorityLabel={PROJECT_PRIORITY_LABEL[p.derivedPriority]??p.derivedPriority}
-                priorityColor={PRI_COLOR[p.derivedPriority]??"#b45309"}
+                priorityColor={PRI_COLOR[p.derivedPriority]??"var(--neutral)"}
+                priorityBg={PRI_BG[p.derivedPriority]??"var(--neutral-soft)"}
                 progress={pct}
                 taskDone={p.taskDone}
                 taskTotal={p.taskTotal}
@@ -102,7 +110,7 @@ export function ProjectsView({ projects, customers, centers }:{ projects:Project
                 planInfo={p.planStats?.hasPlan?`${p.planStats.testCount} bài · ${p.planStats.staffCount} nhân viên`:null}
                 onPlanClick={()=>router.push(`/plan?project=${p.id}`)}
                 avatars={p.customer?.name?[{name:p.customer.name,color:AV_COLORS[i%AV_COLORS.length]}]:[]}
-                dueDate={p.dueDate?new Date(p.dueDate).toLocaleDateString("vi-VN"):undefined}
+                dueDate={fmtDate(p.dueDate)}
                 onEdit={()=>{setEditing(p);setShowForm(true)}}
                 onDelete={()=>setConfirmDeleteId(p.id)}
               /></div>
