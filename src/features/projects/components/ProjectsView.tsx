@@ -1,5 +1,8 @@
 "use client"
 import { useMemo, useState, useTransition } from "react"
+import { ProjectCard } from '@/shared/ui/project-card'
+import { SearchInput } from '@/shared/ui/search-input'
+import { AddButton } from '@/shared/ui/add-button'
 import { CustomSelect } from '@/shared/ui/custom-select'
 import { PageShell } from "@/shared/ui/page-shell"
 import { FormModal } from "@/shared/ui/form-modal"
@@ -72,14 +75,8 @@ export function ProjectsView({ projects, customers, centers }:{ projects:Project
             options={CHIPS.map(c=>({value:c.id,label:c.label}))}
             width={180}
           />
-          <div style={{position:"relative"}}>
-            <input value={q} onChange={e=>{setQ(e.target.value);setPage(1)}} placeholder="Tìm dự án..." style={{padding:"7px 12px 7px 32px",borderRadius:10,border:"1px solid #dfe3e8",fontSize:13,width:200}} />
-            <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="#9aa1ab" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",pointerEvents:"none"}}><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
-          </div>
-          <button type="button" style={{padding:"7px 14px",borderRadius:10,border:"1px solid #dfe3e8",background:"#fff",fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",gap:4}}><span className="msr" style={{fontSize:16}}>filter_list</span>Bộ lọc</button>
-          <button type="button" onClick={()=>{setEditing(null);setShowForm(true)}} style={{padding:"7px 16px",borderRadius:10,border:"none",background:"#1d5fd6",color:"#fff",fontWeight:600,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",gap:4}}>
-            <span className="msr" style={{fontSize:16}}>add</span>Dự án mới
-          </button>
+          <SearchInput value={q} onChange={(v)=>{setQ(v);setPage(1)}} placeholder="Tìm dự án..." width={220} />
+          <AddButton label="Dự án mới" onClick={()=>{setEditing(null);setShowForm(true)}} />
         </div>
       </div>
       <div className="proj-list-wrap">
@@ -90,39 +87,25 @@ export function ProjectsView({ projects, customers, centers }:{ projects:Project
           {pageItems.map((p,i)=>{
             const pct=Math.round(p.progress*100)
             return (
-              <div key={p.id} className="pcard">
-                <div className="pt">
-                  <h4>{p.name}</h4>
-                  <div className="pacts">
-                    <button type="button" onClick={()=>{setEditing(p);setShowForm(true)}} style={{border:"none",background:"#f0f2f5",borderRadius:8,width:30,height:30,cursor:"pointer",display:"grid",placeItems:"center"}} title="Sửa"><span className="msr" style={{fontSize:16}}>edit</span></button>
-                    <button type="button" onClick={()=>setConfirmDeleteId(p.id)} style={{border:"none",background:"#fef2f2",borderRadius:8,width:30,height:30,cursor:"pointer",display:"grid",placeItems:"center"}} title="Xoá"><span className="msr" style={{fontSize:16,color:"#c62828"}}>delete</span></button>
-                  </div>
-                </div>
-                <div className="tags">
-                  <span style={{fontSize:12,fontWeight:600,padding:"4px 10px",borderRadius:20,background:STATUS_BG[p.derivedStatus]??"#f3f4f6",color:STATUS_COLOR[p.derivedStatus]??"#5b637a"}}>{PROJECT_STATUS_LABEL[p.derivedStatus]??p.derivedStatus}</span>
-                  <span style={{fontSize:12,fontWeight:600,padding:"4px 10px",borderRadius:20,background:"#fff3e0",color:PRI_COLOR[p.derivedPriority]??"#333"}}>{PROJECT_PRIORITY_LABEL[p.derivedPriority]??p.derivedPriority}</span>
-                </div>
-                <div className="pbox">
-                  <div className="prow"><span>Tiến độ</span><b>{pct}%</b></div>
-                  <div className="pbar"><i style={{width:`${pct}%`}} /></div>
-                  <div style={{fontSize:12,color:"var(--muted)",marginTop:6}}>{p.taskDone}/{p.taskTotal} công việc hoàn thành{p.taskOverdue?` · ${p.taskOverdue} quá hạn`:""}</div>
-                </div>
-                <div style={{fontSize:12.5}}>
-                  {p.planStats?.hasPlan?(
-                    <button type="button" onClick={()=>router.push(`/plan?project=${p.id}`)} style={{border:"none",background:"none",color:"#1d5fd6",cursor:"pointer",padding:0}}>
-                      {p.planStats.testCount} bài · {p.planStats.staffCount} nhân viên ›
-                    </button>
-                  ):(<span style={{color:"#9aa1ab"}}>Chưa có kế hoạch thử nghiệm</span>)}
-                </div>
-                <div className="pfoot">
-                  <div className="avstack">
-                    {p.customer?.name&&(
-                      <div className="a" style={{background:AV_COLORS[i%AV_COLORS.length]}} title={p.customer.name}>{initials(p.customer.name)}</div>
-                    )}
-                  </div>
-                  {p.dueDate&&<span className="due">Hạn: {new Date(p.dueDate).toLocaleDateString("vi-VN")}</span>}
-                </div>
-              </div>
+              <div key={p.id}><ProjectCard
+                id={p.id}
+                name={p.name}
+                statusLabel={PROJECT_STATUS_LABEL[p.derivedStatus]??p.derivedStatus}
+                statusBg={STATUS_BG[p.derivedStatus]??"#f3f4f6"}
+                statusColor={STATUS_COLOR[p.derivedStatus]??"#5b637a"}
+                priorityLabel={PROJECT_PRIORITY_LABEL[p.derivedPriority]??p.derivedPriority}
+                priorityColor={PRI_COLOR[p.derivedPriority]??"#b45309"}
+                progress={pct}
+                taskDone={p.taskDone}
+                taskTotal={p.taskTotal}
+                taskOverdue={p.taskOverdue}
+                planInfo={p.planStats?.hasPlan?`${p.planStats.testCount} bài · ${p.planStats.staffCount} nhân viên`:null}
+                onPlanClick={()=>router.push(`/plan?project=${p.id}`)}
+                avatars={p.customer?.name?[{name:p.customer.name,color:AV_COLORS[i%AV_COLORS.length]}]:[]}
+                dueDate={p.dueDate?new Date(p.dueDate).toLocaleDateString("vi-VN"):undefined}
+                onEdit={()=>{setEditing(p);setShowForm(true)}}
+                onDelete={()=>setConfirmDeleteId(p.id)}
+              /></div>
             )
           })}
         </div>
