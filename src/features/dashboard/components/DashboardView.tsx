@@ -23,7 +23,6 @@ import {
   computeDueBars,
   computeHeat,
   computeKpi,
-  computeKpiTrend,
   computeOverdue,
   computePaycards1,
   computePaycards2,
@@ -33,15 +32,17 @@ import {
   computeSpotlight,
   computeStatusBar,
   computeTeam,
+  computeKpiSparklines,
+  type KpiTrend,
   currentMonthValue,
   fmtDateVN,
   pvdMonthOptions,
   type DashboardDetailType,
-  type KpiTrend,
 } from "../compute"
 import { DueBarsChart } from "./DueBarsChart"
 import { DonutSvg } from "@/shared/ui/donut-svg"
 import { DashboardDetailModal } from "./DashboardDetailModal"
+import { CustomSelect } from "@/shared/ui/custom-select"
 
 type DueBarsMode = "day" | "week" | "month"
 
@@ -64,7 +65,6 @@ export function DashboardView({ data }: { data: DashboardRawData }) {
   const { tasks, projects, members, samples, equipment, quotes, customers, testItems, bookings } = data
 
   const kpi = useMemo(() => computeKpi(tasks), [tasks])
-  const kpiTrend = useMemo(() => computeKpiTrend(tasks), [tasks])
   const statusBar = useMemo(() => computeStatusBar(tasks), [tasks])
   const priority = useMemo(() => computePriority(tasks), [tasks])
   const dueBars = useMemo(() => computeDueBars(tasks), [tasks])
@@ -77,6 +77,7 @@ export function DashboardView({ data }: { data: DashboardRawData }) {
   const overdue = useMemo(() => computeOverdue(tasks, members), [tasks, members])
   const heat = useMemo(() => computeHeat(equipment, bookings), [equipment, bookings])
   const monthOptions = useMemo(() => pvdMonthOptions(), [])
+  const kpiSparklines = useMemo(() => computeKpiSparklines(tasks), [tasks])
   const detail = useMemo(
     () => (detailType ? computeDashboardDetail(detailType, { tasks, members, projects, equipment, bookings }) : null),
     [detailType, tasks, members, projects, equipment, bookings],
@@ -84,6 +85,42 @@ export function DashboardView({ data }: { data: DashboardRawData }) {
 
   const duePoints = dueBars[dueBarsMode]
   const dueTitleSuffix = dueBarsMode === "day" ? "(7 ngày tới)" : dueBarsMode === "week" ? "(6 tuần tới)" : "(6 tháng tới)"
+
+  // Sparkline: bieu do duong nho cho 3 the KPI hero (thay cho con so % trend)
+  const renderSparkline = (key: "util" | "active" | "risk", color: string) => {
+    const pts = kpiSparklines
+    if (!pts || pts.length < 2) return null
+    const vals = pts.map((p) => p[key])
+    const max = Math.max(...vals, 1)
+    const min = Math.min(...vals)
+    const range = max - min || 1
+    const W = 80, H = 32, PAD = 3
+    const xs = pts.map((_, i) => PAD + (i / (pts.length - 1)) * (W - PAD * 2))
+    const ys = vals.map((v) => H - PAD - ((v - min) / range) * (H - PAD * 2))
+    const points = xs.map((x, i) => `${x.toFixed(1)},${ys[i].toFixed(1)}`).join(" ")
+    const last = vals[vals.length - 1]
+    const first = vals[0]
+    const up = last >= first
+    return (
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
+        <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ overflow: "visible" }}>
+          <polyline
+            points={points}
+            fill="none"
+            stroke={color}
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            opacity={0.85}
+          />
+          <circle cx={xs[xs.length-1]} cy={ys[ys.length-1]} r={3} fill={color} />
+        </svg>
+        <span style={{ fontSize: 11, fontWeight: 700, color: up ? "var(--green, #16a34a)" : "var(--red, #dc2626)" }}>
+          {up ? "▲" : "▼"} {vals[vals.length-1]}
+        </span>
+      </div>
+    )
+  }
 
   // Port .kcard-trend (so voi tuan truoc) - xem computeKpiTrend trong compute.ts.
   const renderTrend = (t: KpiTrend) => {
@@ -109,7 +146,7 @@ export function DashboardView({ data }: { data: DashboardRawData }) {
                   </div>
                   <div className="l">Dự án/nội bộ</div>
                 </div>
-                <div className="kcard-val-row"><div className="v">{kpi.util}%</div>{renderTrend(kpiTrend.util)}</div>
+                <div className="kcard-val-row"><div className="v">{kpi.util}%</div>{renderSparkline("util", "#4f7fc7")}</div>
                 <div className="s">theo dự án</div>
               </div>
               <div className="kcard kg kcard-hero pcard clickable" onClick={() => setDetailType("kpi-active")}>
@@ -119,7 +156,7 @@ export function DashboardView({ data }: { data: DashboardRawData }) {
                   </div>
                   <div className="l">Công việc đang hoạt động</div>
                 </div>
-                <div className="kcard-val-row"><div className="v">{kpi.active}</div>{renderTrend(kpiTrend.active)}</div>
+                <div className="kcard-val-row"><div className="v">{kpi.active}</div>{renderSparkline("active", "#16a34a")}</div>
                 <div className="s">{kpi.activeOverdueLabel}</div>
               </div>
               <div className="kcard kr kcard-hero pcard clickable" onClick={() => setDetailType("kpi-risk")}>
@@ -129,7 +166,7 @@ export function DashboardView({ data }: { data: DashboardRawData }) {
                   </div>
                   <div className="l">Dự án có rủi ro</div>
                 </div>
-                <div className="kcard-val-row"><div className="v">{kpi.risk}</div>{renderTrend(kpiTrend.risk)}</div>
+                <div className="kcard-val-row"><div className="v">{kpi.risk}</div>{renderSparkline("risk", "#dc2626")}</div>
                 <div className="s" />
               </div>
             </div>
@@ -196,11 +233,7 @@ export function DashboardView({ data }: { data: DashboardRawData }) {
                   </div>
                   <h3>Phân bố giá trị dự án</h3>
                 </div>
-                <select className="pvd-month-sel" value={pvdMonth} onChange={(e) => setPvdMonth(e.target.value)}>
-                  {monthOptions.map((o) => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
-                  ))}
-                </select>
+                <CustomSelect value={pvdMonth} options={monthOptions} onChange={setPvdMonth} width={166} />
               </div>
               <div className="exp-summary" id="pvd-summary">
                 <div className="pvd-donut-wrap">

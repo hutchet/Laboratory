@@ -127,6 +127,22 @@ export function computeKpiTrend(tasks: DashTaskRaw[]): DashboardKpiTrend {
   }
 }
 
+// Sparkline: 7 diem du lieu lien tuc (7 ngay gan nhat) cho moi KPI hero.
+// Moi diem la so lieu tai cuoi ngay do - dung de ve bieu do duong nho.
+export type KpiSparklinePoint = { day: number; util: number; active: number; risk: number }
+
+export function computeKpiSparklines(tasks: DashTaskRaw[]): KpiSparklinePoint[] {
+  const now = Date.now()
+  const points: KpiSparklinePoint[] = []
+  for (let i = 6; i >= 0; i--) {
+    const asOf = now - i * 86400000
+    const snap = kpiSnapshot(tasks, asOf)
+    points.push({ day: 6 - i, ...snap })
+  }
+  return points
+}
+
+
 export type StatusBar = { pr: number; pd: number; po: number; inprogN: number; doneN: number; overdueN: number; up: boolean }
 
 export function computeStatusBar(tasks: DashTaskRaw[]): StatusBar {
@@ -508,6 +524,7 @@ export type DashboardDetailTaskRow = {
   project: string
   assigneeName: string
   deadline: string | null
+  status: string
 }
 
 export type DashboardDetailProjectRow = {
@@ -555,7 +572,8 @@ export type DashboardDetailType =
 
 function toDetailRow(t: DashTaskRaw, members: DashMemberRaw[]): DashboardDetailTaskRow {
   const nameOf = (id: string | null) => members.find((m) => m.id === id)?.name || "Chưa gán"
-  return { kind: "task", id: t.id, title: t.title, project: t.projectName || "—", assigneeName: nameOf(t.assigneeId), deadline: t.dueDate }
+  const stateLabel = t.status === "done" ? "Hoàn thành" : stateOf(t) === "over" ? "Quá hạn" : "Đang làm"
+  return { kind: "task", id: t.id, title: t.title, project: t.projectName || "—", assigneeName: nameOf(t.assigneeId), deadline: t.dueDate, status: stateLabel }
 }
 
 // Port 1:1 tu projStats(p) ban goc: trang thai/uu tien suy ra tu Task lien ket,

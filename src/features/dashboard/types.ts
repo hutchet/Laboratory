@@ -3,18 +3,6 @@
 // (khong co bang rieng), nen types o day la "raw" shape lay tu DB, con phan
 // tinh toan (KPI, due-bars, spotlight, workload...) nam trong compute.ts.
 
-export type DashboardStats = {
-  kpi: { label: string; value: number; unit?: string }[]
-  taskDue: number
-  taskOverdue: number
-  quotePending: number
-  activeProjects: number
-  pendingSamples: number
-  equipmentInMaintenance: number
-}
-
-export type BreakdownItem = { label: string; count: number; color: string }
-
 export type DashTaskRaw = {
   id: string
   title: string

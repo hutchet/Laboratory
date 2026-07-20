@@ -8,7 +8,7 @@
 import { useEffect } from "react"
 import { usePathname } from "next/navigation"
 import { applyI18n } from "@/shared/lib/i18n"
-export type Language = "vi" | "en"
+import type { Language } from "@/features/settings/types"
 
 export function I18nApplier({ lang }: { lang: Language }) {
   const pathname = usePathname()

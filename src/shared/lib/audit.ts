@@ -22,7 +22,6 @@ export type AuditEntity =
 	| "quote"
 	| "purchase"
 	| "sample"
-	| "report"
 	| "testplan"
 	| "auditplan"
 	| "quality"

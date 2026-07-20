@@ -71,6 +71,11 @@ function DetailTable({ rows }: { rows: DashboardDetailRow[] }) {
     )
   }
 
+  const statusStyle = (s: string) => {
+    if (s === "Hoàn thành") return { color: "var(--green, #16a34a)", background: "var(--green-soft, #dcfce7)" }
+    if (s === "Quá hạn") return { color: "var(--red, #dc2626)", background: "var(--red-soft, #fee2e2)" }
+    return { color: "var(--pri, #2563eb)", background: "var(--pri-soft, #dbeafe)" }
+  }
   return (
     <table>
       <thead>
@@ -79,6 +84,7 @@ function DetailTable({ rows }: { rows: DashboardDetailRow[] }) {
           <th>Dự án</th>
           <th>Phụ trách</th>
           <th>Hạn chốt</th>
+          <th>Trạng thái</th>
         </tr>
       </thead>
       <tbody>
@@ -90,6 +96,11 @@ function DetailTable({ rows }: { rows: DashboardDetailRow[] }) {
               <td>{r.project}</td>
               <td>{r.assigneeName}</td>
               <td>{fmtDateVN(r.deadline)}</td>
+              <td>
+                <span className="pill" style={{ ...statusStyle(r.status), padding: "2px 8px", borderRadius: 20, fontSize: 12, fontWeight: 600 }}>
+                  {r.status}
+                </span>
+              </td>
             </tr>
           )
         })}

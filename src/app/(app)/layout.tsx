@@ -8,7 +8,6 @@ import { NavLink } from "@/shared/ui/nav-link"
 import { NAV_GROUPS } from "@/shared/config/nav"
 import { VINFAST_LOGO } from "@/shared/lib/vinfast-logo"
 import { getUserRbacContext } from "@/shared/lib/rbac"
-import { type PermRank } from "@/shared/lib/rbac-client"
 import { RBACProvider } from "@/shared/lib/rbac-client"
 import { getSimRole } from "@/features/settings/role-sim"
 import { logoutAction } from "./logout-action"
@@ -16,6 +15,7 @@ import { TopSearch } from "@/shared/ui/top-search"
 import { NotificationBell } from "@/shared/ui/notification-bell"
 import { listOverdueTasksForNotif } from "@/features/tasks/queries"
 import { MobileSidebarController } from "@/shared/ui/mobile-sidebar-controller"
+import { AvatarInitials } from "@/shared/ui/avatar-initials"
 
 // Icon sidebar port 1:1 tu ban goc (taskflow_original.html dong 3095-3123, moi
 // <button class="nav" data-page="..."> co 1 svg truoc label). NAV_GROUPS o
@@ -95,18 +95,19 @@ const LOGOUT_ICON = (
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
   const session = await auth()
-  const name = session?.user?.name || session?.user?.email || "Người dùng"
+  const name = session?.user?.name || "Người dùng"
+  const email = session?.user?.email || ""
 
   // Cung cấp context RBAC thật cho toàn app (Perm/useRBAC ở client) — vai trò lấy từ
   // Role/Permission thật của tài khoản đăng nhập. Nếu người dùng đang "giả lập vai trò"
   // trong trang Cài đặt (tf_active_role_v1, xem features/settings/role-sim.ts), CHỈ ghi
   // đè trường rank hiển thị UI — modulePerms dùng cho canModule()/Server Action vẫn giữ
   // đúng quyền thật, không bị giả lập chi phối.
-  let rbacValue: { rank: PermRank; roleNames: string[]; modulePerms: string[] } = { rank: "viewer" as PermRank, roleNames: [], modulePerms: [] }
+  let rbacValue = { rank: "viewer" as const, roleNames: [] as string[], modulePerms: [] as string[] }
   if (session?.user?.id) {
     const ctx = await getUserRbacContext(session.user.id)
     const simRole = await getSimRole()
-    rbacValue = { ...ctx, rank: (simRole || ctx.rank) as PermRank }
+    rbacValue = { ...ctx, rank: simRole || ctx.rank }
   }
   const overdueTasks = await listOverdueTasksForNotif()
 
@@ -138,11 +139,17 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           </form>
         </aside>
         <main className="main">
-          <div className="top">
-            <div className="top-r" style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
+          <div className="top" style={{ background: "var(--surface, #fff)", borderBottom: "1px solid var(--line, #e6e8ef)", padding: "0 20px", minHeight: 56, display: "flex", alignItems: "center" }}>
+            <div className="top-r" style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 12 }}>
               <TopSearch />
               <NotificationBell tasks={overdueTasks} />
-              <span style={{ fontSize: 13, opacity: 0.75 }}>{name}</span>
+              <div className="me" style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 10px 4px 4px", borderRadius: 10, background: "var(--bg, #f4f5f7)" }}>
+                <AvatarInitials name={name} size={34} />
+                <div style={{ lineHeight: 1.3 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600 }}>{name}</div>
+                  {email ? <div style={{ fontSize: 11, opacity: 0.6 }}>{email}</div> : null}
+                </div>
+              </div>
             </div>
           </div>
           <div className="main-body" style={{ padding: 20 }}>

@@ -25,6 +25,7 @@ export const VF_DICT: Record<string, string> = {
   "Báo cáo": "Reports",
   "Công việc": "Tasks",
   "Thành viên": "Members",
+  "Chất lượng & Hệ thống": "Quality & Systems",
   "Cài đặt": "Settings",
   "Đăng xuất": "Log out",
   "+ Tạo báo giá": "+ New quote",
