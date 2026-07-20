@@ -10,6 +10,7 @@ import { DateField } from '@/shared/ui/date-field'
 import { PageShell } from "@/shared/ui/page-shell"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { KpiCard } from "@/shared/ui/kpi-card"
+import { computeSimpleTrend } from "@/shared/lib/kpi-trend"
 import { useRouter } from "next/navigation"
 import { saveProject, deleteProject } from "../actions"
 import { PROJECT_STATUS_LABEL, PROJECT_PRIORITY_LABEL, type ProjectRow, type Option } from "../types"
@@ -55,6 +56,14 @@ export function ProjectsView({ projects, customers, centers }:{ projects:Project
   const [formCenterId,setFormCenterId] = useState("")
 
   const kpis = useMemo(()=>({ active:projects.length, doing:projects.filter(p=>p.derivedStatus==="doing").length, done:projects.filter(p=>p.derivedStatus==="done").length, risk:projects.filter(p=>p.risk).length }),[projects])
+  // Trend KPI dung data thuc (2026-07-20, ban ah) - dua tren createdAt thuc cua tung du an
+  // (xem shared/lib/kpi-trend.ts). Neu chua du 7 ngay lich su, tu dong tra ve duong thang.
+  const kpiTrend = useMemo(()=>({
+    active: computeSimpleTrend(projects),
+    doing: computeSimpleTrend(projects, p=>p.derivedStatus==="doing"),
+    done: computeSimpleTrend(projects, p=>p.derivedStatus==="done"),
+    risk: computeSimpleTrend(projects, p=>p.risk),
+  }),[projects])
   const filtered = useMemo(()=>projects.filter(p=>{
     if(chip==="doing"&&p.derivedStatus!=="doing") return false
     if(chip==="done"&&p.derivedStatus!=="done") return false
@@ -82,10 +91,10 @@ export function ProjectsView({ projects, customers, centers }:{ projects:Project
     <PageShell title="Dự án">
       <div id="page-projects" style={{display:"flex",flexDirection:"column",minHeight:"calc(100vh - 108px)"}}>
       <div className="kpis-tier" style={{marginBottom:20}}>
-        <KpiCard label="Dự án đang hoạt động" value={kpis.active} />
-        <KpiCard label="Đang thực hiện" value={kpis.doing} tone="warning" />
-        <KpiCard label="Đã hoàn thành" value={kpis.done} tone="success" />
-        <KpiCard label="Dự án rủi ro" value={kpis.risk} tone="danger" />
+        <KpiCard label="Dự án đang hoạt động" value={kpis.active} trend={kpiTrend.active} />
+        <KpiCard label="Đang thực hiện" value={kpis.doing} tone="warning" trend={kpiTrend.doing} />
+        <KpiCard label="Đã hoàn thành" value={kpis.done} tone="success" trend={kpiTrend.done} />
+        <KpiCard label="Dự án rủi ro" value={kpis.risk} tone="danger" trend={kpiTrend.risk} />
       </div>
       <div className="section-head">
         <h3>Tất cả dự án</h3>
@@ -105,7 +114,7 @@ export function ProjectsView({ projects, customers, centers }:{ projects:Project
           KHÔNG phải popup che màn hình (FormModal trước đây sai so với taskflow_original.html
           dòng 3349). */}
       <div className="card" style={{marginBottom:18,display:showForm?"block":"none"}}>
-        <form id="tf-project-form" onSubmit={e=>{e.preventDefault();handleSubmit(new FormData(e.currentTarget))}}>
+        <form id="tf-project-form" key={editing?.id??"new"} onSubmit={e=>{e.preventDefault();handleSubmit(new FormData(e.currentTarget))}}>
           <div className="row">
             <div className="field" style={{flex:2,minWidth:240}}><label>Tên dự án *</label><input name="name" required defaultValue={editing?.name??""} placeholder="VD: VinFast" /></div>
             <div className="field" style={{flex:1,minWidth:200}}><label>Khách hàng</label><CustomSelect value={formCustomerId} onChange={setFormCustomerId} options={[{value:"",label:"—"},...customers.map(c=>({value:c.id,label:c.name}))]} width="100%" /><input type="hidden" name="customerId" value={formCustomerId} /></div>

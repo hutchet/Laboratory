@@ -5,6 +5,7 @@ import { AddButton } from "@/shared/ui/add-button"
 import { IconButton } from "@/shared/ui/icon-button"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { KpiCard } from "@/shared/ui/kpi-card"
+import { computeSimpleTrend } from "@/shared/lib/kpi-trend"
 import { SearchInput } from "@/shared/ui/search-input"
 import { ActionIcon } from "@/shared/ui/icons"
 import { Perm } from "@/shared/lib/rbac-client"
@@ -22,6 +23,13 @@ export function CustomersView({ customers }:{ customers:CustomerRow[] }) {
   const [confirmDeleteId,setConfirmDeleteId]=useState<string|null>(null)
   const [pending,startTransition]=useTransition()
   const kpis=useMemo(()=>({total:customers.length,withProj:customers.filter(c=>c.projectCount>0).length,totalProjects:customers.reduce((s,c)=>s+c.projectCount,0),totalValue:customers.reduce((s,c)=>s+c.displayValue,0)}),[customers])
+  // Trend KPI dung data thuc (2026-07-20, ban ah) - xem shared/lib/kpi-trend.ts.
+  // Chi tinh cho 2 KPI dang "dem theo createdAt rieng cua khach hang" (total/withProj);
+  // totalProjects/totalValue la tong hop tu quan he Project nen chua co trend tuong ung.
+  const kpiTrend=useMemo(()=>({
+    total: computeSimpleTrend(customers),
+    withProj: computeSimpleTrend(customers, c=>c.projectCount>0),
+  }),[customers])
   const filtered=useMemo(()=>customers.filter(c=>!q||c.name.toLowerCase().includes(q.toLowerCase())),[customers,q])
   function handleSubmit(fd:FormData){
     const input={id:editing?.id,name:String(fd.get("name")||"")||"Khách hàng",contact:String(fd.get("contact")||"")||null,email:String(fd.get("email")||"")||null,phone:String(fd.get("phone")||"")||null,address:String(fd.get("address")||"")||null,value:fd.get("value")?Number(fd.get("value")):null,notes:String(fd.get("notes")||"")||null}
@@ -31,8 +39,8 @@ export function CustomersView({ customers }:{ customers:CustomerRow[] }) {
   return (
     <PageShell title="Khách hàng">
       <div className="kpis-tier" style={{marginBottom:20}}>
-        <KpiCard label="Tổng khách hàng" value={kpis.total} />
-        <KpiCard label="Đang có dự án" value={kpis.withProj} tone="warning" />
+        <KpiCard label="Tổng khách hàng" value={kpis.total} trend={kpiTrend.total} />
+        <KpiCard label="Đang có dự án" value={kpis.withProj} tone="warning" trend={kpiTrend.withProj} />
         <KpiCard label="Tổng dự án liên quan" value={kpis.totalProjects} tone="success" />
         <KpiCard label="Tổng giá trị hợp đồng" value={fmtVal(kpis.totalValue)} tone="danger" />
       </div>
@@ -47,7 +55,7 @@ export function CustomersView({ customers }:{ customers:CustomerRow[] }) {
           dưới nút "+ Khách hàng mới" và trên lưới thẻ khách hàng — KHÔNG dùng popup FormModal nữa
           (đúng quy tắc: thẻ ẩn/hiện inline chỉ áp dụng cho + Thêm mới, popup FormModal dùng ở nơi khác). */}
       <div className="card" style={{marginBottom:18,display:showForm?"block":"none"}}>
-        <form id="tf-customer-form" onSubmit={e=>{e.preventDefault();handleSubmit(new FormData(e.currentTarget))}}>
+        <form id="tf-customer-form" key={editing?.id??"new"} onSubmit={e=>{e.preventDefault();handleSubmit(new FormData(e.currentTarget))}}>
           <div className="row">
             <div className="field" style={{flex:2,minWidth:220}}><label>Tên *</label><input name="name" required defaultValue={editing?.name??""} placeholder="VD: Công ty ABC" /></div>
             <div className="field" style={{flex:1,minWidth:180}}><label>Người liên hệ</label><input name="contact" defaultValue={editing?.contact??""} placeholder="VD: Nguyễn Văn A" /></div>

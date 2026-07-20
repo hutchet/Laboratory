@@ -1,6 +1,7 @@
 export type ProjectRow = {
   id: string
   name: string
+  createdAt: string
   status: string | null
   startDate: string | null
   endDate: string | null

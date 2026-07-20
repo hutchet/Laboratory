@@ -6,6 +6,7 @@ import { ActionIcon } from "@/shared/ui/icons"
 import { IconButton } from "@/shared/ui/icon-button"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { KpiCard } from "@/shared/ui/kpi-card"
+import { computeSimpleTrend } from "@/shared/lib/kpi-trend"
 import { SearchInput } from "@/shared/ui/search-input"
 import { Perm } from "@/shared/lib/rbac-client"
 import { saveCenter, deleteCenter } from "../actions"
@@ -22,6 +23,10 @@ export function CentersView({ centers }:{ centers:CenterRow[] }) {
   const [confirmDeleteId,setConfirmDeleteId]=useState<string|null>(null)
   const [pending,startTransition]=useTransition()
   const kpis=useMemo(()=>({total:centers.length,totalProjects:centers.reduce((s,c)=>s+c.projectCount,0),totalValue:centers.reduce((s,c)=>s+c.totalValue,0),totalCustomerLinks:centers.reduce((s,c)=>s+c.customerCount,0)}),[centers])
+  // Trend KPI dung data thuc (2026-07-20, ban ah) - xem shared/lib/kpi-trend.ts.
+  // Chi tinh cho "Tong trung tam" (dem theo createdAt rieng cua trung tam); cac KPI con lai
+  // la tong hop tu quan he Project/Customer nen chua co trend tuong ung.
+  const kpiTrend=useMemo(()=>({ total: computeSimpleTrend(centers) }),[centers])
   const filtered=useMemo(()=>centers.filter(c=>!q||c.name.toLowerCase().includes(q.toLowerCase())),[centers,q])
   function handleSubmit(fd:FormData){
     const input={id:editing?.id,name:String(fd.get("name")||"")||"Trung tâm",address:String(fd.get("address")||"")||null,manager:String(fd.get("manager")||"")||null,phone:String(fd.get("phone")||"")||null,notes:String(fd.get("notes")||"")||null,elecPrice:fd.get("elecPrice")?Number(fd.get("elecPrice")):null,rentPrice:fd.get("rentPrice")?Number(fd.get("rentPrice")):null}
@@ -31,7 +36,7 @@ export function CentersView({ centers }:{ centers:CenterRow[] }) {
   return (
     <PageShell title="Trung tâm thử nghiệm">
       <div className="kpis-tier" style={{marginBottom:20}}>
-        <KpiCard label="Tổng trung tâm" value={kpis.total} />
+        <KpiCard label="Tổng trung tâm" value={kpis.total} trend={kpiTrend.total} />
         <KpiCard label="Tổng dự án liên kết" value={kpis.totalProjects} tone="warning" />
         <KpiCard label="Tổng giá trị dự án" value={fmtVal(kpis.totalValue)} tone="success" />
         <KpiCard label="Khách hàng liên quan" value={kpis.totalCustomerLinks} tone="danger" />
@@ -48,7 +53,7 @@ export function CentersView({ centers }:{ centers:CenterRow[] }) {
           "+ Trung tâm mới" và trên lưới thẻ trung tâm — KHÔNG phải popup che màn hình (FormModal
           trước đó sai, cùng dạng lỗi đã sửa ở trang Dự án bản w). */}
       <div className="card" style={{marginBottom:18,display:showForm?"block":"none"}}>
-        <form id="tf-center-form" onSubmit={e=>{e.preventDefault();handleSubmit(new FormData(e.currentTarget))}}>
+        <form id="tf-center-form" key={editing?.id??"new"} onSubmit={e=>{e.preventDefault();handleSubmit(new FormData(e.currentTarget))}}>
           <div className="row">
             <div className="field" style={{flex:2,minWidth:220}}><label>Tên trung tâm *</label><input name="name" required defaultValue={editing?.name??""} placeholder="VD: Trung tâm thử nghiệm Pin" /></div>
             <div className="field" style={{flex:1,minWidth:180}}><label>Người quản lý</label><input name="manager" defaultValue={editing?.manager??""} placeholder="VD: Nguyễn Văn A" /></div>

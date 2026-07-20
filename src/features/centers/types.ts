@@ -1,6 +1,7 @@
 export type CenterRow = {
   id: string
   name: string
+  createdAt: string
   address: string | null
   manager: string | null
   phone: string | null

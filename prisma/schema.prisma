@@ -97,6 +97,8 @@ model UserRole {
 
 model Project {
   id         String    @id @default(cuid())
+  // Them 2026-07-20 (ban ah): dung de tinh trend KPI thuc (so voi tuan truoc) o trang Du an.
+  createdAt  DateTime  @default(now())
   name       String
   status     String?
   startDate  DateTime?
@@ -113,7 +115,6 @@ model Project {
   quotes   Quote[]
   samples  Sample[]
 
-  createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
@@ -172,6 +173,8 @@ model ReportRow {
 
 model Center {
   id        String  @id @default(cuid())
+  // Them 2026-07-20 (ban ah): dung de tinh trend KPI thuc (so voi tuan truoc) o trang Trung tam.
+  createdAt DateTime @default(now())
   name      String
   address   String?
   manager   String?
@@ -229,6 +232,8 @@ model EquipmentBooking {
 
 model Customer {
   id      String  @id @default(cuid())
+  // Them 2026-07-20 (ban ah): dung de tinh trend KPI thuc (so voi tuan truoc) o trang Khach hang.
+  createdAt DateTime @default(now())
   name    String
   contact String?
   email   String?
