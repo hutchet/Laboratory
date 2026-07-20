@@ -23,6 +23,7 @@ import {
   computeDueBars,
   computeHeat,
   computeKpi,
+  computeKpiTrend,
   computeOverdue,
   computePaycards1,
   computePaycards2,
@@ -63,6 +64,7 @@ export function DashboardView({ data }: { data: DashboardRawData }) {
   const { tasks, projects, members, samples, equipment, quotes, customers, testItems, bookings } = data
 
   const kpi = useMemo(() => computeKpi(tasks), [tasks])
+  const kpiTrend = useMemo(() => computeKpiTrend(tasks), [tasks])
   const statusBar = useMemo(() => computeStatusBar(tasks), [tasks])
   const priority = useMemo(() => computePriority(tasks), [tasks])
   const dueBars = useMemo(() => computeDueBars(tasks), [tasks])
