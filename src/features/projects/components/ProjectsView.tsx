@@ -44,6 +44,13 @@ export function ProjectsView({ projects, customers, centers }:{ projects:Project
   const [showForm,setShowForm] = useState(false)
   const [confirmDeleteId,setConfirmDeleteId] = useState<string|null>(null)
   const [pending,startTransition] = useTransition()
+  // Trang du an dung <select> goc cua trinh duyet cho Khach hang / Trung tam thu
+  // nghiem trong form them/sua -> khong co nen, mui ten lech, khong co hieu ung
+  // xoay khi mo (ban goc dung enhanceSystemSelects() de tu dong bien doi TAT CA
+  // <select> thanh sys-custom-select). Ban Next.js khong co co che DOM-enhance
+  // toan cuc nay nen phai chuyen tay sang CustomSelect + dong bo state rieng.
+  const [formCustomerId,setFormCustomerId] = useState("")
+  const [formCenterId,setFormCenterId] = useState("")
 
   const kpis = useMemo(()=>({ active:projects.length, doing:projects.filter(p=>p.derivedStatus==="doing").length, done:projects.filter(p=>p.derivedStatus==="done").length, risk:projects.filter(p=>p.risk).length }),[projects])
   const filtered = useMemo(()=>projects.filter(p=>{
@@ -61,6 +68,8 @@ export function ProjectsView({ projects, customers, centers }:{ projects:Project
     const input={id:editing?.id,name:String(formData.get("name")||"")||"Dự án mới",customerId:String(formData.get("customerId")||"")||null,centerId:String(formData.get("centerId")||"")||null,value:formData.get("value")?Number(formData.get("value")):null,startDate:String(formData.get("startDate")||"")||null,endDate:String(formData.get("endDate")||"")||null}
     startTransition(async()=>{ await saveProject(input); setShowForm(false); setEditing(null) })
   }
+  function openAddForm(){ setEditing(null); setFormCustomerId(""); setFormCenterId(""); setShowForm(v=>!v) }
+  function openEditForm(p:ProjectRow){ setEditing(p); setFormCustomerId(p.customerId??""); setFormCenterId(p.centerId??""); setShowForm(true); window.scrollTo(0,0) }
   function confirmDelete(){
     if(!confirmDeleteId) return
     const id=confirmDeleteId
@@ -86,7 +95,7 @@ export function ProjectsView({ projects, customers, centers }:{ projects:Project
             width={180}
           />
           <SearchInput value={q} onChange={(v)=>{setQ(v);setPage(1)}} placeholder="Tìm dự án..." width={220} />
-          <AddButton label="Dự án mới" onClick={()=>{setEditing(null);setShowForm(v=>!v)}} />
+          <AddButton label="Dự án mới" onClick={openAddForm} />
         </div>
       </div>
       {/* Thẻ thêm/sửa dự án — khớp đúng cấu trúc bản gốc: <div class="card hidden" id="proj-form">
@@ -97,8 +106,8 @@ export function ProjectsView({ projects, customers, centers }:{ projects:Project
         <form id="tf-project-form" onSubmit={e=>{e.preventDefault();handleSubmit(new FormData(e.currentTarget))}}>
           <div className="row">
             <div className="field" style={{flex:2,minWidth:240}}><label>Tên dự án *</label><input name="name" required defaultValue={editing?.name??""} placeholder="VD: VinFast" /></div>
-            <div className="field" style={{flex:1,minWidth:200}}><label>Khách hàng</label><select name="customerId" defaultValue={editing?.customerId??""}><option value="">—</option>{customers.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
-            <div className="field" style={{flex:1,minWidth:200}}><label>Trung tâm thử nghiệm</label><select name="centerId" defaultValue={editing?.centerId??""}><option value="">—</option>{centers.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
+            <div className="field" style={{flex:1,minWidth:200}}><label>Khách hàng</label><CustomSelect value={formCustomerId} onChange={setFormCustomerId} options={[{value:"",label:"—"},...customers.map(c=>({value:c.id,label:c.name}))]} width="100%" /><input type="hidden" name="customerId" value={formCustomerId} /></div>
+            <div className="field" style={{flex:1,minWidth:200}}><label>Trung tâm thử nghiệm</label><CustomSelect value={formCenterId} onChange={setFormCenterId} options={[{value:"",label:"—"},...centers.map(c=>({value:c.id,label:c.name}))]} width="100%" /><input type="hidden" name="centerId" value={formCenterId} /></div>
           </div>
           <div className="row" style={{marginTop:12}}>
             <div className="field" style={{flex:1,minWidth:180}}><label>Ngày bắt đầu</label><input type="date" name="startDate" defaultValue={editing?.startDate?editing.startDate.slice(0,10):""} /></div>
@@ -137,7 +146,7 @@ export function ProjectsView({ projects, customers, centers }:{ projects:Project
                 onPlanClick={()=>router.push(`/plan?project=${p.id}`)}
                 avatars={p.customer?.name?[{name:p.customer.name,color:AV_COLORS[i%AV_COLORS.length]}]:[]}
                 dueDate={fmtDate(p.dueDate)}
-                onEdit={()=>{setEditing(p);setShowForm(true);window.scrollTo(0,0)}}
+                onEdit={()=>openEditForm(p)}
                 onDelete={()=>setConfirmDeleteId(p.id)}
               /></div>
             )
