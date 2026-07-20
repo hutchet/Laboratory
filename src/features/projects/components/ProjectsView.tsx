@@ -4,6 +4,7 @@ import { ProjectCard } from '@/shared/ui/project-card'
 import { SearchInput } from '@/shared/ui/search-input'
 import { AddButton } from '@/shared/ui/add-button'
 import { CustomSelect } from '@/shared/ui/custom-select'
+import { ActionIcon } from '@/shared/ui/icons'
 import { PageShell } from "@/shared/ui/page-shell"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { KpiCard } from "@/shared/ui/kpi-card"
@@ -106,7 +107,7 @@ export function ProjectsView({ projects, customers, centers }:{ projects:Project
           </div>
           <p style={{fontSize:"12.5px",color:"var(--muted)",marginTop:10}}>Trạng thái, ưu tiên, tiến độ và deadline được tự động tổng hợp từ các công việc có cùng tên dự án này.</p>
           <div className="row" style={{marginTop:12}}>
-            <button type="submit" className="btn-pri" disabled={pending}>{editing?"Lưu thay đổi":"+ Thêm dự án"}</button>
+            <button type="submit" className="btn-pri" style={{display:"flex",alignItems:"center",gap:6}} disabled={pending}>{editing?"Lưu thay đổi":(<><ActionIcon name="add" size={16} />Thêm dự án</>)}</button>
             <button type="button" className="btn-line" onClick={()=>{setShowForm(false);setEditing(null)}}>Hủy</button>
           </div>
         </form>

@@ -199,12 +199,13 @@ const ACTION_PATHS = {
 			<path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
 		</>
 	),
+	// SVG rac chinh xac IC.trash cua ban goc (taskflow_original.html dong 4636) —
+	// truoc day dung nham bien the "trash-2" (co 2 gach doc ben trong + nap tach
+	// rieng) nen bi lech hinh dang so voi anh tham chieu (hinh 1).
 	delete: (
 		<>
 			<polyline points="3 6 5 6 21 6" />
-			<path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6" />
-			<path d="M10 11v6M14 11v6" />
-			<path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
+			<path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
 		</>
 	),
 	personAdd: (
@@ -254,6 +255,40 @@ export function ActionIcon({ name, size = 20, strokeWidth = 2, className, style 
 			style={style}
 		>
 			{ACTION_PATHS[name]}
+		</svg>
+	)
+}
+
+// Icon mui ten dinh huong (port tu directionSvg() ban goc, taskflow_original.html
+// dong ~7552: cac glyph '‹' '›' '⌄' '⌃' duoc doi thanh SVG net mong tai runtime).
+// Dung cho moi nut "sys-arrow-control"/"sys-arrow-glyph" (chevron mo ke hoach thu
+// nghiem, mui ten len/xuong cua droplist) — KHONG dung ky tu unicode tho nhu truoc
+// day vi se sai hinh dang so voi anh tham chieu (hinh 3).
+const DIRECTION_PATHS = {
+	chevronLeft: <path d="M14.5 5.5 8.5 12l6 6.5" />,
+	chevronRight: <path d="m9.5 5.5 6 6.5-6 6.5" />,
+	chevronDown: <path d="m6 9 6 6 6-6" />,
+	chevronUp: <path d="m6 15 6-6 6 6" />,
+} as const
+
+export type DirectionIconName = keyof typeof DIRECTION_PATHS
+
+export function DirectionIcon({ name, size = 20, strokeWidth = 2, className, style }: IconProps & { name: DirectionIconName }) {
+	return (
+		<svg
+			viewBox="0 0 24 24"
+			width={size}
+			height={size}
+			fill="none"
+			stroke="currentColor"
+			strokeWidth={strokeWidth}
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			className={className}
+			style={style}
+			aria-hidden="true"
+		>
+			{DIRECTION_PATHS[name]}
 		</svg>
 	)
 }
