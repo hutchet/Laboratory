@@ -71,10 +71,6 @@ export function BookingsView({
     () => (activeCategory === "all" ? equipment : equipment.filter((e) => e.category === activeCategory)),
     [equipment, activeCategory]
   )
-  const readyEquipment = useMemo(
-    () => visibleEquipment.filter((e) => e.status !== "maintenance"),
-    [visibleEquipment]
-  )
 
   const todaysBookings = useMemo(
     () => bookings.filter((b) => dateStr(b.startTime) === selectedDate).sort((a, b) => minOfDay(a.startTime) - minOfDay(b.startTime)),
@@ -126,6 +122,7 @@ export function BookingsView({
   const totalCount = equipment.length
   const readyCount = equipment.filter((e) => e.status === "active").length
   const maintCount = equipment.filter((e) => e.status === "maintenance").length
+  const readyEquipment = useMemo(() => equipment.filter((e) => e.status !== "maintenance"), [equipment])
 
   return (
     <PageShell
@@ -146,7 +143,7 @@ export function BookingsView({
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
-          <button type="button" onClick={goPrev} style={navBtnStyle}>‹</button>
+          <button type="button" onClick={goPrev} style={{ width: 30, height: 30, borderRadius: 8, border: "1px solid #dfe3e8", background: "#fff", cursor: "pointer" }} aria-label="Lùi">‹</button>
           {viewMode === "day" && (
             <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} style={inputStyle} />
           )}
@@ -156,7 +153,7 @@ export function BookingsView({
           {viewMode === "year" && (
             <input type="text" readOnly value={selectedDate.slice(0, 4)} style={inputStyle} aria-label="Năm đang xem" />
           )}
-          <button type="button" onClick={goNext} style={navBtnStyle}>›</button>
+          <button type="button" onClick={goNext} style={{ width: 30, height: 30, borderRadius: 8, border: "1px solid #dfe3e8", background: "#fff", cursor: "pointer" }} aria-label="Tới">›</button>
           <div style={{ display: "flex", gap: 4, marginLeft: 8 }}>
             {([["day", "Ngày"], ["month", "Tháng"], ["year", "Năm"]] as Array<[ViewMode, string]>).map(([v, label]) => (
               <button
