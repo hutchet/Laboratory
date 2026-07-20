@@ -1,6 +1,7 @@
 import type { MouseEventHandler } from "react"
 import { IconButton } from "./icon-button"
 import { AvatarInitials } from "./avatar-initials"
+import { DirectionIcon } from "./icons"
 
 export type ProjectCardProps = {
   id: string
@@ -77,7 +78,7 @@ export function ProjectCard({
               <span className="pplan-meta">
                 <b>{planInfo}</b>
                 <button type="button" onClick={onPlanClick} className="sys-arrow-control pplan-arrow" aria-label="Mở kế hoạch">
-                  ›
+                  <span className="sys-arrow-glyph"><DirectionIcon name="chevronRight" size={20} /></span>
                 </button>
               </span>
             </>

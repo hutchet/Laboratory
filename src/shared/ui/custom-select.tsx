@@ -1,6 +1,7 @@
 "use client"
 import type { CSSProperties } from "react"
 import { useEffect, useRef, useState } from "react"
+import { DirectionIcon } from "./icons"
 
 export type SelectOption = { value: string; label: string }
 
@@ -43,6 +44,10 @@ export function CustomSelect({
         width: width ?? "auto",
       }}
     >
+      {/* Lop nen chung cua droplist (surface-control) — truoc day nut trigger dung
+          mau nen "--bg" (mau canvas trang, gan nhu vo hinh tren nen sang) nen nhin
+          nhu "khong co nen". Doi sang dung dung bien --surface-control giong
+          .sys-select-trigger cua ban goc (globals.css dong ~1615). */}
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -52,12 +57,12 @@ export function CustomSelect({
           justifyContent: "space-between",
           gap: 8,
           width: "100%",
-          height: 36,
-          padding: "0 12px",
-          border: "1.5px solid var(--line, #dde1e9)",
-          borderRadius: 9,
-          background: "var(--bg, #f4f5f8)",
-          color: "var(--ink, #1c2337)",
+          height: 40,
+          padding: "0 6px 0 14px",
+          border: "none",
+          borderRadius: 10,
+          background: "var(--surface-control, #e7edf3)",
+          color: "var(--sys-text, var(--ink, #1c2337))",
           fontSize: 13,
           fontWeight: 600,
           fontFamily: "inherit",
@@ -66,20 +71,25 @@ export function CustomSelect({
           ...triggerStyle,
         }}
       >
-        <span>{active?.label ?? "—"}</span>
-        <svg
-          viewBox="0 0 24 24"
-          width={14}
-          height={14}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={2}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform .15s" }}
+        <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{active?.label ?? "—"}</span>
+        {/* Lop nen rieng cua icon mui ten (sys-icon-bg) — lop thu 2, tach biet mau
+            voi nen chung cua ca trigger, dung dung cap doi mau .sys-select-arrow
+            cua ban goc (globals.css dong ~1612/1622). */}
+        <span
+          style={{
+            width: 26,
+            height: 26,
+            minWidth: 26,
+            display: "grid",
+            placeItems: "center",
+            borderRadius: 8,
+            background: "var(--sys-icon-bg, #dce5ef)",
+            color: "var(--sys-icon, #4d596a)",
+            flex: "none",
+          }}
         >
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
+          <DirectionIcon name={open ? "chevronUp" : "chevronDown"} size={16} />
+        </span>
       </button>
       {open && (
         <div
@@ -88,8 +98,8 @@ export function CustomSelect({
             top: "calc(100% + 6px)",
             right: 0,
             minWidth: "100%",
-            background: "#fff",
-            border: "1px solid var(--line, #dde1e9)",
+            background: "var(--surface-large, #fff)",
+            border: "none",
             borderRadius: 12,
             boxShadow: "0 10px 28px rgba(20,25,50,.14)",
             padding: 6,
@@ -111,11 +121,11 @@ export function CustomSelect({
                   fontWeight: 600,
                   cursor: "pointer",
                   background: isActive ? "var(--pri, #2563eb)" : "transparent",
-                  color: isActive ? "#fff" : "var(--ink, #1c2337)",
+                  color: isActive ? "#fff" : "var(--sys-text, var(--ink, #1c2337))",
                   whiteSpace: "nowrap",
                 }}
                 onMouseEnter={(e) => {
-                  if (!isActive) (e.currentTarget as HTMLDivElement).style.background = "var(--bg, #f4f5f8)"
+                  if (!isActive) (e.currentTarget as HTMLDivElement).style.background = "var(--surface-control, #f4f5f8)"
                 }}
                 onMouseLeave={(e) => {
                   if (!isActive) (e.currentTarget as HTMLDivElement).style.background = "transparent"
