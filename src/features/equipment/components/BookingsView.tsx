@@ -71,6 +71,10 @@ export function BookingsView({
     () => (activeCategory === "all" ? equipment : equipment.filter((e) => e.category === activeCategory)),
     [equipment, activeCategory]
   )
+  const readyEquipment = useMemo(
+    () => visibleEquipment.filter((e) => e.status !== "maintenance"),
+    [visibleEquipment]
+  )
 
   const todaysBookings = useMemo(
     () => bookings.filter((b) => dateStr(b.startTime) === selectedDate).sort((a, b) => minOfDay(a.startTime) - minOfDay(b.startTime)),
