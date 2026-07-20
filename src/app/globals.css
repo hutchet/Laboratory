@@ -1754,9 +1754,9 @@ html[data-viewport="tablet"] .side{width:86px!important;padding:14px 10px!import
     width:276px!important;max-width:82vw!important;
     height:100vh!important;
     z-index:9999!important;
-    transform:translateX(-100%)!important;
-    transition:transform .28s cubic-bezier(.4,0,.2,1)!important;
-    box-shadow:4px 0 24px rgba(15,23,42,.18)!important;
+    transform:translateX(-101%)!important;
+    transition:transform .25s ease!important;
+    box-shadow:0 16px 40px -12px rgba(0,0,0,.45)!important;
     padding:18px 14px!important;
     overflow-y:auto!important;
   }
@@ -1769,6 +1769,7 @@ html[data-viewport="tablet"] .side{width:86px!important;padding:14px 10px!import
   .side .nav{justify-content:flex-start!important;padding:11px 12px!important;gap:12px!important;white-space:nowrap!important;font-size:14px!important;overflow:hidden!important;text-overflow:ellipsis!important;min-height:46px!important}
   .side .nav svg{flex:0 0 auto!important;width:20px!important;height:20px!important}
   .side .nav-h{display:block!important;font-size:11px!important;white-space:nowrap!important}
+  .side .upgrade{display:flex!important}
   .side .logout span{display:inline!important;white-space:nowrap!important}
 }
 .v106-side-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:9998;opacity:0;pointer-events:none;transition:opacity .2s ease}
@@ -3134,7 +3135,7 @@ html body .center-detail-card > .qs-box, html body .center-detail-card #pm-detai
   .mdl-kpi-l{font-size:12px;color:var(--muted);margin-top:4px;font-weight:500}
   .mdl-sect{font-size:13px;font-weight:600;color:var(--ink);margin:10px 0 8px}
   /* Status segment bars */
-  .ssb-legend{display:flex;gap:14px;margin:8px 0 4px}
+  .ssb-legend{display:flex;gap:8px;margin:8px 0 4px}
   .ssb-leg-item{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--muted)}
   .ssb-count-row{display:flex;gap:0;border-top:1px solid var(--line);padding-top:10px;margin-top:8px}
   .ssb-count-item{flex:1;text-align:center;border-right:1px solid var(--line)}
@@ -3170,7 +3171,7 @@ html body .center-detail-card > .qs-box, html body .center-detail-card #pm-detai
   margin-bottom:16px;
 }
 .section-head h3{
-  font-size:15px;
+  font-size:16px;
   font-weight:600;
   color:var(--ink);
 }
@@ -3195,19 +3196,7 @@ html body .center-detail-card > .qs-box, html body .center-detail-card #pm-detai
 .icon-btn-md3 .msr{font-size:18px}
 
 /* AddButton overrides (btn-pri already styled) */
-.btn-pri{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
-
-/* pcard token fixes — white card lifts above surface */
-.material-3 .pcard{
-  background:var(--md-sys-color-surface-container-lowest,#ffffff)!important;
-  border:1px solid var(--md-sys-color-outline-variant,#cac4d0)!important;
-  box-shadow:var(--md-sys-elevation-1)!important;
-}
-.material-3 .pcard:hover{
-  background:var(--md-sys-color-surface-container-low,#f5f2fa)!important;
-  box-shadow:var(--md-sys-elevation-2)!important;
-  transform:translateY(-2px);
-}
+.btn-pri{display:inline-flex;align-items:center;gap:7px;white-space:nowrap!important}
 
 /* pcard badge — chip style */
 .pcard-badge{
@@ -3228,4 +3217,4 @@ html body .center-detail-card > .qs-box, html body .center-detail-card #pm-detai
 .plan-empty{color:var(--muted)}
 
 /* search class min-width fix khi dùng inline width */
-.search{flex:none}
+
