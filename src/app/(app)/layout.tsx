@@ -17,38 +17,22 @@ import { listOverdueTasksForNotif } from "@/features/tasks/queries"
 import { TopbarPageTitle } from "@/shared/ui/topbar-page-title"
 import { MobileSidebarController } from "@/shared/ui/mobile-sidebar-controller"
 import { AvatarInitials } from "@/shared/ui/avatar-initials"
+import { NavIcon, type NavIconName } from "@/shared/ui/icons"
 
 // Icon sidebar port 1:1 tu ban goc (taskflow_original.html dong 3095-3123, moi
-// <button class="nav" data-page="..."> co 1 svg truoc label). NAV_GROUPS o
-// shared/config/nav.ts la file .ts thuan (khong JSX) nen icon duoc map o day
-// theo dataPage, dung chung ICON_ATTR cho toan bo (fill=none/stroke=currentColor).
-const ICON_ATTR = { viewBox: "0 0 24 24", fill: "none" as const, stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const }
+// <button class="nav" data-page="..."> co 1 svg truoc label). Ban goc KHONG dung
+// icon font (Material Symbols) - chi dung SVG net mong (fill=none/stroke=currentColor,
+// stroke-width 1.8). Xem shared/ui/icons.tsx cho toan bo path da port.
 
-const NAV_ICONS: Record<string, ReactNode> = {
-  dash: <span className="msr">dashboard</span>,
-  projects: <span className="msr">folder</span>,
-  centers: <span className="msr">science</span>,
-  customers: <span className="msr">groups</span>,
-  samples: <span className="msr">biotech</span>,
-  plan: <span className="msr">event_note</span>,
-  equipment: <span className="msr">precision_manufacturing</span>,
-  analytics: <span className="msr">bar_chart</span>,
-  "quote-depreciation": <span className="msr">money_off</span>,
-  "quote-overview": <span className="msr">request_quote</span>,
-  "quote-catalog": <span className="msr">menu_book</span>,
-  "quote-matrix": <span className="msr">grid_on</span>,
-  "quote-personnel": <span className="msr">badge</span>,
-  "quote-variable": <span className="msr">tune</span>,
-  report: <span className="msr">description</span>,
-  tasks: <span className="msr">task_alt</span>,
-  members: <span className="msr">people</span>,
-  purchase: <span className="msr">shopping_cart</span>,
-  auditplan: <span className="msr">calendar_month</span>,
-  quality: <span className="msr">verified</span>,
-  settings: <span className="msr">settings</span>,
-}
+const NAV_ICONS: Record<string, ReactNode> = Object.fromEntries(
+  ([
+    "dash", "projects", "centers", "customers", "samples", "plan", "equipment", "analytics",
+    "quote-depreciation", "quote-overview", "quote-catalog", "quote-matrix", "quote-personnel", "quote-variable",
+    "report", "tasks", "members", "purchase", "auditplan", "quality", "settings",
+  ] as NavIconName[]).map((name) => [name, <NavIcon key={name} name={name} />]),
+)
 
-const LOGOUT_ICON = <span className="msr">logout</span>
+const LOGOUT_ICON = <NavIcon name="logout" />
 
 
 

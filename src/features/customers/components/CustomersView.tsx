@@ -1,10 +1,11 @@
 "use client"
 import { useMemo, useState, useTransition } from "react"
 import { PageShell } from "@/shared/ui/page-shell"
-import { SearchInput } from "@/shared/ui/search-input"
 import { FormModal } from "@/shared/ui/form-modal"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { KpiCard } from "@/shared/ui/kpi-card"
+import { SearchInput } from "@/shared/ui/search-input"
+import { ActionIcon } from "@/shared/ui/icons"
 import { Perm } from "@/shared/lib/rbac-client"
 import { saveCustomer, deleteCustomer } from "../actions"
 import type { CustomerRow } from "../types"
@@ -58,8 +59,8 @@ export function CustomersView({ customers }:{ customers:CustomerRow[] }) {
                   </div>
                 </div>
                 <div className="center-card-actions">
-                  <button type="button" onClick={()=>{setEditing(c);setShowForm(true)}} style={{border:"none",background:"#f0f2f5",borderRadius:8,width:32,height:32,cursor:"pointer",fontSize:13,display:"grid",placeItems:"center"}} title="Sửa"><span className="msr" style={{fontSize:16}}>edit</span></button>
-                  <button type="button" onClick={()=>setConfirmDeleteId(c.id)} style={{border:"none",background:"#fef2f2",borderRadius:8,width:32,height:32,cursor:"pointer",fontSize:13,display:"grid",placeItems:"center"}} title="Xoá"><span className="msr" style={{fontSize:16,color:"#c62828"}}>delete</span></button>
+                  <button type="button" onClick={()=>{setEditing(c);setShowForm(true)}} style={{border:"none",background:"#f0f2f5",borderRadius:8,width:32,height:32,cursor:"pointer",fontSize:13,display:"grid",placeItems:"center"}} title="Sửa"><ActionIcon name="edit" size={15} /></button>
+                  <button type="button" onClick={()=>setConfirmDeleteId(c.id)} style={{border:"none",background:"#fef2f2",borderRadius:8,width:32,height:32,cursor:"pointer",fontSize:13,display:"grid",placeItems:"center"}} title="Xoá"><ActionIcon name="delete" size={15} style={{color:"#c62828"}} /></button>
                 </div>
               </div>
               <div className="center-card-summary">
