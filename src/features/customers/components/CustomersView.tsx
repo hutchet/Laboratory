@@ -1,7 +1,8 @@
 "use client"
 import { useMemo, useState, useTransition } from "react"
 import { PageShell } from "@/shared/ui/page-shell"
-import { FormModal } from "@/shared/ui/form-modal"
+import { AddButton } from "@/shared/ui/add-button"
+import { IconButton } from "@/shared/ui/icon-button"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { KpiCard } from "@/shared/ui/kpi-card"
 import { SearchInput } from "@/shared/ui/search-input"
@@ -28,8 +29,8 @@ export function CustomersView({ customers }:{ customers:CustomerRow[] }) {
   }
   function confirmDelete(){ if(!confirmDeleteId) return; const id=confirmDeleteId; startTransition(async()=>{ await deleteCustomer(id); setConfirmDeleteId(null) }) }
   return (
-    <PageShell title="Khách hàng" actions={<Perm minPerm="manager"><button type="button" onClick={()=>{setEditing(null);setShowForm(true)}} style={{padding:"8px 18px",borderRadius:10,border:"none",background:"#1d5fd6",color:"#fff",fontWeight:600,fontSize:13.5,cursor:"pointer"}}>+ Khách hàng mới</button></Perm>}>
-      <div className="kpis" style={{marginBottom:20,display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12}}>
+    <PageShell title="Khách hàng">
+      <div className="kpis-tier" style={{marginBottom:20}}>
         <KpiCard label="Tổng khách hàng" value={kpis.total} />
         <KpiCard label="Đang có dự án" value={kpis.withProj} tone="warning" />
         <KpiCard label="Tổng dự án liên quan" value={kpis.totalProjects} tone="success" />
@@ -39,29 +40,67 @@ export function CustomersView({ customers }:{ customers:CustomerRow[] }) {
         <h3>Tất cả khách hàng</h3>
         <div className="tools">
           <SearchInput value={q} onChange={setQ} placeholder="Tìm khách hàng..." width={220} />
+          <Perm minPerm="manager"><AddButton label="Khách hàng mới" onClick={()=>{setEditing(null);setShowForm(v=>!v)}} /></Perm>
         </div>
       </div>
+      {/* Thẻ thêm/sửa khách hàng — chuẩn hóa khớp Dự án/Trung tâm: hiện/ẩn NGAY TRONG luồng trang,
+          dưới nút "+ Khách hàng mới" và trên lưới thẻ khách hàng — KHÔNG dùng popup FormModal nữa
+          (đúng quy tắc: thẻ ẩn/hiện inline chỉ áp dụng cho + Thêm mới, popup FormModal dùng ở nơi khác). */}
+      <div className="card" style={{marginBottom:18,display:showForm?"block":"none"}}>
+        <form id="tf-customer-form" onSubmit={e=>{e.preventDefault();handleSubmit(new FormData(e.currentTarget))}}>
+          <div className="row">
+            <div className="field" style={{flex:2,minWidth:220}}><label>Tên *</label><input name="name" required defaultValue={editing?.name??""} placeholder="VD: Công ty ABC" /></div>
+            <div className="field" style={{flex:1,minWidth:180}}><label>Người liên hệ</label><input name="contact" defaultValue={editing?.contact??""} placeholder="VD: Nguyễn Văn A" /></div>
+            <div className="field" style={{flex:1,minWidth:140}}><label>Số điện thoại</label><input name="phone" defaultValue={editing?.phone??""} placeholder="09xxxxxxxx" /></div>
+          </div>
+          <div className="row" style={{marginTop:10}}>
+            <div className="field" style={{flex:1,minWidth:200}}><label>Email</label><input name="email" type="email" defaultValue={editing?.email??""} placeholder="ten@congty.com" /></div>
+            <div className="field" style={{flex:2,minWidth:220}}><label>Địa chỉ</label><input name="address" defaultValue={editing?.address??""} placeholder="Địa chỉ khách hàng" /></div>
+          </div>
+          <div className="row" style={{marginTop:10}}>
+            <div className="field" style={{flex:1,minWidth:180}}><label>Giá trị hợp đồng (VNĐ)</label><input type="number" name="value" defaultValue={editing?.value??""} /></div>
+            <div className="field" style={{flex:1,width:"100%"}}><label>Ghi chú</label><input name="notes" defaultValue={editing?.notes??""} placeholder="Ghi chú thêm" /></div>
+          </div>
+          <div className="row" style={{marginTop:12}}>
+            <button type="submit" className="btn-pri" style={{display:"flex",alignItems:"center",gap:6}} disabled={pending}>{editing?"Lưu thay đổi":(<><ActionIcon name="add" size={16} />Thêm khách hàng</>)}</button>
+            <button type="button" className="btn-line" onClick={()=>{setShowForm(false);setEditing(null)}}>Hủy</button>
+          </div>
+        </form>
+      </div>
       {filtered.length===0?(<div className="empty">Chưa có khách hàng nào.</div>):(
-        <div id="eq-center-cards">
+        <div className="cu-grid">
           {filtered.map((c,i)=>(
-            <div key={c.id} className="center-card">
-              <div className="center-card-head">
-                <div style={{display:"flex",alignItems:"flex-start",gap:14,flex:1}}>
-                  <div style={{width:48,height:48,borderRadius:12,flexShrink:0,background:AV_COLORS[i%AV_COLORS.length],color:"#fff",display:"grid",placeItems:"center",fontWeight:700,fontSize:15}}>{initials(c.name)}</div>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontWeight:700,fontSize:15,marginBottom:2}}>{c.name}</div>
-                    {c.contact&&<div style={{fontSize:12,color:"var(--muted)",marginBottom:4}}>{c.contact}</div>}
-                    <div className="center-card-meta" style={{marginTop:4}}>
-                      {c.email&&<span>{c.email}</span>}
-                      {c.phone&&<span>{c.phone}</span>}
-                      {c.address&&<span>{c.address}</span>}
-                    </div>
+            <div key={c.id} className="cucard">
+              <div className="cucard-head">
+                <div className="cu-avatar" style={{background:AV_COLORS[i%AV_COLORS.length]}}>{initials(c.name)}</div>
+                <div className="cucard-title">
+                  <h4>{c.name}</h4>
+                  <div className="cu-sub">{c.contact||"Chưa có người liên hệ"}</div>
+                </div>
+                <div className="cucard-acts">
+                  <IconButton icon="edit" variant="ghost" size={30} title="Sửa" onClick={()=>{setEditing(c);setShowForm(true)}} />
+                  <IconButton icon="delete" variant="danger" size={30} title="Xoá" onClick={()=>setConfirmDeleteId(c.id)} />
+                </div>
+              </div>
+              <div className="cucard-info">
+                {c.email&&(
+                  <div className="cu-info-row">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M22 6c0-1.1-.9-2-2-2H4a2 2 0 0 0-2 2v12c0 1.1.9 2 2 2h16a2 2 0 0 0 2-2V6z"/><path d="m22 6-10 7L2 6"/></svg>
+                    <span>{c.email}</span>
                   </div>
-                </div>
-                <div className="center-card-actions">
-                  <button type="button" onClick={()=>{setEditing(c);setShowForm(true)}} style={{border:"none",background:"#f0f2f5",borderRadius:8,width:32,height:32,cursor:"pointer",fontSize:13,display:"grid",placeItems:"center"}} title="Sửa"><ActionIcon name="edit" size={15} /></button>
-                  <button type="button" onClick={()=>setConfirmDeleteId(c.id)} style={{border:"none",background:"#fef2f2",borderRadius:8,width:32,height:32,cursor:"pointer",fontSize:13,display:"grid",placeItems:"center"}} title="Xoá"><ActionIcon name="delete" size={15} style={{color:"#c62828"}} /></button>
-                </div>
+                )}
+                {c.phone&&(
+                  <div className="cu-info-row">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.79 19.79 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3.5a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                    <span>{c.phone}</span>
+                  </div>
+                )}
+                {c.address&&(
+                  <div className="cu-info-row">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    <span>{c.address}</span>
+                  </div>
+                )}
               </div>
               <div className="center-card-summary">
                 <div className="sum-item"><b>{c.projectCount}</b><span>Dự án</span></div>
@@ -72,16 +111,6 @@ export function CustomersView({ customers }:{ customers:CustomerRow[] }) {
           ))}
         </div>
       )}
-      <FormModal open={showForm} title={editing?"Sửa khách hàng":"Thêm khách hàng mới"} onClose={()=>{setShowForm(false);setEditing(null)}} onSubmit={()=>{const f=document.getElementById("tf-customer-form") as HTMLFormElement|null;if(f)handleSubmit(new FormData(f))}} submitting={pending}>
-        <form id="tf-customer-form" onSubmit={e=>e.preventDefault()} style={{display:"flex",flexDirection:"column",gap:12}}>
-          <label style={{fontSize:12,fontWeight:600}}>Tên *<input name="name" required defaultValue={editing?.name??""} style={{width:"100%",padding:8,borderRadius:6,border:"1px solid #dfe3e8",marginTop:4}} /></label>
-          <div style={{display:"flex",gap:12}}><label style={{fontSize:12,fontWeight:600,flex:1}}>Người liên hệ<input name="contact" defaultValue={editing?.contact??""} style={{width:"100%",padding:8,borderRadius:6,border:"1px solid #dfe3e8",marginTop:4}} /></label><label style={{fontSize:12,fontWeight:600,flex:1}}>Sđt<input name="phone" defaultValue={editing?.phone??""} style={{width:"100%",padding:8,borderRadius:6,border:"1px solid #dfe3e8",marginTop:4}} /></label></div>
-          <label style={{fontSize:12,fontWeight:600}}>Email<input name="email" type="email" defaultValue={editing?.email??""} style={{width:"100%",padding:8,borderRadius:6,border:"1px solid #dfe3e8",marginTop:4}} /></label>
-          <label style={{fontSize:12,fontWeight:600}}>Địa chỉ<input name="address" defaultValue={editing?.address??""} style={{width:"100%",padding:8,borderRadius:6,border:"1px solid #dfe3e8",marginTop:4}} /></label>
-          <label style={{fontSize:12,fontWeight:600}}>Giá trị hợp đồng (VNĐ)<input name="value" type="number" defaultValue={editing?.value??""} style={{width:"100%",padding:8,borderRadius:6,border:"1px solid #dfe3e8",marginTop:4}} /></label>
-          <label style={{fontSize:12,fontWeight:600}}>Ghi chú<textarea name="notes" defaultValue={editing?.notes??""} style={{width:"100%",padding:8,borderRadius:6,border:"1px solid #dfe3e8",marginTop:4}} /></label>
-        </form>
-      </FormModal>
       <ConfirmDialog open={!!confirmDeleteId} title="Xoá khách hàng?" description="Hành động này không thể hoàn tác." danger onConfirm={confirmDelete} onCancel={()=>setConfirmDeleteId(null)} />
     </PageShell>
   )

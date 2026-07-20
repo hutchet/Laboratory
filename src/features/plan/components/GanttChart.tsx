@@ -1,6 +1,7 @@
 "use client"
 import { useMemo, useRef, useState } from "react"
 import { autoStatus, RESULT_COLOR, RESULT_LABEL, type TestItemRow, type TestPackRow } from "../types"
+import { ArrowButton } from "@/shared/ui/arrow-button"
 
 type Zoom = "day" | "week" | "month"
 
@@ -165,7 +166,7 @@ export function GanttChart({ items, packs }: { items: TestItemRow[]; packs: Test
     <div>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <button type="button" onClick={() => shiftFocus(-1)} style={{ width: 30, height: 30, borderRadius: 8, border: "1px solid #dfe3e8", background: "#fff", cursor: "pointer" }} aria-label="Lùi thời gian">‹</button>
+          <ArrowButton direction="chevronLeft" onClick={() => shiftFocus(-1)} ariaLabel="Lùi thời gian" />
           <input
             type={inputType}
             value={inputValue}
@@ -179,7 +180,7 @@ export function GanttChart({ items, packs }: { items: TestItemRow[]; packs: Test
             }}
             style={{ padding: "5px 8px", borderRadius: 8, border: "1px solid #dfe3e8", fontSize: 12.5 }}
           />
-          <button type="button" onClick={() => shiftFocus(1)} style={{ width: 30, height: 30, borderRadius: 8, border: "1px solid #dfe3e8", background: "#fff", cursor: "pointer" }} aria-label="Tới thời gian">›</button>
+          <ArrowButton direction="chevronRight" onClick={() => shiftFocus(1)} ariaLabel="Tới thời gian" />
         </div>
         <div style={{ display: "flex", gap: 4 }}>
           {ZOOM_OPTIONS.map((z) => (

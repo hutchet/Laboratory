@@ -5,6 +5,8 @@ import { SearchInput } from '@/shared/ui/search-input'
 import { AddButton } from '@/shared/ui/add-button'
 import { CustomSelect } from '@/shared/ui/custom-select'
 import { ActionIcon } from '@/shared/ui/icons'
+import { ArrowButton } from '@/shared/ui/arrow-button'
+import { DateField } from '@/shared/ui/date-field'
 import { PageShell } from "@/shared/ui/page-shell"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { KpiCard } from "@/shared/ui/kpi-card"
@@ -79,7 +81,7 @@ export function ProjectsView({ projects, customers, centers }:{ projects:Project
   return (
     <PageShell title="Dự án">
       <div id="page-projects" style={{display:"flex",flexDirection:"column",minHeight:"calc(100vh - 108px)"}}>
-      <div className="kpis" style={{marginBottom:20,display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12}}>
+      <div className="kpis-tier" style={{marginBottom:20}}>
         <KpiCard label="Dự án đang hoạt động" value={kpis.active} />
         <KpiCard label="Đang thực hiện" value={kpis.doing} tone="warning" />
         <KpiCard label="Đã hoàn thành" value={kpis.done} tone="success" />
@@ -110,8 +112,8 @@ export function ProjectsView({ projects, customers, centers }:{ projects:Project
             <div className="field" style={{flex:1,minWidth:200}}><label>Trung tâm thử nghiệm</label><CustomSelect value={formCenterId} onChange={setFormCenterId} options={[{value:"",label:"—"},...centers.map(c=>({value:c.id,label:c.name}))]} width="100%" /><input type="hidden" name="centerId" value={formCenterId} /></div>
           </div>
           <div className="row" style={{marginTop:12}}>
-            <div className="field" style={{flex:1,minWidth:180}}><label>Ngày bắt đầu</label><input type="date" name="startDate" defaultValue={editing?.startDate?editing.startDate.slice(0,10):""} /></div>
-            <div className="field" style={{flex:1,minWidth:180}}><label>Ngày kết thúc</label><input type="date" name="endDate" defaultValue={editing?.endDate?editing.endDate.slice(0,10):""} /></div>
+            <div className="field" style={{flex:1,minWidth:180}}><label>Ngày bắt đầu</label><DateField name="startDate" defaultValue={editing?.startDate?editing.startDate.slice(0,10):""} /></div>
+            <div className="field" style={{flex:1,minWidth:180}}><label>Ngày kết thúc</label><DateField name="endDate" defaultValue={editing?.endDate?editing.endDate.slice(0,10):""} /></div>
             <div className="field" style={{flex:1,minWidth:180}}><label>Giá trị (VNĐ)</label><input name="value" type="number" defaultValue={editing?.value??""} /></div>
           </div>
           <p style={{fontSize:"12.5px",color:"var(--muted)",marginTop:10}}>Trạng thái, ưu tiên, tiến độ và deadline được tự động tổng hợp từ các công việc có cùng tên dự án này.</p>
@@ -157,9 +159,9 @@ export function ProjectsView({ projects, customers, centers }:{ projects:Project
       <div className="pager" id="proj-pager" style={{position:"sticky",bottom:0,background:"var(--bg,#f3f4f6)",zIndex:5,borderTop:"2px solid var(--line,#e4e8f0)",marginTop:"auto"}}>
         <span className="info">Hiện thị {filtered.length===0?0:(safePage-1)*PAGE_SIZE+1}–{Math.min(safePage*PAGE_SIZE,filtered.length)} / {filtered.length} dự án</span>
         <div className="pages">
-          <button className="pg" onClick={()=>setPage(p=>Math.max(1,p-1))} disabled={safePage===1}>‹</button>
+          <ArrowButton direction="chevronLeft" onClick={()=>setPage(p=>Math.max(1,p-1))} disabled={safePage===1} ariaLabel="Trang trước" />
           {Array.from({length:pageCount},(_,i)=>i+1).map(n=>(<button key={n} className={`pg${n===safePage?" active":""}`} onClick={()=>setPage(n)}>{n}</button>))}
-          <button className="pg" onClick={()=>setPage(p=>Math.min(pageCount,p+1))} disabled={safePage===pageCount}>›</button>
+          <ArrowButton direction="chevronRight" onClick={()=>setPage(p=>Math.min(pageCount,p+1))} disabled={safePage===pageCount} ariaLabel="Trang sau" />
         </div>
       </div>
       </div>

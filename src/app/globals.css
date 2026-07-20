@@ -375,6 +375,7 @@
   .section-head h3{font-size:16px;font-weight:600}
   .tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
   .proj-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+  @media(max-width:1300px){.proj-grid{grid-template-columns:repeat(3,1fr)}}
   .pcard{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:13px}
   .pcard .pt{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
   .pcard .pt h4{font-size:15.5px;font-weight:600;background:var(--surface-control);display:inline-block;padding:4px 10px;border-radius:8px;line-height:1.3}
@@ -712,6 +713,21 @@
   @media(max-width:1300px){.cu-grid{grid-template-columns:repeat(3,1fr)}}
   @media(max-width:1100px){.cu-grid{grid-template-columns:repeat(2,1fr)}}
   @media(max-width:680px){.cu-grid{grid-template-columns:1fr}}
+  /* Chuẩn hóa lưới KPI 4 cấp theo màn hình: PC=4/Laptop=3/iPad=2/Mobile=1 — dùng class riêng .kpis-tier
+     (không dùng .kpis mặc định) để không xung đột với các rule .kpis khác đang áp cho Dashboard. */
+  .kpis-tier{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  @media(max-width:1300px){.kpis-tier{grid-template-columns:repeat(3,1fr)}}
+  @media(max-width:1100px){.kpis-tier{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:680px){.kpis-tier{grid-template-columns:1fr}}
+  .material-3 .kpis-tier{grid-template-columns:repeat(4,1fr)}
+  @media(max-width:1300px){.material-3 .kpis-tier{grid-template-columns:repeat(3,1fr)}}
+  @media(max-width:1100px){.material-3 .kpis-tier{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:680px){.material-3 .kpis-tier{grid-template-columns:1fr}}
+  /* Chuẩn hóa "box chọn thời gian" — ô input ngày dùng chung bo góc + nền var(--surface-control)
+     giống các control khác (SearchInput/CustomSelect). */
+  .sys-date-field{height:38px;border-radius:var(--radius-control,10px);border:1px solid var(--line);background:var(--surface-control);padding:0 12px;font-size:13px;color:var(--ink);width:100%;box-sizing:border-box}
+  .sys-date-field:focus{outline:none;border-color:var(--pri)}
+  .material-3 .sys-date-field{border:0;border-radius:var(--ds-control-radius);background:var(--surface-control);height:var(--ds-field-height)}
   .cucard{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:14px;transition:box-shadow .18s}
   .cucard:hover{box-shadow:0 12px 32px -10px rgba(20,25,50,.20)}
   .cucard-head{display:flex;align-items:flex-start;gap:12px}
@@ -1017,6 +1033,7 @@
 .material-3 .me,.material-3 .adminbar{background:var(--md-sys-color-surface-container-low);border:0;border-radius:var(--md-sys-shape-medium);box-shadow:none}
 .material-3 .top-r svg,.material-3 button svg{width:20px;height:20px;flex:none}
 /* Adaptive Material layout */
+@media(max-width:1300px){.material-3 .proj-grid{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:1199px){.material-3 .main{padding:20px}.material-3 .kpis{grid-template-columns:repeat(2,1fr)}.material-3 .proj-grid{grid-template-columns:repeat(2,1fr)}.material-3 #eq-center-cards,.material-3 #qtm-center-cards,.material-3 #plan-card-overview{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:839px){.material-3 .side{width:88px;padding:12px 8px}.material-3 .brand{justify-content:center;font-size:0}.material-3 .brand .logo{width:48px;height:48px}.material-3 .nav{justify-content:center;padding:0}.material-3 .nav span:not(.badge),.material-3 .nav-h,.material-3 .upgrade,.material-3 .logout span{display:none}.material-3 .main{padding:16px}.material-3 .top-r{width:100%}.material-3 .search{flex:1}.material-3 .cols3{grid-template-columns:1fr}.material-3 .analytics-layout{grid-template-columns:1fr}}
 @media(max-width:599px){.material-3 .side{display:none}.material-3 .main{padding:12px}.material-3 .top{position:static;padding:0;margin:0 0 16px}.material-3 .kpis,.material-3 .proj-grid,.material-3 #eq-center-cards,.material-3 #qtm-center-cards,.material-3 #plan-card-overview{grid-template-columns:1fr}.material-3 .analytics-metrics{grid-template-columns:1fr 1fr}.material-3 .row{flex-direction:column;align-items:stretch}.material-3 .field{width:100%!important;min-width:0!important}.material-3 .btn-pri,.material-3 .btn-line,.material-3 .btn-sec{justify-content:center}.material-3 .center-detail-tools{width:100%}.material-3 .center-detail-tools>*{flex:1}.material-3 .modal,.material-3 #eq-form-card{border-radius:var(--md-sys-shape-large)!important;width:calc(100vw - 16px)!important;max-height:calc(100vh - 16px)!important}}
@@ -2359,7 +2376,7 @@ html[data-viewport="mobile"] .me>div{display:none!important}
     z-index: 5 !important;
     background: var(--md-sys-color-surface-container-low, #f4f5f9) !important;
   }
-  /* Chỉ card có .qs-box/.rtable-wrap trực tiếp bên trong mới ép fit viewport */
+  /* Chỉ card có .qs-box/.rtable-wrap trực tiếp bên trong mới ��p fit viewport */
   .material-3 #page-quote-catalog > .card:has(> .qs-box),
   .material-3 #page-quote-catalog > .card:has(> .rtable-wrap),
   .material-3 #page-quote-personnel > .card:has(.qs-box),

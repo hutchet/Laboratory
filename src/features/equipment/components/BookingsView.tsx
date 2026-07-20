@@ -3,6 +3,7 @@ import { useMemo, useState, useTransition, type CSSProperties } from "react"
 import { PageShell } from "@/shared/ui/page-shell"
 import { KpiCard } from "@/shared/ui/kpi-card"
 import { FormModal } from "@/shared/ui/form-modal"
+import { ArrowButton } from "@/shared/ui/arrow-button"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { saveBooking, deleteBooking } from "../actions"
 import type { BookingRow, EquipmentRow, Option } from "../types"
@@ -143,7 +144,7 @@ export function BookingsView({
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
-          <button type="button" onClick={goPrev} style={{ width: 30, height: 30, borderRadius: 8, border: "1px solid #dfe3e8", background: "#fff", cursor: "pointer" }} aria-label="Lùi">‹</button>
+          <ArrowButton direction="chevronLeft" onClick={goPrev} ariaLabel="Lùi" />
           {viewMode === "day" && (
             <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} style={inputStyle} />
           )}
@@ -153,7 +154,7 @@ export function BookingsView({
           {viewMode === "year" && (
             <input type="text" readOnly value={selectedDate.slice(0, 4)} style={inputStyle} aria-label="Năm đang xem" />
           )}
-          <button type="button" onClick={goNext} style={{ width: 30, height: 30, borderRadius: 8, border: "1px solid #dfe3e8", background: "#fff", cursor: "pointer" }} aria-label="Tới">›</button>
+          <ArrowButton direction="chevronRight" onClick={goNext} ariaLabel="Tới" />
           <div style={{ display: "flex", gap: 4, marginLeft: 8 }}>
             {([["day", "Ngày"], ["month", "Tháng"], ["year", "Năm"]] as Array<[ViewMode, string]>).map(([v, label]) => (
               <button

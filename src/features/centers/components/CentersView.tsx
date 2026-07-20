@@ -3,6 +3,7 @@ import { useMemo, useState, useTransition } from "react"
 import { PageShell } from "@/shared/ui/page-shell"
 import { AddButton } from "@/shared/ui/add-button"
 import { ActionIcon } from "@/shared/ui/icons"
+import { IconButton } from "@/shared/ui/icon-button"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { KpiCard } from "@/shared/ui/kpi-card"
 import { SearchInput } from "@/shared/ui/search-input"
@@ -29,7 +30,7 @@ export function CentersView({ centers }:{ centers:CenterRow[] }) {
   function confirmDelete(){ if(!confirmDeleteId) return; const id=confirmDeleteId; startTransition(async()=>{ await deleteCenter(id); setConfirmDeleteId(null) }) }
   return (
     <PageShell title="Trung tâm thử nghiệm">
-      <div className="kpis" style={{marginBottom:20,display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12}}>
+      <div className="kpis-tier" style={{marginBottom:20}}>
         <KpiCard label="Tổng trung tâm" value={kpis.total} />
         <KpiCard label="Tổng dự án liên kết" value={kpis.totalProjects} tone="warning" />
         <KpiCard label="Tổng giá trị dự án" value={fmtVal(kpis.totalValue)} tone="success" />
@@ -78,12 +79,8 @@ export function CentersView({ centers }:{ centers:CenterRow[] }) {
                   <div className="cu-sub">{c.manager||"Chưa có người quản lý"}</div>
                 </div>
                 <div className="cucard-acts">
-                  <button type="button" className="icon-act pri" onClick={()=>{setEditing(c);setShowForm(true)}} title="Sửa">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
-                  </button>
-                  <button type="button" className="icon-act del" onClick={()=>setConfirmDeleteId(c.id)} title="Xoá">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                  </button>
+                  <IconButton icon="edit" variant="ghost" size={30} title="Sửa" onClick={()=>{setEditing(c);setShowForm(true)}} />
+                  <IconButton icon="delete" variant="danger" size={30} title="Xoá" onClick={()=>setConfirmDeleteId(c.id)} />
                 </div>
               </div>
               <div className="cucard-info">
