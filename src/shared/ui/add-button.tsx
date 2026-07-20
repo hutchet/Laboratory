@@ -1,4 +1,5 @@
 import type { MouseEventHandler } from "react"
+import { ActionIcon } from "./icons"
 
 export type AddButtonProps = {
   label: string
@@ -13,7 +14,7 @@ export type AddButtonProps = {
 export function AddButton({ label, onClick, type = "button" }: AddButtonProps) {
   return (
     <button type={type} onClick={onClick} className="btn-pri" style={{ display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}>
-      <span className="msr" style={{ fontSize: 18 }}>add</span>
+      <ActionIcon name="add" size={18} />
       {label}
     </button>
   )

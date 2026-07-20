@@ -1,9 +1,10 @@
-import type { ReactNode, MouseEventHandler } from "react"
+import type { MouseEventHandler } from "react"
+import { ActionIcon, type ActionIconName } from "./icons"
 
 export type IconButtonVariant = "ghost" | "danger"
 
 export type IconButtonProps = {
-  icon: string        // Material Symbols name
+  icon: ActionIconName // ten icon SVG port tu ban goc (icons map: add/edit/delete/...)
   onClick?: MouseEventHandler<HTMLButtonElement>
   title?: string
   variant?: IconButtonVariant
@@ -24,7 +25,7 @@ export function IconButton({ icon, onClick, title, variant = "ghost", size = 32,
       className={`icon-btn-md3${variant === "danger" ? " danger" : ""}`}
       style={{ width: size, height: size }}
     >
-      <span className="msr">{icon}</span>
+      <ActionIcon name={icon} size={16} />
     </button>
   )
 }

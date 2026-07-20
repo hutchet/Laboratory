@@ -19,8 +19,11 @@ const CHIPS = [
   { id: "done", label: "Hoàn thành" },
   { id: "risk", label: "Có rủi ro" },
 ]
-const STATUS_BG: Record<string,string> = { doing:"#e8f0fe", done:"#e8f5e9", not_started:"#f3f4f6" }
-const STATUS_COLOR: Record<string,string> = { doing:"#1d5fd6", done:"#2e7d32", not_started:"#5b637a" }
+// Khop dung logic mau trang thai cua renderProjects() ban goc: done=green-soft/green,
+// not_started=neutral-soft/neutral, doing (con lai)=pri-soft/pri — dung bien CSS thay vi
+// hex hardcode de an theo dung theme Material 3 + dark mode (xem .tag2 trong globals.css).
+const STATUS_BG: Record<string,string> = { doing:"var(--pri-soft)", done:"var(--green-soft)", not_started:"var(--neutral-soft)" }
+const STATUS_COLOR: Record<string,string> = { doing:"var(--pri)", done:"var(--green)", not_started:"var(--neutral)" }
 const PRI_COLOR: Record<string,string> = { high:"var(--red)", med:"var(--amber)", low:"var(--green)" }
 const PRI_BG: Record<string,string> = { high:"var(--red-soft)", med:"var(--amber-soft)", low:"var(--green-soft)" }
 const AV_COLORS = ["#5b7bff","#e37c13","#2e7d32","#c62828","#7c3aed"]
@@ -98,8 +101,8 @@ export function ProjectsView({ projects, customers, centers }:{ projects:Project
                 id={p.id}
                 name={p.name}
                 statusLabel={PROJECT_STATUS_LABEL[p.derivedStatus]??p.derivedStatus}
-                statusBg={STATUS_BG[p.derivedStatus]??"#f3f4f6"}
-                statusColor={STATUS_COLOR[p.derivedStatus]??"#5b637a"}
+                statusBg={STATUS_BG[p.derivedStatus]??"var(--neutral-soft)"}
+                statusColor={STATUS_COLOR[p.derivedStatus]??"var(--neutral)"}
                 priorityLabel={PROJECT_PRIORITY_LABEL[p.derivedPriority]??p.derivedPriority}
                 priorityColor={PRI_COLOR[p.derivedPriority]??"var(--neutral)"}
                 priorityBg={PRI_BG[p.derivedPriority]??"var(--neutral-soft)"}

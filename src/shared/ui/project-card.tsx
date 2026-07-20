@@ -48,10 +48,10 @@ export function ProjectCard({
 
       {/* Badges: trạng thái + ưu tiên */}
       <div className="tags">
-        <span className="pcard-badge" style={{ background: statusBg, color: statusColor }}>
+        <span className="tag2" style={{ background: statusBg, color: statusColor }}>
           {statusLabel}
         </span>
-        <span className="pcard-badge" style={{ background: priorityBg ?? "var(--md-sys-color-tertiary-container,#ffddb3)", color: priorityColor }}>
+        <span className="tag2" style={{ background: priorityBg ?? "var(--neutral-soft)", color: priorityColor }}>
           {priorityLabel}
         </span>
       </div>

@@ -3,6 +3,7 @@ import { useRef, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { PageShell } from "@/shared/ui/page-shell"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
+import { ActionIcon } from "@/shared/ui/icons"
 import { saveTheme, resetTheme, setSimRole, saveLanguage, requestFullBackup, restoreFullBackup, clearAllData } from "../actions"
 import { FONT_OPTIONS, SIM_ROLE_OPTIONS, LANGUAGE_OPTIONS } from "../types"
 import type { AppSettings, FontKey, Language, SimRole, ThemeMode } from "../types"
@@ -242,7 +243,7 @@ export function SettingsView({ settings }: { settings: AppSettings }) {
             disabled={!settings.canWipe || pending}
             onClick={() => setClearStep(1)}
           >
-            <span className="msr" style={{fontSize:16,marginRight:4}}>delete_forever</span>Xóa toàn bộ dữ liệu
+            <ActionIcon name="delete" size={16} style={{marginRight:4}} />Xóa toàn bộ dữ liệu
           </button>
           <button type="button" className="btn-line" disabled={!settings.canRestore || pending || restoreBusy} onClick={() => fileRef.current?.click()}>
             {restoreBusy ? "Đang khôi phục..." : "⬆ Khôi phục dữ liệu"}
@@ -269,7 +270,7 @@ export function SettingsView({ settings }: { settings: AppSettings }) {
           </div>
         </div>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginTop: 10 }}>
-          <button className="btn-pri" type="button" disabled><span className="msr" style={{fontSize:16,marginRight:4}}>folder_open</span>Chọn thư mục database</button>
+          <button className="btn-pri" type="button" disabled>📁 Chọn thư mục database</button>
         </div>
         <div style={{ marginTop: 10, fontSize: 12.5, fontWeight: 600, color: "var(--muted)" }}>Không áp dụng cho bản chạy trên server/Vercel</div>
       </div>
