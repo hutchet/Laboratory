@@ -26,6 +26,7 @@ export type AuditEntity =
 	| "auditplan"
 	| "quality"
 	| "settings"
+	| "report"
 
 export type AuditAction = "create" | "update" | "delete" | "other"
 
