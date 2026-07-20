@@ -58,6 +58,7 @@ export function BookingsView({
   const [slotPrefill, setSlotPrefill] = useState<SlotPrefill>(null)
   const [showForm, setShowForm] = useState(false)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [formError, setFormError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
   const categories = useMemo(() => {
