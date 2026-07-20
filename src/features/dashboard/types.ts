@@ -12,6 +12,9 @@ export type DashTaskRaw = {
   projectName: string | null
   assigneeId: string | null
   dueDate: string | null
+  // Dung de tinh trend "so voi tuan truoc" tren 3 the KPI hero (kcard-trend) -
+  // xem computeKpiTrend trong compute.ts.
+  createdAt: string
 }
 
 export type DashProjectRaw = {

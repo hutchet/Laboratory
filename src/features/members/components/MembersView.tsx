@@ -36,6 +36,7 @@ export function MembersView({ members, currentMember }: { members: MemberRow[]; 
       gender: String(formData.get("gender") || ""),
       team: String(formData.get("team") || ""),
       accessRole: String(formData.get("accessRole") || "viewer"),
+      password: String(formData.get("password") || "") || undefined,
     }
     startTransition(async () => { await saveMember(input); setShowForm(false); setEditing(null) })
   }
@@ -142,6 +143,15 @@ export function MembersView({ members, currentMember }: { members: MemberRow[]; 
               <option value="quote_staff">Nhân viên báo giá</option>
               <option value="viewer">Chỉ xem</option>
             </select>
+          </label>
+          {/* Sửa lỗi phát hiện khi rà lại P0: trước đây không có cách nào tạo/đổi mật khẩu
+              đăng nhập thật (User.passwordHash) từ trang này, nên đổi "Phân quyền" ở trên
+              chỉ đổi phần hiển thị, không đổi được quyền thực thi ở server. Ô này là tuỳ chọn —
+              chỉ cần nhập khi muốn tạo tài khoản đăng nhập mới hoặc đổi mật khẩu hiện có; để
+              trống thì Phân quyền vẫn được đồng bộ vào tài khoản đã có (nếu email đã có User). */}
+          <label style={{ fontSize: 12, fontWeight: 600 }}>Mật khẩu đăng nhập (tuỳ chọn)
+            <input name="password" type="password" placeholder="Để trống nếu không tạo/đổi mật khẩu" style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+            <span style={{ display: "block", fontSize: 11, color: "#6b7280", marginTop: 2 }}>Nhập để tạo tài khoản đăng nhập ứng với email trên, hoặc đổi mật khẩu tài khoản đã có.</span>
           </label>
         </form>
       </FormModal>
