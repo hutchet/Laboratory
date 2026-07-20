@@ -67,17 +67,24 @@ export function ProjectCard({
           {taskDone}/{taskTotal} công việc hoàn thành
           {taskOverdue ? <span className="overdue"> · {taskOverdue} quá hạn</span> : null}
         </div>
-      </div>
 
-      {/* Kế hoạch thử nghiệm */}
-      <div className="plan-info">
-        {planInfo ? (
-          <button type="button" onClick={onPlanClick} className="plan-link">
-            {planInfo} ›
-          </button>
-        ) : (
-          <span className="plan-empty">Chưa có kế hoạch thử nghiệm</span>
-        )}
+        {/* Kế hoạch thử nghiệm — dùng đúng class pplan-link/pplan-meta/pplan-arrow của
+            taskflow_original.html để CSS MD3 (globals.css) tạo nền tròn 40px cho icon mũi tên */}
+        <div className={`pplan-link${planInfo ? "" : " is-empty"}`}>
+          {planInfo ? (
+            <>
+              <span>Kế hoạch thử nghiệm</span>
+              <span className="pplan-meta">
+                <b>{planInfo}</b>
+                <button type="button" onClick={onPlanClick} className="sys-arrow-control pplan-arrow" aria-label="Mở kế hoạch">
+                  ›
+                </button>
+              </span>
+            </>
+          ) : (
+            <span>Chưa có kế hoạch thử nghiệm</span>
+          )}
+        </div>
       </div>
 
       {/* Footer: avatars + hạn */}

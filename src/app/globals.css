@@ -97,6 +97,9 @@
   #page-dash .paycard,
   #page-dash .spotlight{box-shadow:none!important}
   #page-dash .clickable:hover{box-shadow:none!important}
+  #page-projects .kcard,
+  #page-projects .pcard{box-shadow:none!important}
+  #page-projects .clickable:hover{box-shadow:none!important}
   #page-dash .spotlight::before{content:'';position:absolute;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.08),transparent 70%);top:-80px;right:-60px}
   #page-dash .spotlight-lab{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;opacity:.65;font-weight:600;margin-bottom:6px;position:relative;z-index:1}
   #page-dash .spotlight-name{font-size:19px;font-weight:600;margin-bottom:4px;position:relative;z-index:1}
