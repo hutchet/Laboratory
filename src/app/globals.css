@@ -1627,7 +1627,7 @@ html[data-theme=dark] body.material-3 .nav.active svg{color:#d9e5ff!important;st
 .material-3 #modal .modal.wide{width:min(1280px,calc(100vw - 48px))!important;max-width:none!important}
 .material-3 #modal .modal-h{display:grid!important;grid-template-columns:minmax(0,1fr) 44px!important;align-items:center!important;gap:16px!important;min-height:64px!important;padding:12px 16px 12px 24px!important;background:var(--surface-large)!important;border:0!important;position:sticky!important;top:0!important;z-index:5!important;flex:none!important}
 .material-3 #modal .modal-h h3{min-width:0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;margin:0!important}
-.material-3 #modal .modal-x{position:static!important;justify-self:end!important;width:40px!important;height:40px!important;min-width:40px!important;min-height:40px!important;border-radius:10px!important;background:var(--surface-control)!important;color:var(--sys-icon)!important;display:grid!important;place-items:center!important;padding:0!important;line-height:1!important;z-index:6!important}
+.material-3 .modal-x{position:static!important;justify-self:end!important;width:40px!important;height:40px!important;min-width:40px!important;min-height:40px!important;border-radius:10px!important;background:var(--surface-control)!important;color:var(--sys-icon)!important;display:grid!important;place-items:center!important;padding:0!important;line-height:1!important;z-index:6!important}
 .material-3 #modal .modal-body{padding:0 24px 24px!important;overflow:auto!important;display:flex!important;flex-direction:column!important;gap:14px!important;position:relative!important;z-index:1!important}
 .material-3 #modal .modal-body :is(.rtable-wrap,.qs-box){border-radius:12px!important;background:var(--surface-small)!important;padding:8px!important;overflow:auto!important}
 /* Arrow glyph stays centered inside its own small square surface */
@@ -3247,11 +3247,11 @@ html body .center-detail-card > .qs-box, html body .center-detail-card #pm-detai
 .material-3 :is(.pcard,.cucard,.hub-card,.qlcard,.kcard,.paycard,.overview-analytics,.adminbar,.upgrade){
   background:var(--sys-surface-small)!important;
   border:1px solid transparent!important;
-  box-shadow:var(--md-sys-elevation-1)!important;
+  box-shadow:none!important;
 }
 .material-3 :is(.pcard,.cucard,.hub-card,.qlcard,.kcard,.paycard,.overview-analytics,.adminbar,.upgrade):hover{
   background:var(--md-sys-color-surface-container-high,#e9e7ef)!important;
-  box-shadow:var(--md-sys-elevation-2)!important;
+  box-shadow:none!important;
   transform:translateY(-2px);
 }
 [data-theme=dark] .material-3 :is(.pcard,.cucard,.hub-card,.qlcard,.kcard,.paycard,.overview-analytics,.adminbar,.upgrade):hover{
