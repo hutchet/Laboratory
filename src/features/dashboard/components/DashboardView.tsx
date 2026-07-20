@@ -37,7 +37,7 @@ import {
   pvdMonthOptions,
   type DashboardDetailType,
   type KpiTrend,
-|} from "../compute"
+} from "../compute"
 import { DueBarsChart } from "./DueBarsChart"
 import { DonutSvg } from "@/shared/ui/donut-svg"
 import { DashboardDetailModal } from "./DashboardDetailModal"
