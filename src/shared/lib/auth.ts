@@ -20,11 +20,21 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   pages: { signIn: "/login" },
   callbacks: {
     jwt({ token, user }) {
-      if (user) token.id = user.id
+      if (user) {
+        token.id = user.id
+        // Preserve name and email so session always has display info
+        if (user.name) token.name = user.name
+        if (user.email) token.email = user.email
+      }
       return token
     },
     session({ session, token }) {
-      if (session.user) session.user.id = token.id as string
+      if (session.user) {
+        session.user.id = token.id as string
+        // Always surface real name from token (falls back to email prefix)
+        if (token.name) session.user.name = token.name as string
+        else if (token.email) session.user.name = (token.email as string).split("@")[0]
+      }
       return session
     },
   },
@@ -41,7 +51,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           if (!user?.passwordHash) return null
           const valid = await bcrypt.compare(credentials.password as string, user.passwordHash)
           if (!valid) return null
-          return { id: user.id, email: user.email, name: user.name ?? undefined }
+          // Try to get display name from Member record
+          const member = await db.member.findFirst({ where: { email: credentials.email as string } })
+          return { id: user.id, email: user.email, name: member?.name ?? user.name ?? undefined }
         } catch (e) {
           console.error("authorize error:", e)
           return null

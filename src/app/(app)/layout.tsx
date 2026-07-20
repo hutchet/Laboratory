@@ -14,6 +14,7 @@ import { logoutAction } from "./logout-action"
 import { TopSearch } from "@/shared/ui/top-search"
 import { NotificationBell } from "@/shared/ui/notification-bell"
 import { listOverdueTasksForNotif } from "@/features/tasks/queries"
+import { TopbarPageTitle } from "@/shared/ui/topbar-page-title"
 import { MobileSidebarController } from "@/shared/ui/mobile-sidebar-controller"
 import { AvatarInitials } from "@/shared/ui/avatar-initials"
 
@@ -139,8 +140,11 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           </form>
         </aside>
         <main className="main">
-          <div className="top" style={{ background: "var(--surface, #fff)", borderBottom: "1px solid var(--line, #e6e8ef)", padding: "0 20px", minHeight: 56, display: "flex", alignItems: "center" }}>
-            <div className="top-r" style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 12 }}>
+          <div className="top" style={{ padding: "0 20px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+            <div className="hello">
+              <h2><TopbarPageTitle /></h2>
+            </div>
+            <div className="top-r" style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <TopSearch />
               <NotificationBell tasks={overdueTasks} />
               <div className="me" style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 10px 4px 4px", borderRadius: 10, background: "var(--bg, #f4f5f7)" }}>

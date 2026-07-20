@@ -97,21 +97,42 @@ export function DashboardView({ data }: { data: DashboardRawData }) {
     const W = 80, H = 32, PAD = 3
     const xs = pts.map((_, i) => PAD + (i / (pts.length - 1)) * (W - PAD * 2))
     const ys = vals.map((v) => H - PAD - ((v - min) / range) * (H - PAD * 2))
-    const points = xs.map((x, i) => `${x.toFixed(1)},${ys[i].toFixed(1)}`).join(" ")
     const last = vals[vals.length - 1]
     const first = vals[0]
     const up = last >= first
+    // Smooth cubic-bezier path (Catmull-Rom tension 0.35)
+    const T = 0.35
+    const smoothD = xs.reduce((d, x, i) => {
+      if (i === 0) return `M${x.toFixed(1)},${ys[i].toFixed(1)}`
+      const px = xs[i - 1], py = ys[i - 1]
+      const ppx = i > 1 ? xs[i - 2] : px, ppy = i > 1 ? ys[i - 2] : py
+      const nx = i < xs.length - 1 ? xs[i + 1] : x, ny = i < xs.length - 1 ? ys[i + 1] : ys[i]
+      const cp1x = (px + (x - ppx) * T).toFixed(1)
+      const cp1y = (py + (ys[i] - ppy) * T).toFixed(1)
+      const cp2x = (x - (nx - px) * T).toFixed(1)
+      const cp2y = (ys[i] - (ny - py) * T).toFixed(1)
+      return `${d} C${cp1x},${cp1y} ${cp2x},${cp2y} ${x.toFixed(1)},${ys[i].toFixed(1)}`
+    }, "")
+    // Gradient fill area under curve
+    const fillD = `${smoothD} L${xs[xs.length-1]},${H} L${xs[0]},${H} Z`
     return (
       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
         <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ overflow: "visible" }}>
-          <polyline
-            points={points}
+          <defs>
+            <linearGradient id={`sg-${color.replace("#","c")}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={color} stopOpacity={0.18} />
+              <stop offset="100%" stopColor={color} stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <path d={fillD} fill={`url(#sg-${color.replace("#","c")})`} stroke="none" />
+          <path
+            d={smoothD}
             fill="none"
             stroke={color}
-            strokeWidth={2}
+            strokeWidth={2.2}
             strokeLinecap="round"
             strokeLinejoin="round"
-            opacity={0.85}
+            opacity={0.9}
           />
           <circle cx={xs[xs.length-1]} cy={ys[ys.length-1]} r={3} fill={color} />
         </svg>
@@ -171,12 +192,12 @@ export function DashboardView({ data }: { data: DashboardRawData }) {
               </div>
             </div>
             <div className="card" style={{ marginBottom: 0, flex: 1 }}>
-              <div className="ch">
+              <div className="ch" onClick={() => setDetailType("due-bars")} style={{ cursor: "pointer" }}>
                 <div className="ch-l">
                   <div className="ch-ic" style={{ background: "var(--pri-soft)", color: "var(--pri-d)" }}>
                     <svg viewBox="0 0 24 24" {...ICON_STROKE}><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></svg>
                   </div>
-                  <h3 className="clickable" onClick={() => setDetailType("due-bars")}>Công việc/hạn chốt {dueTitleSuffix}</h3>
+                  <h3>Công việc/hạn chốt {dueTitleSuffix}</h3>
                 </div>
                 <div className="pl-zoom">
                   {DUE_BARS_MODES.map(([v, label]) => (
@@ -316,7 +337,7 @@ export function DashboardView({ data }: { data: DashboardRawData }) {
                 <div className="ch-ic" style={{ background: "var(--neutral-soft)", color: "var(--neutral)" }}>
                   <svg viewBox="0 0 24 24" {...ICON_STROKE}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
                 </div>
-                <h3 className="clickable" onClick={() => setDetailType("workload")}>Khối lượng công việc</h3>
+                <h3>Khối lượng công việc</h3>
               </div>
               <span style={{ cursor: "pointer", fontSize: 11.5, color: "var(--pri)", fontWeight: 600 }} onClick={() => setShowTeamList((v) => !v)}>
                 {showTeamList ? "Xem biểu đồ" : "Xem danh sách"}
@@ -462,7 +483,7 @@ export function DashboardView({ data }: { data: DashboardRawData }) {
               <div className="ch-ic" style={{ background: "var(--kred)", color: "var(--red)" }}>
                 <svg viewBox="0 0 24 24" {...ICON_STROKE}><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
               </div>
-              <h3 className="clickable" onClick={() => setDetailType("overdue")}>3 công việc quá hạn lâu nhất</h3>
+              <h3 style={{ cursor: "pointer" }} onClick={() => setDetailType("overdue")}>3 công việc quá hạn lâu nhất</h3>
             </div>
             <span>cần xử lý gấp</span>
           </div>
@@ -485,7 +506,7 @@ export function DashboardView({ data }: { data: DashboardRawData }) {
 
         <div className="card">
           <div className="ch">
-            <div className="ch-l"><h3 className="clickable" onClick={() => setDetailType("dash-projects")}>Tiến độ theo dự án</h3></div>
+            <div className="ch-l" onClick={() => setDetailType("dash-projects")} style={{ cursor: "pointer" }}><h3>Tiến độ theo dự án</h3></div>
           </div>
           {projectList.length === 0 ? (
             <div className="empty" style={{ padding: "10px 0" }}>Chưa có dự án nào có công việc.</div>
@@ -507,7 +528,7 @@ export function DashboardView({ data }: { data: DashboardRawData }) {
 
         <div className="card">
           <div className="ch">
-            <div className="ch-l"><h3 className="clickable" onClick={() => setDetailType("activity")}>Mật độ đặt lịch thiết bị (7 ngày)</h3></div>
+            <div className="ch-l" onClick={() => setDetailType("activity")} style={{ cursor: "pointer" }}><h3>Mật độ đặt lịch thiết bị (7 ngày)</h3></div>
             <span>{heat.readyPct}% sẵn sàng{heat.maintCount > 0 ? ` · ${heat.maintCount} đang bảo trì` : ""}</span>
           </div>
           {heat.rows.length === 0 ? (

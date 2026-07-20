@@ -1,7 +1,0 @@
-node_modules
-.next
-.env
-.env.local
-prisma/dev.db
-.vercel
-.env.production
