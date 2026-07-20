@@ -1,50 +1,54 @@
 import type { ReactNode } from "react"
 import { cn } from "@/shared/lib/cn"
 
+export type KpiCardTone = "neutral" | "blue" | "success" | "warning" | "danger"
+
 export type KpiCardProps = {
   label: string
   value: ReactNode
   hint?: string
-  tone?: "neutral" | "success" | "warning" | "danger"
+  // neutral = lavender xanh nhạt, success = xanh lá nhạt, warning = trắng/xám nhạt, danger = hồng nhạt, blue = xanh dương đậm
+  tone?: KpiCardTone
   icon?: ReactNode
   className?: string
-  // Port cua data-detail + class "clickable" tren cac kcard ban goc (dong
-  // 3336-3339): cho phep the kpi mo modal chi tiet khi bam vao.
   onClick?: () => void
+  size?: "hero" | "sm"
 }
 
-const TONE_BORDER: Record<string, string> = {
-  neutral: "#e2e5e9",
-  success: "#bfe8cd",
-  warning: "#f6dcae",
-  danger: "#f4bcbc",
+// Màu flat pastel khớp ảnh chuẩn
+const TONE_STYLE: Record<KpiCardTone, { bg: string; valueColor: string; border: string }> = {
+  neutral: { bg: "#eef1fb",  valueColor: "#1d5fd6", border: "#d8e0f7" },
+  blue:    { bg: "#dbeafe",  valueColor: "#1d4ed8", border: "#bfdbfe" },
+  success: { bg: "#e6f5ed",  valueColor: "#16a34a", border: "#bbf7d0" },
+  warning: { bg: "#f4f5f7",  valueColor: "#374151", border: "#e5e7eb" },
+  danger:  { bg: "#fdf0f0",  valueColor: "#dc2626", border: "#fecaca" },
 }
 
-export function KpiCard({ label, value, hint, tone = "neutral", icon, className, onClick }: KpiCardProps) {
+export function KpiCard({
+  label, value, hint, tone = "neutral", icon, className, onClick, size = "sm",
+}: KpiCardProps) {
+  const s = TONE_STYLE[tone]
   return (
     <div
-      className={cn("tf-kpi-card", className)}
+      className={cn("kcard", size === "hero" ? "kcard-hero" : "kcard-sm", onClick ? "clickable" : undefined, className)}
       data-tf-kit="kpi-card"
       onClick={onClick}
       role={onClick ? "button" : undefined}
       style={{
-        border: `1px solid ${TONE_BORDER[tone]}`,
-        borderRadius: 12,
-        padding: "14px 16px",
+        background: s.bg,
+        border: `1px solid ${s.border}`,
+        borderRadius: 14,
+        padding: "18px 20px",
         display: "flex",
         flexDirection: "column",
-        gap: 6,
-        minWidth: 160,
-        background: "#fff",
+        gap: 4,
         cursor: onClick ? "pointer" : undefined,
       }}
     >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ fontSize: 12, opacity: 0.65, fontWeight: 600, textTransform: "uppercase" }}>{label}</span>
-        {icon}
-      </div>
-      <div style={{ fontSize: 24, fontWeight: 700 }}>{value}</div>
-      {hint ? <div style={{ fontSize: 12, opacity: 0.6 }}>{hint}</div> : null}
+      {icon && <div className="kcard-icon" style={{ color: s.valueColor }}>{icon}</div>}
+      <div style={{ fontSize: 28, fontWeight: 700, color: s.valueColor, lineHeight: 1.2 }}>{value}</div>
+      <div style={{ fontSize: 13, color: "#5b637a", fontWeight: 500, marginTop: 2 }}>{label}</div>
+      {hint ? <div style={{ fontSize: 11.5, color: "#9aa1ab", marginTop: 2 }}>{hint}</div> : null}
     </div>
   )
 }

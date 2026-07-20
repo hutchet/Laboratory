@@ -569,6 +569,7 @@ export type DashboardDetailType =
   | "dash-projects"
   | "spot-project"
   | "spot-all"
+  | "pvd"
 
 function toDetailRow(t: DashTaskRaw, members: DashMemberRaw[]): DashboardDetailTaskRow {
   const nameOf = (id: string | null) => members.find((m) => m.id === id)?.name || "Chưa gán"
@@ -743,6 +744,21 @@ export function computeDashboardDetail(
     return {
       title: "Dự án đang hoạt động",
       stats: [],
+      sections: [{ heading: "", color: "", rows: projects.map((p) => projectDetailRow(p, tasks)) }],
+    }
+  }
+
+  if (type === "pvd") {
+    const projsByValue = projects
+      .filter((p) => p.value && p.value > 0)
+      .slice()
+      .sort((a, b) => (b.value || 0) - (a.value || 0))
+    return {
+      title: "Phân bổ giá trị dự án",
+      stats: [
+        { label: "Tổng dự án có giá trị", value: projsByValue.length },
+        { label: "Tổng giá trị", value: projsByValue.reduce((s, p) => s + (p.value || 0), 0).toLocaleString("vi-VN") + "đ" },
+      ],
       sections: [{ heading: "", color: "", rows: projects.map((p) => projectDetailRow(p, tasks)) }],
     }
   }

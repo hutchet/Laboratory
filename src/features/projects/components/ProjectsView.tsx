@@ -54,12 +54,9 @@ export function ProjectsView({ projects, customers, centers }:{ projects:Project
   }
 
   return (
-    <PageShell title="Dự án" actions={
-      <button type="button" onClick={()=>{setEditing(null);setShowForm(true)}} style={{padding:"8px 18px",borderRadius:10,border:"none",background:"#1d5fd6",color:"#fff",fontWeight:600,fontSize:13.5,cursor:"pointer"}}>
-        + Dự án mới
-      </button>
-    }>
-      <div className="kpis" style={{marginBottom:20}}>
+    <PageShell title="Dự án">
+      <div id="page-projects" style={{display:"flex",flexDirection:"column",minHeight:"calc(100vh - 108px)"}}>
+      <div className="kpis" style={{marginBottom:20,display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12}}>
         <KpiCard label="Dự án đang hoạt động" value={kpis.active} />
         <KpiCard label="Đang thực hiện" value={kpis.doing} tone="warning" />
         <KpiCard label="Đã hoàn thành" value={kpis.done} tone="success" />
@@ -75,11 +72,15 @@ export function ProjectsView({ projects, customers, centers }:{ projects:Project
           </div>
           <div style={{position:"relative"}}>
             <input value={q} onChange={e=>{setQ(e.target.value);setPage(1)}} placeholder="Tìm dự án..." style={{padding:"7px 12px 7px 32px",borderRadius:10,border:"1px solid #dfe3e8",fontSize:13,width:200}} />
-            <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:"#9aa1ab"}}>🔍</span>
+            <span className="msr" style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:"#9aa1ab",fontSize:16}}>search</span>
           </div>
-          <button type="button" style={{padding:"7px 14px",borderRadius:10,border:"1px solid #dfe3e8",background:"#fff",fontSize:13,cursor:"pointer"}}>🔽 Bộ lọc</button>
+          <button type="button" style={{padding:"7px 14px",borderRadius:10,border:"1px solid #dfe3e8",background:"#fff",fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",gap:4}}><span className="msr" style={{fontSize:16}}>filter_list</span>Bộ lọc</button>
+          <button type="button" onClick={()=>{setEditing(null);setShowForm(true)}} style={{padding:"7px 16px",borderRadius:10,border:"none",background:"#1d5fd6",color:"#fff",fontWeight:600,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",gap:4}}>
+            <span className="msr" style={{fontSize:16}}>add</span>Dự án mới
+          </button>
         </div>
       </div>
+      <div className="proj-list-wrap">
       {pageItems.length===0?(
         <div className="empty">Chưa có dự án nào phù hợp.</div>
       ):(
@@ -91,8 +92,8 @@ export function ProjectsView({ projects, customers, centers }:{ projects:Project
                 <div className="pt">
                   <h4>{p.name}</h4>
                   <div className="pacts">
-                    <button type="button" onClick={()=>{setEditing(p);setShowForm(true)}} style={{border:"none",background:"#f0f2f5",borderRadius:8,width:30,height:30,cursor:"pointer",fontSize:13,display:"grid",placeItems:"center"}} title="Sửa">✏️</button>
-                    <button type="button" onClick={()=>setConfirmDeleteId(p.id)} style={{border:"none",background:"#fef2f2",borderRadius:8,width:30,height:30,cursor:"pointer",fontSize:13,display:"grid",placeItems:"center"}} title="Xoá">🗑</button>
+                    <button type="button" onClick={()=>{setEditing(p);setShowForm(true)}} style={{border:"none",background:"#f0f2f5",borderRadius:8,width:30,height:30,cursor:"pointer",display:"grid",placeItems:"center"}} title="Sửa"><span className="msr" style={{fontSize:16}}>edit</span></button>
+                    <button type="button" onClick={()=>setConfirmDeleteId(p.id)} style={{border:"none",background:"#fef2f2",borderRadius:8,width:30,height:30,cursor:"pointer",display:"grid",placeItems:"center"}} title="Xoá"><span className="msr" style={{fontSize:16,color:"#c62828"}}>delete</span></button>
                   </div>
                 </div>
                 <div className="tags">
@@ -124,16 +125,15 @@ export function ProjectsView({ projects, customers, centers }:{ projects:Project
           })}
         </div>
       )}
-      {pageCount>1&&(
-        <div className="pager" id="proj-pager">
-          <span className="info">Hiện thị {(safePage-1)*PAGE_SIZE+1}–{Math.min(safePage*PAGE_SIZE,filtered.length)} / {filtered.length}</span>
-          <div className="pages">
-            <button className="pg" onClick={()=>setPage(p=>Math.max(1,p-1))} disabled={safePage===1}>‹</button>
-            {Array.from({length:pageCount},(_,i)=>i+1).map(n=>(<button key={n} className={`pg${n===safePage?" active":""}`} onClick={()=>setPage(n)}>{n}</button>))}
-            <button className="pg" onClick={()=>setPage(p=>Math.min(pageCount,p+1))} disabled={safePage===pageCount}>›</button>
-          </div>
+      </div>
+      <div className="pager" id="proj-pager" style={{position:"sticky",bottom:0,background:"var(--bg,#f3f4f6)",zIndex:5,borderTop:"2px solid var(--line,#e4e8f0)",marginTop:"auto"}}>
+        <span className="info">Hiện thị {filtered.length===0?0:(safePage-1)*PAGE_SIZE+1}–{Math.min(safePage*PAGE_SIZE,filtered.length)} / {filtered.length} dự án</span>
+        <div className="pages">
+          <button className="pg" onClick={()=>setPage(p=>Math.max(1,p-1))} disabled={safePage===1}>‹</button>
+          {Array.from({length:pageCount},(_,i)=>i+1).map(n=>(<button key={n} className={`pg${n===safePage?" active":""}`} onClick={()=>setPage(n)}>{n}</button>))}
+          <button className="pg" onClick={()=>setPage(p=>Math.min(pageCount,p+1))} disabled={safePage===pageCount}>›</button>
         </div>
-      )}
+      </div>
       <FormModal open={showForm} title={editing?"Sửa dự án":"Thêm dự án mới"} onClose={()=>{setShowForm(false);setEditing(null)}} onSubmit={()=>{const f=document.getElementById("tf-project-form") as HTMLFormElement|null;if(f)handleSubmit(new FormData(f))}} submitting={pending}>
         <form id="tf-project-form" onSubmit={e=>e.preventDefault()} style={{display:"flex",flexDirection:"column",gap:12}}>
           <label style={{fontSize:12,fontWeight:600}}>Tên dự án *<input name="name" required defaultValue={editing?.name??""} style={{width:"100%",padding:8,borderRadius:6,border:"1px solid #dfe3e8",marginTop:4}} /></label>
@@ -148,6 +148,7 @@ export function ProjectsView({ projects, customers, centers }:{ projects:Project
           <label style={{fontSize:12,fontWeight:600}}>Giá trị (VNĐ)<input name="value" type="number" defaultValue={editing?.value??""} style={{width:"100%",padding:8,borderRadius:6,border:"1px solid #dfe3e8",marginTop:4}} /></label>
         </form>
       </FormModal>
+      </div>
       <ConfirmDialog open={!!confirmDeleteId} title="Xoá dự án?" description="Hành động này không thể hoàn tác." danger onConfirm={confirmDelete} onCancel={()=>setConfirmDeleteId(null)} />
     </PageShell>
   )

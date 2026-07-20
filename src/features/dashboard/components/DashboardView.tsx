@@ -201,13 +201,13 @@ export function DashboardView({ data }: { data: DashboardRawData }) {
                 </div>
                 <div className="pl-zoom">
                   {DUE_BARS_MODES.map(([v, label]) => (
-                    <button key={v} type="button" className={dueBarsMode === v ? "active" : ""} onClick={() => setDueBarsMode(v)}>
+                    <button key={v} type="button" className={dueBarsMode === v ? "active" : ""} onClick={(e) => { e.stopPropagation(); setDueBarsMode(v) }}>
                       {label}
                     </button>
                   ))}
                 </div>
               </div>
-              <DueBarsChart points={duePoints} />
+              <div onClick={() => setDetailType("due-bars")} style={{ cursor: "pointer" }}><DueBarsChart points={duePoints} /></div>
             </div>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
@@ -252,11 +252,11 @@ export function DashboardView({ data }: { data: DashboardRawData }) {
                   <div className="ch-ic" style={{ background: "var(--neutral-soft)", color: "var(--neutral)" }}>
                     <svg viewBox="0 0 24 24" {...ICON_STROKE}><line x1="12" y1="20" x2="12" y2="10" /><line x1="18" y1="20" x2="18" y2="4" /><line x1="6" y1="20" x2="6" y2="16" /></svg>
                   </div>
-                  <h3>Phân bố giá trị dự án</h3>
+                  <h3 style={{ cursor: "pointer" }} onClick={() => setDetailType("pvd")}>Phân bổ giá trị dự án</h3>
                 </div>
                 <CustomSelect value={pvdMonth} options={monthOptions} onChange={setPvdMonth} width={166} />
               </div>
-              <div className="exp-summary" id="pvd-summary">
+              <div className="exp-summary clickable" id="pvd-summary" onClick={() => setDetailType("pvd")} style={{ cursor: "pointer" }}>
                 <div className="pvd-donut-wrap">
                   <DonutSvg segments={pvd.segments.map((s) => ({ value: s.value, color: s.color }))} />
                   <div className="pvd-donut-center">
@@ -337,14 +337,14 @@ export function DashboardView({ data }: { data: DashboardRawData }) {
                 <div className="ch-ic" style={{ background: "var(--neutral-soft)", color: "var(--neutral)" }}>
                   <svg viewBox="0 0 24 24" {...ICON_STROKE}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
                 </div>
-                <h3>Khối lượng công việc</h3>
+                <h3 style={{ cursor: "pointer" }} onClick={() => setDetailType("workload")}>Khối lượng công việc</h3>
               </div>
               <span style={{ cursor: "pointer", fontSize: 11.5, color: "var(--pri)", fontWeight: 600 }} onClick={() => setShowTeamList((v) => !v)}>
                 {showTeamList ? "Xem biểu đồ" : "Xem danh sách"}
               </span>
             </div>
             {!showTeamList ? (
-              <div className="nest-donut-wrap">
+              <div className="nest-donut-wrap" onClick={() => setDetailType("workload")} style={{ cursor: "pointer" }}>
                 <div className="bubble-chart">
                   {team.bubbles.map((b, i) => {
                     const sizes = [86, 58, 40]

@@ -14,13 +14,11 @@ export type PageShellProps = {
 export function PageShell({ title, subtitle, actions, filters, children, className }: PageShellProps) {
   return (
     <div className={cn("tf-page", className)} data-tf-kit="page-shell">
-      <div className="tf-page-head" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, marginBottom: 16 }}>
-        <div>
-          <h1 className="tf-page-title" style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>{title}</h1>
-          {subtitle ? <p className="tf-page-sub" style={{ margin: "4px 0 0", opacity: 0.7, fontSize: 14 }}>{subtitle}</p> : null}
+      {actions ? (
+        <div className="tf-page-head" style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 16, marginBottom: 16 }}>
+          <div className="tf-page-actions" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>{actions}</div>
         </div>
-        {actions ? <div className="tf-page-actions" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>{actions}</div> : null}
-      </div>
+      ) : null}
       {filters ? <div className="tf-page-filters" style={{ marginBottom: 12 }}>{filters}</div> : null}
       <div className="tf-page-body">{children}</div>
     </div>

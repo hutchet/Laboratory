@@ -27,7 +27,7 @@ export function CentersView({ centers }:{ centers:CenterRow[] }) {
   function confirmDelete(){ if(!confirmDeleteId) return; const id=confirmDeleteId; startTransition(async()=>{ await deleteCenter(id); setConfirmDeleteId(null) }) }
   return (
     <PageShell title="Trung tâm thử nghiệm" actions={<Perm minPerm="manager"><button type="button" onClick={()=>{setEditing(null);setShowForm(true)}} style={{padding:"8px 18px",borderRadius:10,border:"none",background:"#1d5fd6",color:"#fff",fontWeight:600,fontSize:13.5,cursor:"pointer"}}>+ Trung tâm mới</button></Perm>}>
-      <div className="kpis" style={{marginBottom:20}}>
+      <div className="kpis" style={{marginBottom:20,display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12}}>
         <KpiCard label="Tổng trung tâm" value={kpis.total} />
         <KpiCard label="Tổng dự án liên kết" value={kpis.totalProjects} tone="warning" />
         <KpiCard label="Tổng giá trị dự án" value={fmtVal(kpis.totalValue)} tone="success" />
@@ -36,7 +36,7 @@ export function CentersView({ centers }:{ centers:CenterRow[] }) {
       <div className="section-head">
         <h3>Tất cả trung tâm thử nghiệm</h3>
         <div className="tools">
-          <div style={{position:"relative"}}><input value={q} onChange={e=>setQ(e.target.value)} placeholder="Tìm trung tâm..." style={{padding:"7px 12px 7px 32px",borderRadius:10,border:"1px solid #dfe3e8",fontSize:13,width:220}} /><span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:"#9aa1ab"}}>🔍</span></div>
+          <div style={{position:"relative"}}><input value={q} onChange={e=>setQ(e.target.value)} placeholder="Tìm trung tâm..." style={{padding:"7px 12px 7px 32px",borderRadius:10,border:"1px solid #dfe3e8",fontSize:13,width:220}} /><span className="msr" style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:"#9aa1ab",fontSize:16}}>search</span></div>
         </div>
       </div>
       {filtered.length===0?(<div className="empty">Chưa có trung tâm nào.</div>):(
@@ -49,14 +49,14 @@ export function CentersView({ centers }:{ centers:CenterRow[] }) {
                   <div style={{flex:1,minWidth:0}}>
                     <div className="center-card-title"><h3>{c.name}</h3><span>{c.manager??"—"}</span></div>
                     <div className="center-card-meta" style={{marginTop:8}}>
-                      {c.phone&&<span>📞 {c.phone}</span>}
-                      {c.address&&<span>📍 {c.address}</span>}
+                      {c.phone&&<span>{c.phone}</span>}
+                      {c.address&&<span>{c.address}</span>}
                     </div>
                   </div>
                 </div>
                 <div className="center-card-actions">
-                  <button type="button" onClick={()=>{setEditing(c);setShowForm(true)}} style={{border:"none",background:"#f0f2f5",borderRadius:8,width:32,height:32,cursor:"pointer",fontSize:13,display:"grid",placeItems:"center"}} title="Sửa">✏️</button>
-                  <button type="button" onClick={()=>setConfirmDeleteId(c.id)} style={{border:"none",background:"#fef2f2",borderRadius:8,width:32,height:32,cursor:"pointer",fontSize:13,display:"grid",placeItems:"center"}} title="Xoá">🗑</button>
+                  <button type="button" onClick={()=>{setEditing(c);setShowForm(true)}} style={{border:"none",background:"#f0f2f5",borderRadius:8,width:32,height:32,cursor:"pointer",fontSize:13,display:"grid",placeItems:"center"}} title="Sửa"><span className="msr" style={{fontSize:16}}>edit</span></button>
+                  <button type="button" onClick={()=>setConfirmDeleteId(c.id)} style={{border:"none",background:"#fef2f2",borderRadius:8,width:32,height:32,cursor:"pointer",fontSize:13,display:"grid",placeItems:"center"}} title="Xoá"><span className="msr" style={{fontSize:16,color:"#c62828"}}>delete</span></button>
                 </div>
               </div>
               <div className="center-card-summary">
