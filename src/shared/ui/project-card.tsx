@@ -10,6 +10,7 @@ export type ProjectCardProps = {
   statusColor: string
   priorityLabel: string
   priorityColor: string
+  priorityBg?: string
   progress: number          // 0-100
   taskDone: number
   taskTotal: number
@@ -28,7 +29,7 @@ export type ProjectCardProps = {
  */
 export function ProjectCard({
   name, statusLabel, statusBg, statusColor,
-  priorityLabel, priorityColor,
+  priorityLabel, priorityColor, priorityBg,
   progress, taskDone, taskTotal, taskOverdue,
   planInfo, onPlanClick,
   avatars = [], dueDate,
@@ -50,7 +51,7 @@ export function ProjectCard({
         <span className="pcard-badge" style={{ background: statusBg, color: statusColor }}>
           {statusLabel}
         </span>
-        <span className="pcard-badge" style={{ background: "var(--md-sys-color-tertiary-container,#ffddb3)", color: priorityColor }}>
+        <span className="pcard-badge" style={{ background: priorityBg ?? "var(--md-sys-color-tertiary-container,#ffddb3)", color: priorityColor }}>
           {priorityLabel}
         </span>
       </div>

@@ -1754,9 +1754,9 @@ html[data-viewport="tablet"] .side{width:86px!important;padding:14px 10px!import
     width:276px!important;max-width:82vw!important;
     height:100vh!important;
     z-index:9999!important;
-    transform:translateX(-101%)!important;
-    transition:transform .25s ease!important;
-    box-shadow:0 16px 40px -12px rgba(0,0,0,.45)!important;
+    transform:translateX(-100%)!important;
+    transition:transform .28s cubic-bezier(.4,0,.2,1)!important;
+    box-shadow:4px 0 24px rgba(15,23,42,.18)!important;
     padding:18px 14px!important;
     overflow-y:auto!important;
   }
@@ -1769,7 +1769,6 @@ html[data-viewport="tablet"] .side{width:86px!important;padding:14px 10px!import
   .side .nav{justify-content:flex-start!important;padding:11px 12px!important;gap:12px!important;white-space:nowrap!important;font-size:14px!important;overflow:hidden!important;text-overflow:ellipsis!important;min-height:46px!important}
   .side .nav svg{flex:0 0 auto!important;width:20px!important;height:20px!important}
   .side .nav-h{display:block!important;font-size:11px!important;white-space:nowrap!important}
-  .side .upgrade{display:flex!important}
   .side .logout span{display:inline!important;white-space:nowrap!important}
 }
 .v106-side-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:9998;opacity:0;pointer-events:none;transition:opacity .2s ease}
@@ -3198,6 +3197,21 @@ html body .center-detail-card > .qs-box, html body .center-detail-card #pm-detai
 /* AddButton overrides (btn-pri already styled) */
 .btn-pri{display:inline-flex;align-items:center;gap:7px;white-space:nowrap!important}
 
+/* pcard token fix — dung dung --sys-surface-small (#eef2f6 / #20262e) theo HTML goc, KHONG phai trang */
+.material-3 :is(.pcard,.cucard,.hub-card,.qlcard,.kcard,.paycard,.overview-analytics,.adminbar,.upgrade){
+  background:var(--sys-surface-small)!important;
+  border:1px solid transparent!important;
+  box-shadow:var(--md-sys-elevation-1)!important;
+}
+.material-3 :is(.pcard,.cucard,.hub-card,.qlcard,.kcard,.paycard,.overview-analytics,.adminbar,.upgrade):hover{
+  background:var(--md-sys-color-surface-container-high,#e9e7ef)!important;
+  box-shadow:var(--md-sys-elevation-2)!important;
+  transform:translateY(-2px);
+}
+[data-theme=dark] .material-3 :is(.pcard,.cucard,.hub-card,.qlcard,.kcard,.paycard,.overview-analytics,.adminbar,.upgrade):hover{
+  background:#282e36!important;
+}
+
 /* pcard badge — chip style */
 .pcard-badge{
   display:inline-flex;align-items:center;
@@ -3215,6 +3229,4 @@ html body .center-detail-card > .qs-box, html body .center-detail-card #pm-detai
 .plan-link{border:none;background:none;color:var(--pri);cursor:pointer;padding:0;font-size:12.5px}
 .plan-link:hover{text-decoration:underline}
 .plan-empty{color:var(--muted)}
-
-/* search class min-width fix khi dùng inline width */
 

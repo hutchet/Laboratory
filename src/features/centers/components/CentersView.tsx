@@ -1,10 +1,10 @@
 "use client"
 import { useMemo, useState, useTransition } from "react"
 import { PageShell } from "@/shared/ui/page-shell"
-import { SearchInput } from "@/shared/ui/search-input"
 import { FormModal } from "@/shared/ui/form-modal"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { KpiCard } from "@/shared/ui/kpi-card"
+import { SearchInput } from "@/shared/ui/search-input"
 import { Perm } from "@/shared/lib/rbac-client"
 import { saveCenter, deleteCenter } from "../actions"
 import type { CenterRow } from "../types"
@@ -41,29 +41,47 @@ export function CentersView({ centers }:{ centers:CenterRow[] }) {
         </div>
       </div>
       {filtered.length===0?(<div className="empty">Chưa có trung tâm nào.</div>):(
-        <div id="eq-center-cards">
+        <div className="cu-grid" id="ct-grid">
           {filtered.map((c,i)=>(
-            <div key={c.id} className="center-card">
-              <div className="center-card-head">
-                <div style={{display:"flex",alignItems:"flex-start",gap:14,flex:1}}>
-                  <div style={{width:48,height:48,borderRadius:12,flexShrink:0,background:AV_COLORS[i%AV_COLORS.length],color:"#fff",display:"grid",placeItems:"center",fontWeight:700,fontSize:15}}>{initials(c.name)}</div>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div className="center-card-title"><h3>{c.name}</h3><span>{c.manager??"—"}</span></div>
-                    <div className="center-card-meta" style={{marginTop:8}}>
-                      {c.phone&&<span>{c.phone}</span>}
-                      {c.address&&<span>{c.address}</span>}
-                    </div>
-                  </div>
+            <div key={c.id} className="cucard">
+              <div className="cucard-head">
+                <div className="cu-avatar" style={{background:AV_COLORS[i%AV_COLORS.length]}}>{initials(c.name)}</div>
+                <div className="cucard-title">
+                  <h4>{c.name}</h4>
+                  <div className="cu-sub">{c.manager||"Chưa có người quản lý"}</div>
                 </div>
-                <div className="center-card-actions">
-                  <button type="button" onClick={()=>{setEditing(c);setShowForm(true)}} style={{border:"none",background:"#f0f2f5",borderRadius:8,width:32,height:32,cursor:"pointer",fontSize:13,display:"grid",placeItems:"center"}} title="Sửa"><span className="msr" style={{fontSize:16}}>edit</span></button>
-                  <button type="button" onClick={()=>setConfirmDeleteId(c.id)} style={{border:"none",background:"#fef2f2",borderRadius:8,width:32,height:32,cursor:"pointer",fontSize:13,display:"grid",placeItems:"center"}} title="Xoá"><span className="msr" style={{fontSize:16,color:"#c62828"}}>delete</span></button>
+                <div className="cucard-acts">
+                  <button type="button" className="icon-act pri" onClick={()=>{setEditing(c);setShowForm(true)}} title="Sửa">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+                  </button>
+                  <button type="button" className="icon-act del" onClick={()=>setConfirmDeleteId(c.id)} title="Xoá">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                  </button>
                 </div>
               </div>
-              <div className="center-card-summary">
-                <div className="sum-item"><b>{c.projectCount}</b><span>Dự án</span></div>
-                <div className="sum-item"><b>{c.activeProjectCount}</b><span>Đang chạy</span></div>
-                <div className="sum-item"><b>{fmtVal(c.totalValue)}</b><span>Giá trị</span></div>
+              <div className="cucard-info">
+                {c.phone&&(
+                  <div className="cu-info-row">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.79 19.79 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3.5a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                    <span>{c.phone}</span>
+                  </div>
+                )}
+                {c.address&&(
+                  <div className="cu-info-row">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    <span>{c.address}</span>
+                  </div>
+                )}
+                {!c.phone&&!c.address&&(
+                  <div className="cu-info-row"><span style={{fontStyle:"italic",fontSize:12}}>Chưa có thông tin liên hệ</span></div>
+                )}
+              </div>
+              <div className="cucard-footer">
+                <div className="cu-stat"><span className="cu-stat-v">{c.projectCount}</span><span className="cu-stat-l">Dự án</span></div>
+                <div className="cu-divider" />
+                <div className="cu-stat"><span className="cu-stat-v" style={{color:"var(--green)"}}>{c.activeProjectCount}</span><span className="cu-stat-l">Đang chạy</span></div>
+                <div className="cu-divider" />
+                <div className="cu-stat"><span className="cu-stat-v" style={{color:"var(--amber)"}}>{fmtVal(c.totalValue)}</span><span className="cu-stat-l">Giá trị</span></div>
               </div>
             </div>
           ))}
