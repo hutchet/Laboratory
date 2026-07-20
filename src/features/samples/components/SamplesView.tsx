@@ -171,7 +171,7 @@ export function SamplesView({ samples, customers, projects }: { samples: SampleR
         }}
         submitting={pending}
       >
-        <form id="tf-sample-form" onSubmit={(e) => e.preventDefault()} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <form key={editing?.id ?? "new"} id="tf-sample-form" onSubmit={(e) => e.preventDefault()} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <label style={{ fontSize: 12, fontWeight: 600 }}>Mã mẫu *
             <input name="code" required defaultValue={editing?.code ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
           </label>

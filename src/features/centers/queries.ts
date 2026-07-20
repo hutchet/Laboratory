@@ -22,7 +22,6 @@ export async function listCenters(): Promise<CenterRow[]> {
     return {
       id: c.id,
       name: c.name,
-      createdAt: c.createdAt.toISOString(),
       address: c.address,
       manager: c.manager,
       phone: c.phone,

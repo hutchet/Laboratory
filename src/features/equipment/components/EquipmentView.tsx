@@ -170,7 +170,7 @@ export function EquipmentView({ equipment, centers }: { equipment: EquipmentRow[
         }}
         submitting={pending}
       >
-        <form id="tf-equipment-form" onSubmit={(e) => e.preventDefault()} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <form key={editing?.id ?? "new"} id="tf-equipment-form" onSubmit={(e) => e.preventDefault()} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <label style={{ fontSize: 12, fontWeight: 600 }}>Tên thiết bị *
             <input name="name" required defaultValue={editing?.name ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
           </label>

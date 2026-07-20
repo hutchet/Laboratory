@@ -1,15 +1,16 @@
 "use client"
 import { useMemo, useState, useTransition } from "react"
 import { PageShell } from "@/shared/ui/page-shell"
-import { CustomSelect } from '@/shared/ui/custom-select'
+import { CustomSelect } from "@/shared/ui/custom-select"
 import { FilterBar } from "@/shared/ui/filter-bar"
-import { DataTable, type DataTableColumn } from "@/shared/ui/data-table"
+import { AddButton } from "@/shared/ui/add-button"
 import { FormModal } from "@/shared/ui/form-modal"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { StatusBadge } from "@/shared/ui/status-badge"
 import { KpiCard } from "@/shared/ui/kpi-card"
-import { GanttChart } from "./GanttChart"
 import { DonutSvg } from "@/shared/ui/donut-svg"
+import { DateField } from "@/shared/ui/date-field"
+import { GanttChart } from "./GanttChart"
 import { Perm } from "@/shared/lib/rbac-client"
 import { saveTestItem, deleteTestItem, saveTestPack, deleteTestPack } from "../actions"
 import { RESULT_LABEL, RESULT_COLOR, autoStatus, isOverdue, type TestItemRow, type TestPackRow, type TestPlanRow, type Option } from "../types"
@@ -33,19 +34,11 @@ function downloadCsv(filename: string, rows: Array<Array<string | number | null>
   URL.revokeObjectURL(url)
 }
 
-function resultTone(status: string): "neutral" | "success" | "danger" | "warning" {
-  if (status === "pass") return "success"
-  if (status === "fail" || status === "delay") return "danger"
-  if (status === "ongoing") return "warning"
-  return "neutral"
-}
-
 export function PlanView({
   items, packs, plans, projects, samples, equipmentOptions, memberOptions, initialProjectFilter,
 }: {
   items: TestItemRow[]; packs: TestPackRow[]; plans: TestPlanRow[]; projects: Option[]; samples: Option[]; equipmentOptions: Option[]; memberOptions: Option[]; initialProjectFilter?: string
 }) {
-  const [q, setQ] = useState("")
   // Port cua data-goto-plan ban goc (dong 6493-6495): cho phep nhay toi day
   // tu trang Du an da loc san theo ?project=<id>.
   const [projectFilter, setProjectFilter] = useState(initialProjectFilter || "")
@@ -53,6 +46,7 @@ export function PlanView({
   const [showForm, setShowForm] = useState(false)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [showPackForm, setShowPackForm] = useState(false)
+  const [newItemPackId, setNewItemPackId] = useState<string>("")
   const [confirmDeletePackId, setConfirmDeletePackId] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
@@ -65,33 +59,30 @@ export function PlanView({
     return packs.filter((p) => planIds.has(p.testPlanId))
   }, [packs, plans, projectFilter])
 
-  const filtered = useMemo(
-    () => scopedItems.filter((it) => !q || it.name.toLowerCase().includes(q.toLowerCase())),
-    [scopedItems, q],
-  )
-
   // Overview KPIs (mirrors renderPlanOverview: totals, avg progress, status breakdown, overdue count).
   const kpi = useMemo(() => {
     const total = scopedItems.length
-    const done = scopedItems.filter((it) => it.result === "pass").length
+    const pass = scopedItems.filter((it) => it.result === "pass").length
+    const fail = scopedItems.filter((it) => it.result === "fail").length
+    const ongoing = scopedItems.filter((it) => autoStatus(it) === "ongoing").length
     const overdue = scopedItems.filter((it) => isOverdue(it)).length
     const avgProgress = total ? Math.round(scopedItems.reduce((s, it) => s + (it.progress || 0), 0) / total) : 0
     const byStatus: Record<string, number> = {}
     scopedItems.forEach((it) => { const s = autoStatus(it); byStatus[s] = (byStatus[s] || 0) + 1 })
-    return { total, done, overdue, avgProgress, byStatus }
+    return { total, pass, fail, ongoing, overdue, avgProgress, byStatus }
   }, [scopedItems])
 
   const statusDonutSegments = useMemo(
-    () => PLAN_STATUS_DONUT_KEYS.map((k) => ({ key: k, value: kpi.byStatus[k] || 0, color: RESULT_COLOR[k] })).filter((s) => s.value > 0),
+    () => PLAN_STATUS_DONUT_KEYS.map((k) => ({ value: kpi.byStatus[k] || 0, color: RESULT_COLOR[k] })).filter((s) => s.value > 0),
     [kpi.byStatus],
   )
   const resultDonutSegments = useMemo(
-    () => PLAN_RESULT_DONUT_KEYS.map((k) => ({ key: k, value: kpi.byStatus[k] || 0, color: RESULT_COLOR[k] })).filter((s) => s.value > 0),
+    () => PLAN_RESULT_DONUT_KEYS.map((k) => ({ value: kpi.byStatus[k] || 0, color: RESULT_COLOR[k] })).filter((s) => s.value > 0),
     [kpi.byStatus],
   )
 
-  // Muc con thieu theo checklist: "bieu do khoi luong theo PIC dang bar rieng",
-  // port dung mau voi workload cua AuditPlanView (Khoi luong theo phu trach).
+  // Khoi luong theo nguoi phu trach - port cua #plan-pic-workload ban goc
+  // (.pl-hbar-row, sap xep giam dan theo so bai).
   const workload = useMemo(() => {
     const map = new Map<string, number>()
     scopedItems.forEach((it) => {
@@ -102,9 +93,23 @@ export function PlanView({
   }, [scopedItems])
   const maxWorkload = Math.max(1, ...workload.map(([, n]) => n))
 
+  // Ty le hoan thanh theo muc do uu tien - cung ky thuat .pl-hbar-row nhu
+  // khoi luong theo PIC, nhom theo gia tri priority thuc te cua bai thu.
+  const priorityStats = useMemo(() => {
+    const map = new Map<string, { done: number; total: number }>()
+    scopedItems.forEach((it) => {
+      const key = it.priority || "Chưa gán"
+      const cur = map.get(key) || { done: 0, total: 0 }
+      cur.total++
+      if (it.result === "pass") cur.done++
+      map.set(key, cur)
+    })
+    return Array.from(map.entries()).sort((a, b) => b[1].total - a[1].total)
+  }, [scopedItems])
+
   function exportCsv() {
     const header = ["Bài thử", "Dự án", "Mẫu", "Tiêu chuẩn", "Phụ trách", "KH bắt đầu", "KH kết thúc", "TT bắt đầu", "TT kết thúc", "Tiến độ", "Kết quả"]
-    const rows = filtered.map((it) => [
+    const rows = scopedItems.map((it) => [
       it.name,
       it.testPlan?.project?.name ?? "",
       packs.find((p) => p.id === it.packId)?.code ?? "",
@@ -120,8 +125,9 @@ export function PlanView({
     downloadCsv("ke-hoach-thu-nghiem.csv", [header, ...rows])
   }
 
-  function openNew() { setEditing(null); setShowForm(true) }
+  function openNew() { setEditing(null); setNewItemPackId(""); setShowForm(true) }
   function openEdit(it: TestItemRow) { setEditing(it); setShowForm(true) }
+  function openNewItemForPack(packId: string) { setEditing(null); setNewItemPackId(packId); setShowForm(true) }
   function handleSubmit(formData: FormData) {
     const input = {
       id: editing?.id,
@@ -163,107 +169,164 @@ export function PlanView({
     startTransition(async () => { await deleteTestPack(id); setConfirmDeletePackId(null) })
   }
 
-  const columns: Array<DataTableColumn<TestItemRow>> = [
-    { key: "name", header: "Bài thử", render: (it) => <span style={{ fontWeight: 600 }}>{it.name}</span> },
-    { key: "project", header: "Dự án", render: (it) => it.testPlan?.project?.name ?? "—" },
-    { key: "pack", header: "Mẫu", render: (it) => packs.find((p) => p.id === it.packId)?.code ?? "—" },
-    { key: "standard", header: "Tiêu chuẩn", render: (it) => it.standard ?? "—" },
-    { key: "pic", header: "Phụ trách", render: (it) => it.pic?.name ?? it.assignee ?? "—" },
-    { key: "planStart", header: "Kế hoạch", render: (it) => it.planStart ? `${it.planStart.slice(0, 10)} → ${it.planEnd?.slice(0, 10) ?? "—"}` : "—" },
-    { key: "actual", header: "Thực tế", render: (it) => it.actualStart ? `${it.actualStart.slice(0, 10)} → ${it.actualEnd?.slice(0, 10) ?? "—"}` : "—" },
-    { key: "progress", header: "Tiến đứ", align: "right", render: (it) => (it.progress != null ? `${it.progress}%` : "—") },
-    { key: "result", header: "Kết quả", render: (it) => { const s = autoStatus(it); return <StatusBadge label={RESULT_LABEL[s] ?? s} tone={resultTone(s)} /> } },
-    {
-      key: "actions", header: "", align: "right",
-      render: (it) => (
-        <span style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-          <button type="button" onClick={() => openEdit(it)} style={{ border: "none", background: "none", color: "#1d5fd6", cursor: "pointer" }}>Sửa</button>
-          <button type="button" onClick={() => setConfirmDeleteId(it.id)} style={{ border: "none", background: "none", color: "#c62828", cursor: "pointer" }}>Xoá</button>
-        </span>
-      ),
-    },
-  ]
-
   return (
     <PageShell
       title="Kế hoạch thử nghiệm"
-      actions={(
-        <span style={{ display: "flex", gap: 8 }}>
-          <Perm minPerm="manager"><button type="button" onClick={() => setShowPackForm(true)} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #1d5fd6", background: "#fff", color: "#1d5fd6" }}>+ Mẫu</button></Perm>
-          <button type="button" onClick={exportCsv} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #dfe3e8", background: "#fff", color: "#1b1f24" }}>Xuất Excel</button>
-          <button type="button" onClick={() => window.print()} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #dfe3e8", background: "#fff", color: "#1b1f24" }}>Xuất PDF</button>
-          <button type="button" onClick={openNew} style={{ padding: "8px 14px", borderRadius: 8, border: "none", background: "#1d5fd6", color: "#fff" }}>+ Thêm bài thử</button>
-        </span>
-      )}
+      actions={<AddButton label="Thêm bài thử" onClick={openNew} />}
       filters={(
-        <FilterBar search={{ value: q, onChange: setQ, placeholder: "Tìm bài thử..." }}>
-          <CustomSelect
-            value={projectFilter}
-            onChange={setProjectFilter}
-            options={[{value:"",label:"Tất cả dự án"},...projects.map(p=>({value:p.id,label:p.name}))]}
-            width={200}
-          />
-        </FilterBar>
+        <FilterBar
+          filterSlot={(
+            <CustomSelect
+              value={projectFilter}
+              onChange={setProjectFilter}
+              options={[{ value: "", label: "Tất cả dự án" }, ...projects.map((p) => ({ value: p.id, label: p.name }))]}
+              width={200}
+            />
+          )}
+        />
       )}
     >
-      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 16 }}>
-        <KpiCard label="Tổng bài thử" value={kpi.total} />
-        <KpiCard label="Đảt" value={kpi.done} tone="success" />
-        <KpiCard label="Tiến độ TB" value={`${kpi.avgProgress}%`} />
-        <KpiCard label="Quá hạn" value={kpi.overdue} tone={kpi.overdue > 0 ? "danger" : "neutral"} />
+      <div className="kpis-tier" style={{ marginBottom: 18 }}>
+        <KpiCard label="Tổng bài thử" value={kpi.total} hint="Trong kế hoạch" tone="neutral" />
+        <KpiCard label="Đạt" value={kpi.pass} hint="Số bài đạt" tone="success" />
+        <KpiCard label="Không đạt" value={kpi.fail} hint="Số bài không đạt" tone="danger" />
+        <KpiCard label="Đang thực hiện" value={kpi.ongoing} hint="Đang triển khai" tone="warning" />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0,1fr))", gap: 16, marginBottom: 20 }}>
-        <div style={{ border: "1px solid #e6e9ee", borderRadius: 10, padding: 16, display: "flex", alignItems: "center", gap: 16 }}>
-          <DonutSvg size={100} segments={statusDonutSegments.map((s) => ({ value: s.value, color: s.color }))} />
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8, color: "#444" }}>Phân bố theo trạng thái</div>
-            {PLAN_STATUS_DONUT_KEYS.map((k) => (
-              <div key={k} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, marginBottom: 3 }}>
-                <span style={{ width: 8, height: 8, borderRadius: 4, background: RESULT_COLOR[k], display: "inline-block" }} />
-                {RESULT_LABEL[k]}: <b>{kpi.byStatus[k] || 0}</b>
-              </div>
-            ))}
-          </div>
+      <div className="card" style={{ marginBottom: 18 }}>
+        <div className="ch">
+          <h3>Tổng quan tiến độ &amp; kết quả</h3>
+          <span>Toàn bộ kế hoạch trong phạm vi đang lọc</span>
         </div>
-        <div style={{ border: "1px solid #e6e9ee", borderRadius: 10, padding: 16, display: "flex", alignItems: "center", gap: 16 }}>
-          <DonutSvg size={100} segments={resultDonutSegments.map((s) => ({ value: s.value, color: s.color }))} />
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8, color: "#444" }}>Phân bố theo kết quả</div>
-            {PLAN_RESULT_DONUT_KEYS.map((k) => (
-              <div key={k} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, marginBottom: 3 }}>
-                <span style={{ width: 8, height: 8, borderRadius: 4, background: RESULT_COLOR[k], display: "inline-block" }} />
-                {RESULT_LABEL[k]}: <b>{kpi.byStatus[k] || 0}</b>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 16, marginBottom: 20 }}>
-        <div>
-          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8, color: "#444" }}>Biểu đồ Gantt</div>
-          <GanttChart items={filtered} packs={scopedPacks} />
-        </div>
-        <div>
-          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8, color: "#444" }}>Khối lượng theo PIC</div>
-          <div style={{ border: "1px solid #e6e9ee", borderRadius: 10, padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
-            {workload.length === 0 && <div style={{ color: "#8a8f98", fontSize: 13 }}>Chưa có dữ liệu.</div>}
-            {workload.map(([name, count]) => (
-              <div key={name}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 3 }}>
-                  <span>{name}</span><span style={{ fontWeight: 600 }}>{count}</span>
-                </div>
-                <div style={{ background: "#eef1f5", borderRadius: 4, height: 6 }}>
-                  <div style={{ background: "#1d5fd6", borderRadius: 4, height: 6, width: `${(count / maxWorkload) * 100}%` }} />
+        {scopedItems.length === 0 ? (
+          <div className="empty">Chưa có bài thử nào trong phạm vi này.</div>
+        ) : (
+          <div className="pl-donut-wrap">
+            <div>
+              <div style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600, marginBottom: 8, textAlign: "center" }}>Theo trạng thái</div>
+              <div className="pl-donut-inline">
+                <DonutSvg size={110} segments={statusDonutSegments} />
+                <div className="pl-legend-side">
+                  {PLAN_STATUS_DONUT_KEYS.map((k) => (
+                    <div key={k} className="li"><span className="dot" style={{ background: RESULT_COLOR[k] }} />{RESULT_LABEL[k]}: <b>{kpi.byStatus[k] || 0}</b></div>
+                  ))}
                 </div>
               </div>
-            ))}
+            </div>
+            <div>
+              <div style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600, marginBottom: 8, textAlign: "center" }}>Tỷ lệ đạt / không đạt</div>
+              <div className="pl-donut-inline">
+                <DonutSvg size={110} segments={resultDonutSegments} />
+                <div className="pl-legend-side">
+                  {PLAN_RESULT_DONUT_KEYS.map((k) => (
+                    <div key={k} className="li"><span className="dot" style={{ background: RESULT_COLOR[k] }} />{RESULT_LABEL[k]}: <b>{kpi.byStatus[k] || 0}</b></div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600, marginBottom: 6 }}>Tiến độ trung bình</div>
+              <div className="pctbig">{kpi.avgProgress}%</div>
+              <div style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600, marginTop: 14, marginBottom: 6 }}>Quá hạn kế hoạch</div>
+              <div className="pctbig" style={{ fontSize: 22, color: "var(--red)" }}>{kpi.overdue} bài</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600, marginBottom: 8 }}>Khối lượng theo người phụ trách</div>
+              {workload.length === 0 ? <div className="pl-mini-row">Chưa gán người phụ trách.</div> : workload.map(([name, count]) => (
+                <div key={name} className="pl-hbar-row">
+                  <span className="pl-hbar-label" title={name}>{name}</span>
+                  <div className="pl-hbar-track"><div className="pl-hbar-fill" style={{ width: `${Math.round((count / maxWorkload) * 100)}%`, background: "var(--pri)" }} /></div>
+                  <span className="pl-hbar-val">{count}</span>
+                </div>
+              ))}
+            </div>
+            <div>
+              <div style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600, marginBottom: 8 }}>Tiến độ theo mẫu</div>
+              {scopedPacks.length === 0 ? <div className="pl-mini-row">Chưa có mẫu.</div> : (
+                <div className="pl-pack-tiles">
+                  {scopedPacks.map((p) => {
+                    const its = scopedItems.filter((it) => it.packId === p.id)
+                    const done = its.filter((it) => it.result === "pass").length
+                    const pct = its.length ? Math.round((done / its.length) * 100) : 0
+                    const bg = pct >= 100 ? "var(--green)" : pct > 0 ? "#4f6cf7" : "var(--muted)"
+                    return (
+                      <div key={p.id} className="pl-pack-tile" style={{ background: bg }} title={`Mẫu ${p.code}: ${done}/${its.length} đạt`}>
+                        <div>{p.code}</div>
+                        <div className="pct">{pct}%</div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+            <div>
+              <div style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600, marginBottom: 8 }}>Tỷ lệ hoàn thành theo mức độ ưu tiên</div>
+              {priorityStats.length === 0 ? <div className="pl-mini-row">Chưa có dữ liệu.</div> : priorityStats.map(([label, s]) => (
+                <div key={label} className="pl-hbar-row">
+                  <span className="pl-hbar-label" title={label}>{label}</span>
+                  <div className="pl-hbar-track"><div className="pl-hbar-fill" style={{ width: `${s.total ? Math.round((s.done / s.total) * 100) : 0}%`, background: "var(--pri)" }} /></div>
+                  <span className="pl-hbar-val">{s.done}/{s.total}</span>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
-      <DataTable columns={columns} rows={filtered} rowKey={(it) => it.id} loading={pending} emptyTitle="Chưa có bài thử nào" />
+      <div className="card" style={{ marginBottom: 18 }}>
+        <GanttChart
+          items={scopedItems}
+          packs={scopedPacks}
+          onEditItem={openEdit}
+          title="Sơ đồ Gantt kế hoạch thử nghiệm"
+          subtitle="Mỗi mẫu chạy một chuỗi bài thử tuần tự riêng"
+        />
+      </div>
+
+      <div className="card" style={{ marginBottom: 18 }}>
+        <div className="ch">
+          <h3>Mẫu thử nghiệm và bài thử</h3>
+          <span>{scopedPacks.length} mẫu</span>
+        </div>
+        <Perm minPerm="manager">
+          <div style={{ marginBottom: 14 }}><AddButton label="Thêm mẫu" onClick={() => setShowPackForm(true)} /></div>
+        </Perm>
+        {scopedPacks.length === 0 ? (
+          <div className="empty">Chưa có mẫu nào. Bấm &quot;+ Thêm mẫu&quot; để tạo mẫu đầu tiên.</div>
+        ) : (
+          scopedPacks.map((p) => {
+            const packItems = scopedItems.filter((it) => it.packId === p.id)
+            const done = packItems.filter((it) => it.result === "pass").length
+            return (
+              <div key={p.id} className="pl-pack-card">
+                <div className="ph">
+                  <b>Mẫu {p.code}</b>
+                  <span style={{ fontSize: 11.5, color: "var(--muted)" }}>S/N: {p.serial || "—"} · SL: {p.qty ?? 1}</span>
+                  <span style={{ flex: 1 }} />
+                  <StatusBadge label={`${done}/${packItems.length} đạt`} tone={done >= packItems.length && packItems.length > 0 ? "success" : "neutral"} />
+                  <Perm minPerm="technician">
+                    <button type="button" className="btn-line" style={{ padding: "6px 10px", fontSize: 12 }} onClick={() => openNewItemForPack(p.id)}>+ Bài test</button>
+                  </Perm>
+                  <Perm minPerm="manager">
+                    <button type="button" className="txt-act del" onClick={() => setConfirmDeletePackId(p.id)}>Xóa mẫu</button>
+                  </Perm>
+                </div>
+              </div>
+            )
+          })
+        )}
+      </div>
+
+      <div className="card">
+        <div className="ch">
+          <h3>Xuất báo cáo kế hoạch</h3>
+          <span>Tải danh sách bài thử chi tiết trong phạm vi đang lọc</span>
+        </div>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button type="button" className="btn-line" onClick={exportCsv}>⤓ Xuất Excel</button>
+          <button type="button" className="btn-line" onClick={() => window.print()}>⤓ Xuất PDF</button>
+        </div>
+      </div>
 
       <FormModal
         open={showForm}
@@ -272,13 +335,17 @@ export function PlanView({
         onSubmit={() => { const f = document.getElementById("tf-plan-form") as HTMLFormElement | null; if (f) handleSubmit(new FormData(f)) }}
         submitting={pending}
       >
-        <form id="tf-plan-form" onSubmit={(e) => e.preventDefault()} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {/* key={editing?.id ?? "new"} - fix loi remount giu du lieu cu tu form
+            truoc (nhu da ap dung cho Projects/Customers/Centers o ban ah): moi khi
+            doi doi tuong dang sua (hoac chuyen sang tao moi), React se huy va tao
+            lai toan bo form nay tu dau thay vi tai su dung DOM node cu. */}
+        <form key={editing?.id ?? "new"} id="tf-plan-form" onSubmit={(e) => e.preventDefault()} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <label style={{ fontSize: 12, fontWeight: 600 }}>Tên bài thử *
             <input name="name" required defaultValue={editing?.name ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
           </label>
           {!editing && (
             <label style={{ fontSize: 12, fontWeight: 600 }}>Dự án *
-              <select name="projectId" required style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
+              <select name="projectId" required defaultValue={projectFilter} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
                 <option value="">—</option>
                 {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
@@ -286,7 +353,7 @@ export function PlanView({
           )}
           <div style={{ display: "flex", gap: 12 }}>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Mẫu
-              <select name="packId" defaultValue={editing?.packId ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
+              <select name="packId" defaultValue={editing?.packId ?? newItemPackId} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
                 <option value="">—</option>
                 {packs.map((p) => <option key={p.id} value={p.id}>{p.code}</option>)}
               </select>
@@ -313,32 +380,40 @@ export function PlanView({
             </label>
           </div>
           <div style={{ display: "flex", gap: 12 }}>
+            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Mức độ ưu tiên
+              <select name="priority" defaultValue={editing?.priority ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
+                <option value="">—</option>
+                <option value="Cao">Cao</option>
+                <option value="Trung bình">Trung bình</option>
+                <option value="Thấp">Thấp</option>
+              </select>
+            </label>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Tiêu chuẩn
               <input name="standard" defaultValue={editing?.standard ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
             </label>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Kết quả
-              <select name="result" defaultValue={editing?.result ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
-                <option value="">(tự động)</option>
-                <option value="pass">Đạt</option>
-                <option value="fail">Không đạt</option>
-                <option value="cancel">Hủy</option>
-              </select>
-            </label>
           </div>
+          <label style={{ fontSize: 12, fontWeight: 600 }}>Kết quả
+            <select name="result" defaultValue={editing?.result ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
+              <option value="">(tự động)</option>
+              <option value="pass">Đạt</option>
+              <option value="fail">Không đạt</option>
+              <option value="cancel">Hủy</option>
+            </select>
+          </label>
           <div style={{ display: "flex", gap: 12 }}>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Kế hoạch bắt đầu
-              <input type="date" name="planStart" defaultValue={editing?.planStart ? editing.planStart.slice(0, 10) : ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+              <DateField name="planStart" defaultValue={editing?.planStart ? editing.planStart.slice(0, 10) : ""} style={{ width: "100%", marginTop: 4 }} />
             </label>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Kế hoạch kết thúc
-              <input type="date" name="planEnd" defaultValue={editing?.planEnd ? editing.planEnd.slice(0, 10) : ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+              <DateField name="planEnd" defaultValue={editing?.planEnd ? editing.planEnd.slice(0, 10) : ""} style={{ width: "100%", marginTop: 4 }} />
             </label>
           </div>
           <div style={{ display: "flex", gap: 12 }}>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Thực tế bắt đầu
-              <input type="date" name="actualStart" defaultValue={editing?.actualStart ? editing.actualStart.slice(0, 10) : ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+              <DateField name="actualStart" defaultValue={editing?.actualStart ? editing.actualStart.slice(0, 10) : ""} style={{ width: "100%", marginTop: 4 }} />
             </label>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Thực tế kết thúc
-              <input type="date" name="actualEnd" defaultValue={editing?.actualEnd ? editing.actualEnd.slice(0, 10) : ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+              <DateField name="actualEnd" defaultValue={editing?.actualEnd ? editing.actualEnd.slice(0, 10) : ""} style={{ width: "100%", marginTop: 4 }} />
             </label>
           </div>
           <label style={{ fontSize: 12, fontWeight: 600 }}>Tiến độ (%)
@@ -356,7 +431,7 @@ export function PlanView({
       >
         <form id="tf-pack-form" onSubmit={(e) => e.preventDefault()} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <label style={{ fontSize: 12, fontWeight: 600 }}>Dự án *
-            <select name="projectId" required style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
+            <select name="projectId" required defaultValue={projectFilter} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
               <option value="">—</option>
               {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
@@ -374,27 +449,6 @@ export function PlanView({
           </div>
         </form>
       </FormModal>
-
-      {scopedPacks.length > 0 && (
-        <div style={{ marginTop: 20 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8, color: "#444" }}>Quản lý mẫu</div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-            {scopedPacks.map((p) => {
-              const packItems = items.filter((it) => it.packId === p.id)
-              const done = packItems.filter((it) => it.result === "pass").length
-              return (
-                <div key={p.id} style={{ border: "1px solid #e2e5e9", borderRadius: 10, padding: 12, minWidth: 200, display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 700, fontSize: 13 }}>Mẫu {p.code}</div>
-                    <div style={{ fontSize: 12, color: "#8a8f98" }}>S/N: {p.serial ?? "—"} · SL: {p.qty ?? 1} · {done}/{packItems.length} đạt</div>
-                  </div>
-                  <Perm minPerm="manager"><button type="button" onClick={() => setConfirmDeletePackId(p.id)} style={{ border: "none", background: "none", color: "#c62828", cursor: "pointer", fontSize: 12 }}>Xoá</button></Perm>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
 
       <ConfirmDialog
         open={!!confirmDeleteId}

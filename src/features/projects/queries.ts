@@ -49,7 +49,6 @@ export async function listProjects(): Promise<ProjectRow[]> {
     return {
       id: p.id,
       name: p.name,
-      createdAt: p.createdAt.toISOString(),
       status: p.status ?? "doing",
       startDate: p.startDate ? p.startDate.toISOString() : null,
       endDate: p.endDate ? p.endDate.toISOString() : null,

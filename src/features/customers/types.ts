@@ -1,7 +1,6 @@
 export type CustomerRow = {
   id: string
   name: string
-  createdAt: string
   contact: string | null
   email: string | null
   phone: string | null

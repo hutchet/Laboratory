@@ -254,7 +254,7 @@ export function BookingsView({
         }}
         submitting={pending}
       >
-        <form id="tf-booking-form" onSubmit={(e) => e.preventDefault()} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <form key={editing?.id ?? "new"} id="tf-booking-form" onSubmit={(e) => e.preventDefault()} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {formError && (
             <div style={{ background: "#fdecea", color: "#c62828", border: "1px solid #f4c7c3", borderRadius: 8, padding: "8px 12px", fontSize: 12.5 }}>
               {formError}

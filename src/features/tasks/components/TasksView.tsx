@@ -235,7 +235,7 @@ export function TasksView({ tasks, projects, members, initialQuery }: TasksViewP
         }}
         submitting={pending}
       >
-        <form id="tf-task-form" onSubmit={(e) => e.preventDefault()} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <form key={editing?.id ?? "new"} id="tf-task-form" onSubmit={(e) => e.preventDefault()} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <label style={{ fontSize: 12, fontWeight: 600 }}>
             Tên công việc *
             <input name="title" required defaultValue={editing?.title ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />

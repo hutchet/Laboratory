@@ -8,9 +8,6 @@ type Zoom = "day" | "week" | "month"
 function toDay(iso: string | null): string | null {
   return iso ? iso.slice(0, 10) : null
 }
-function dayDiff(a: string, b: string): number {
-  return Math.round((new Date(b).getTime() - new Date(a).getTime()) / 86400000)
-}
 function addDays(iso: string, n: number): string {
   const d = new Date(iso)
   d.setDate(d.getDate() + n)
@@ -104,12 +101,26 @@ const ZOOM_OPTIONS: Array<{ key: Zoom; label: string }> = [
 ]
 
 /**
- * Port cua renderGanttChart ban goc: timeline CSS-grid, hang gom theo mau,
- * thanh the hien khung ke hoach (mau nhat) + khung thuc te (mau dam). Them
- * dieu khien zoom (ngay/tuan/thang - giu ten nhan Ngay/Thang/Nam nhu ban goc)
- * va dieu huong ngay (nhay toi mot ngay/thang/nam cu the tren cung Gantt).
+ * Port cua renderGanttChart ban goc: timeline CSS-grid dung dung class goc
+ * (.pl-gantt/.pl-ghead/.pl-corner/.pl-rowlabel/.pl-packrow/.pl-bar/.pl-gcell)
+ * da duoc port sang globals.css, thay cho inline style rieng truoc day.
+ * Hang gom theo mau (.pl-packrow), thanh the hien khung ke hoach (nhat, mo)
+ * + khung thuc te (dam, lech len) giong ban goc. Nhan vao ten bai test /
+ * thanh Gantt de mo form sua (onEditItem) - port cua click mo modal ban goc.
  */
-export function GanttChart({ items, packs }: { items: TestItemRow[]; packs: TestPackRow[] }) {
+export function GanttChart({
+  items,
+  packs,
+  onEditItem,
+  title,
+  subtitle,
+}: {
+  items: TestItemRow[]
+  packs: TestPackRow[]
+  onEditItem?: (item: TestItemRow) => void
+  title?: string
+  subtitle?: string
+}) {
   const [zoom, setZoom] = useState<Zoom>("day")
   const [focusDate, setFocusDate] = useState<string>(todayIso())
   const colRefs = useRef<Array<HTMLDivElement | null>>([])
@@ -130,7 +141,7 @@ export function GanttChart({ items, packs }: { items: TestItemRow[]; packs: Test
 
   const cols = useMemo(() => buildColumns(zoom, start, end), [zoom, start, end])
   const runs = useMemo(() => groupRuns(cols), [cols])
-  const colWidth = zoom === "day" ? 30 : zoom === "week" ? 54 : 64
+  const colWidth = zoom === "day" ? 34 : zoom === "week" ? 64 : 74
 
   function scrollToFocus(nextFocus: string) {
     setFocusDate(nextFocus)
@@ -158,14 +169,14 @@ export function GanttChart({ items, packs }: { items: TestItemRow[]; packs: Test
   })
   packless.forEach((it) => rows.push({ type: "item", item: it }))
 
-  if (items.length === 0) {
-    return <div style={{ padding: 24, textAlign: "center", color: "#8a8f98", fontSize: 13 }}>Chưa có bài thử nào để hiển thị Gantt.</div>
-  }
-
-  return (
-    <div>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+  const toolbar = (
+    <div className="pl-toolbar">
+      <div>
+        {title && <h3 style={{ fontSize: 16, fontWeight: 600 }}>{title}</h3>}
+        {subtitle && <span style={{ fontSize: 12, color: "var(--muted)" }}>{subtitle}</span>}
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        <div className="pl-daynav">
           <ArrowButton direction="chevronLeft" onClick={() => shiftFocus(-1)} ariaLabel="Lùi thời gian" />
           <input
             type={inputType}
@@ -178,28 +189,46 @@ export function GanttChart({ items, packs }: { items: TestItemRow[]; packs: Test
               else if (zoom === "week") scrollToFocus(`${v}-01`)
               else scrollToFocus(`${v}-01-01`)
             }}
-            style={{ padding: "5px 8px", borderRadius: 8, border: "1px solid #dfe3e8", fontSize: 12.5 }}
           />
           <ArrowButton direction="chevronRight" onClick={() => shiftFocus(1)} ariaLabel="Tới thời gian" />
         </div>
-        <div style={{ display: "flex", gap: 4 }}>
+        <div className="pl-zoom">
           {ZOOM_OPTIONS.map((z) => (
-            <button
-              key={z.key}
-              type="button"
-              onClick={() => setZoom(z.key)}
-              style={{ padding: "5px 12px", borderRadius: 8, border: "1px solid #1d5fd6", background: zoom === z.key ? "#1d5fd6" : "#fff", color: zoom === z.key ? "#fff" : "#1d5fd6", fontSize: 12.5, cursor: "pointer" }}
-            >
+            <button key={z.key} type="button" className={zoom === z.key ? "active" : undefined} onClick={() => setZoom(z.key)}>
               {z.label}
             </button>
           ))}
         </div>
       </div>
-      <div style={{ overflowX: "auto", border: "1px solid #e6e9ee", borderRadius: 10 }}>
-        <div style={{ display: "grid", gridTemplateColumns: `200px repeat(${cols.length}, ${colWidth}px)`, minWidth: 200 + cols.length * colWidth }}>
-          <div style={{ gridColumn: 1, gridRow: "1 / span 2", background: "#f7f8fa", borderBottom: "1px solid #e6e9ee", borderRight: "1px solid #e6e9ee" }} />
+    </div>
+  )
+
+  if (items.length === 0) {
+    return (
+      <div>
+        {toolbar}
+        <div className="pl-empty">
+          <b>Chưa có bài thử nào để hiển thị Gantt.</b>
+          Thêm bài thử ở mục &quot;Mẫu thử nghiệm và bài thử&quot; bên dưới.
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      {toolbar}
+      <div className="pl-gantt-wrap">
+        <div
+          className="pl-gantt"
+          style={{
+            gridTemplateColumns: `200px repeat(${cols.length}, ${colWidth}px)`,
+            gridAutoRows: "36px",
+          }}
+        >
+          <div className="pl-corner" style={{ gridColumn: 1, gridRow: "1 / span 2" }} />
           {runs.map((run) => (
-            <div key={run.startIdx} style={{ gridColumn: `${run.startIdx + 2} / span ${run.span}`, gridRow: 1, fontSize: 10.5, fontWeight: 700, textAlign: "center", padding: "3px 0", background: "#eef2f7", borderBottom: "1px solid #e6e9ee", color: "#4b5563" }}>
+            <div key={run.startIdx} className="pl-ghead grp" style={{ gridColumn: `${run.startIdx + 2} / span ${run.span}`, gridRow: 1 }}>
               {groupLabel(zoom, run.group)}
             </div>
           ))}
@@ -207,7 +236,8 @@ export function GanttChart({ items, packs }: { items: TestItemRow[]; packs: Test
             <div
               key={c.key}
               ref={(el) => { colRefs.current[i] = el }}
-              style={{ gridColumn: i + 2, gridRow: 2, fontSize: 10, textAlign: "center", padding: "4px 0", background: c.isToday ? "#e3edff" : c.isWeekend ? "#f2f3f5" : "#f7f8fa", borderBottom: "1px solid #e6e9ee", color: "#6b7280" }}
+              className={`pl-ghead${c.isToday ? " today" : ""}${c.isWeekend ? " weekend" : ""}`}
+              style={{ gridColumn: i + 2, gridRow: 2 }}
             >
               {c.label}
             </div>
@@ -216,7 +246,7 @@ export function GanttChart({ items, packs }: { items: TestItemRow[]; packs: Test
             const row = ri + 3
             if (r.type === "pack") {
               return (
-                <div key={`pack-${r.pack.id}`} style={{ gridColumn: `1 / span ${cols.length + 1}`, gridRow: row, background: "#eef2f7", fontWeight: 700, fontSize: 12, padding: "5px 10px" }}>
+                <div key={`pack-${r.pack.id}`} className="pl-packrow" style={{ gridColumn: `1 / span ${cols.length + 1}`, gridRow: row }}>
                   Mẫu {r.pack.code}{r.pack.serial ? ` · ${r.pack.serial}` : ""}
                 </div>
               )
@@ -224,48 +254,63 @@ export function GanttChart({ items, packs }: { items: TestItemRow[]; packs: Test
             const it = r.item
             const status = autoStatus(it)
             const color = RESULT_COLOR[status] || "#9aa1ab"
-            const planS = toDay(it.planStart), planE = toDay(it.planEnd) || planS
-            const actS = toDay(it.actualStart), actE = toDay(it.actualEnd) || (actS ? today : null)
+            const planS = toDay(it.planStart)
+            const planE = toDay(it.planEnd) || planS
+            const actS = toDay(it.actualStart)
+            const actE = toDay(it.actualEnd) || (actS ? today : null)
             return (
               <div key={it.id} style={{ display: "contents" }}>
-                <div style={{ gridColumn: 1, gridRow: row, fontSize: 12, padding: "6px 10px", borderTop: "1px solid #f1f2f4", borderRight: "1px solid #e6e9ee", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }} title={it.name}>
-                  {it.name}
+                <div className="pl-rowlabel" style={{ gridColumn: 1, gridRow: row }} onClick={() => onEditItem?.(it)}>
+                  <div className="tn">{it.name}</div>
+                  <div className="tm">{RESULT_LABEL[status] || status}</div>
                 </div>
                 {cols.map((c, ci) => (
-                  <div key={ci} style={{ gridColumn: ci + 2, gridRow: row, borderTop: "1px solid #f1f2f4", background: c.isToday ? "#f5f8ff" : undefined }} />
+                  <div key={ci} className={`pl-gcell${c.isWeekend ? " weekend" : ""}${c.isToday ? " today-col" : ""}`} style={{ gridColumn: ci + 2, gridRow: row }} />
                 ))}
                 {planS && (
                   <div
-                    title={`${it.name} (${RESULT_LABEL[status] || status}) ${planS} → ${planE}`}
+                    className="pl-bar"
+                    onClick={() => onEditItem?.(it)}
+                    title={`${it.name} — Kế hoạch: ${planS} → ${planE}`}
                     style={{
                       gridColumn: `${colIndexForDate(cols, planS) + 2} / span ${colSpan(cols, planS, planE || planS)}`,
                       gridRow: row,
-                      margin: "6px 2px",
-                      borderRadius: 5,
                       background: color,
-                      opacity: actS ? 0.35 : 0.85,
-                      height: 16,
+                      opacity: actS ? 0.42 : 0.9,
                     }}
-                  />
+                  >
+                    {!actS && <div className="fill" style={{ width: `${Math.max(0, Math.min(100, it.progress || 0))}%` }} />}
+                    <span>{it.name}</span>
+                  </div>
                 )}
                 {actS && (
                   <div
-                    title={`Thực tế: ${actS} → ${actE}`}
+                    className="pl-bar"
+                    onClick={() => onEditItem?.(it)}
+                    title={`${it.name} — Thực tế: ${actS} → ${actE}`}
                     style={{
                       gridColumn: `${colIndexForDate(cols, actS) + 2} / span ${colSpan(cols, actS, actE || actS)}`,
                       gridRow: row,
-                      margin: "6px 2px",
-                      borderRadius: 5,
                       background: color,
-                      height: 16,
-                      position: "relative",
-                      top: -22,
+                      top: -18,
                     }}
-                  />
+                  >
+                    <div className="fill" style={{ width: `${Math.max(0, Math.min(100, it.progress || 0))}%` }} />
+                    <span>{it.name}</span>
+                  </div>
                 )}
               </div>
             )
           })}
+        </div>
+      </div>
+      <div className="pl-gantt-legend">
+        <div className="pl-legend" style={{ flexDirection: "row", gap: 14, flexWrap: "wrap" }}>
+          {Object.entries(RESULT_LABEL).map(([k, label]) => (
+            <span key={k} className="li"><span className="dot" style={{ background: RESULT_COLOR[k] }} />{label}</span>
+          ))}
+          <span className="li"><span style={{ width: 20, height: 8, borderRadius: 4, background: "#1d5fd6", opacity: 0.42, display: "inline-block" }} /> Khung kế hoạch</span>
+          <span className="li"><span style={{ width: 20, height: 8, borderRadius: 4, background: "#1d5fd6", display: "inline-block" }} /> Khung thực tế</span>
         </div>
       </div>
     </div>

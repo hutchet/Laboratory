@@ -21,7 +21,6 @@ export async function listCustomers(): Promise<CustomerRow[]> {
     return {
       id: c.id,
       name: c.name,
-      createdAt: c.createdAt.toISOString(),
       contact: c.contact,
       email: c.email,
       phone: c.phone,

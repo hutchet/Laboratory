@@ -125,7 +125,7 @@ export function ReportView({
         onSubmit={handleSubmitProject}
         submitting={pending}
       >
-        <label style={{ fontSize: 12, fontWeight: 600 }}>Tên dự án *
+        <label key={editingProject?.id ?? "new"} style={{ fontSize: 12, fontWeight: 600 }}>Tên dự án *
           <input id="tf-report-project-name" required defaultValue={editingProject?.name ?? ""} placeholder="VD: VinFast" style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
         </label>
       </FormModal>

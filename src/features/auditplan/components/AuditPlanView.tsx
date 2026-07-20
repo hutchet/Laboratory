@@ -327,7 +327,7 @@ export function AuditPlanView({
       </FormModal>
 
       <FormModal open={showItemForm} title={editingItem ? "Sửa hạng mục" : "Thêm hạng mục"} onClose={() => { setShowItemForm(false); setEditingItem(null) }} onSubmit={() => { const f = document.getElementById("tf-audititem-form") as HTMLFormElement | null; if (f) submitItem(new FormData(f)) }} submitting={pending}>
-        <form id="tf-audititem-form" onSubmit={(e) => e.preventDefault()} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <form key={editingItem?.id ?? "new"} id="tf-audititem-form" onSubmit={(e) => e.preventDefault()} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <label style={{ fontSize: 12, fontWeight: 600 }}>Kế hoạch *
             <select name="auditPlanId" required defaultValue={editingItem?.auditPlanId ?? visiblePlanId} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
               <option value="">—</option>

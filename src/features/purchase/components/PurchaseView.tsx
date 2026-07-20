@@ -320,7 +320,7 @@ function PurchaseFormModal({
       submitting={pending}
       width={720}
     >
-      <form id="tf-purchase-form" onSubmit={(e) => e.preventDefault()} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+      <form key={editing?.id ?? "new"} id="tf-purchase-form" onSubmit={(e) => e.preventDefault()} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <label style={{ fontSize: 12, fontWeight: 600 }}>Phòng mua hàng
           <input name="pic" defaultValue={editing?.pic ?? ""} placeholder="PIC ngoài lab" style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
         </label>

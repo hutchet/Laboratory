@@ -132,7 +132,7 @@ export function CatalogView({ items, personnelConfig, routing }: { items: TestCa
         onSubmit={() => { const f = document.getElementById("tf-catalog-form") as HTMLFormElement | null; if (f) handleSubmit(new FormData(f)) }}
         submitting={pending}
       >
-        <form id="tf-catalog-form" onSubmit={(e) => e.preventDefault()} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <form key={editing?.id ?? "new"} id="tf-catalog-form" onSubmit={(e) => e.preventDefault()} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <div style={{ display: "flex", gap: 12 }}>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Mã
               <input name="code" defaultValue={editing?.code ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
