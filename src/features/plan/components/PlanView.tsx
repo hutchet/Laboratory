@@ -1,6 +1,7 @@
 "use client"
 import { useMemo, useState, useTransition } from "react"
 import { PageShell } from "@/shared/ui/page-shell"
+import { CustomSelect } from '@/shared/ui/custom-select'
 import { FilterBar } from "@/shared/ui/filter-bar"
 import { DataTable, type DataTableColumn } from "@/shared/ui/data-table"
 import { FormModal } from "@/shared/ui/form-modal"
@@ -196,10 +197,12 @@ export function PlanView({
       )}
       filters={(
         <FilterBar search={{ value: q, onChange: setQ, placeholder: "Tìm bài thử..." }}>
-          <select value={projectFilter} onChange={(e) => setProjectFilter(e.target.value)} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #dfe3e8", fontSize: 13 }}>
-            <option value="">Tất cả dự án</option>
-            {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
+          <CustomSelect
+            value={projectFilter}
+            onChange={setProjectFilter}
+            options={[{value:"",label:"Tất cả dự án"},...projects.map(p=>({value:p.id,label:p.name}))]}
+            width={200}
+          />
         </FilterBar>
       )}
     >

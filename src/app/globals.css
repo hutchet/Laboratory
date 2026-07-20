@@ -3016,6 +3016,8 @@ html[data-viewport="mobile"] .me>div{display:none!important}
 /* ============================================================
    v119.3.4 SCOPED ICONS + TOOLBAR + KPI + PAYROLL + WHITE-STROKE
    ============================================================ */
+/* Material Symbols Rounded ligature icon font */
+.msr{font-family:'Material Symbols Rounded';font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;font-size:22px;line-height:1;display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;user-select:none;font-style:normal;letter-spacing:normal;text-transform:none;white-space:nowrap;-webkit-font-smoothing:antialiased;}
 .msr-svg{width:22px;height:22px;display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .msr-svg *{stroke:inherit;fill:none}
 .msr-btn{position:relative}
@@ -3037,7 +3039,9 @@ html body button.btn-pri svg.msr-svg *{stroke:#ffffff!important;color:#ffffff!im
     padding:0!important;margin:-1px!important;overflow:hidden!important;
     clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important;
   }
-  button.msr-btn > .msr-svg{margin:0!important}
+  button.msr-btn > /* Material Symbols Rounded ligature icon font */
+
+.msr-svg{margin:0!important}
 }
 
 /* --- Quote overview toolbar (no .ch wrapper) --- */

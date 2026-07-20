@@ -2,6 +2,7 @@
 import { useMemo, useState, useTransition } from "react"
 import { PageShell } from "@/shared/ui/page-shell"
 import { KpiCard } from "@/shared/ui/kpi-card"
+import { CustomSelect } from '@/shared/ui/custom-select'
 import { FilterBar } from "@/shared/ui/filter-bar"
 import { DataTable, type DataTableColumn } from "@/shared/ui/data-table"
 import { StatusBadge } from "@/shared/ui/status-badge"
@@ -141,9 +142,12 @@ export function QualityView({
       <h3 style={{ fontSize: 14, margin: "0 0 10px" }}>Nhật ký truy vết (audit trail)</h3>
       <div style={{ marginBottom: 10 }}>
         <FilterBar search={{ value: q, onChange: setQ, placeholder: "Tìm theo nội dung/người thực hiện..." }}>
-          <select value={entityFilter} onChange={(e) => setEntityFilter(e.target.value)} style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #dfe3e8", fontSize: 13 }}>
-            {QL_ENTITY_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
+          <CustomSelect
+            value={entityFilter}
+            onChange={setEntityFilter}
+            options={QL_ENTITY_OPTIONS}
+            width={200}
+          />
         </FilterBar>
       </div>
       <DataTable columns={auditColumns} rows={filteredAudit} rowKey={(a) => a.id} emptyTitle="Chưa có nhật ký nào khớp điều kiện lọc" resizable />

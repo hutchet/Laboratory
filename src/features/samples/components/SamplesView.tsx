@@ -7,6 +7,7 @@ import { FormModal } from "@/shared/ui/form-modal"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { StatusBadge } from "@/shared/ui/status-badge"
 import { KpiCard } from "@/shared/ui/kpi-card"
+import { CustomSelect } from '@/shared/ui/custom-select'
 import { ChipFilterDropdown, type ChipFilterOption } from "@/shared/ui/chip-filter"
 import { Perm } from "@/shared/lib/rbac-client"
 import { saveSample, deleteSample } from "../actions"
@@ -104,10 +105,12 @@ export function SamplesView({ samples, customers, projects }: { samples: SampleR
             onChange={setStatusFilter}
             options={[{ value: "all", label: "Tất cả" } as ChipFilterOption, ...SAMPLE_STATUS_ORDER.map((s) => ({ value: s, label: SAMPLE_STATUS_LABEL[s] }))]}
           />
-          <select value={customerFilter} onChange={(e) => setCustomerFilter(e.target.value)} style={{ padding: 8, borderRadius: 6, border: "1px solid #dfe3e8" }}>
-            <option value="">Tất cả khách hàng</option>
-            {customers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
+          <CustomSelect
+            value={customerFilter}
+            onChange={setCustomerFilter}
+            options={[{value:"",label:"Tất cả khách hàng"},...customers.map(c=>({value:c.id,label:c.name}))]}
+            width={180}
+          />
         </FilterBar>
       }
     >

@@ -34,6 +34,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         // Always surface real name from token (falls back to email prefix)
         if (token.name) session.user.name = token.name as string
         else if (token.email) session.user.name = (token.email as string).split("@")[0]
+        if (token.email) session.user.email = token.email as string
       }
       return session
     },
