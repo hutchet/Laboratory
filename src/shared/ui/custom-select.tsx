@@ -1,4 +1,5 @@
 "use client"
+import type { CSSProperties } from "react"
 import { useEffect, useRef, useState } from "react"
 
 export type SelectOption = { value: string; label: string }
@@ -10,11 +11,15 @@ export function CustomSelect({
   options,
   onChange,
   width,
+  triggerStyle,
 }: {
   value: string
   options: SelectOption[]
   onChange: (v: string) => void
   width?: number | string
+  // Cho phep tuy chinh style rieng cua nut trigger (vd: bo border cho 1 vi tri cu the)
+  // ma khong lam thay doi mac dinh cua CustomSelect o cac trang khac.
+  triggerStyle?: CSSProperties
 }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -31,6 +36,7 @@ export function CustomSelect({
   return (
     <div
       ref={ref}
+      onClick={(e) => e.stopPropagation()}
       style={{
         position: "relative",
         display: "inline-block",
@@ -57,6 +63,7 @@ export function CustomSelect({
           fontFamily: "inherit",
           cursor: "pointer",
           whiteSpace: "nowrap",
+          ...triggerStyle,
         }}
       >
         <span>{active?.label ?? "—"}</span>

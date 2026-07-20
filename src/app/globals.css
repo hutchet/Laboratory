@@ -89,6 +89,14 @@
   [data-theme=dark] #page-dash .kcard-hero.pcard .kcard-trend{background:rgba(0,0,0,.32);color:#f4f6fb}
   [data-theme=dark] #page-dash .kcard-hero.pcard .kcard-trend.dn{background:rgba(0,0,0,.32);color:#ffb4ab}
   #page-dash .spotlight{position:relative;overflow:hidden;border-radius:22px;padding:22px 24px;margin-bottom:18px;background:linear-gradient(135deg,#2b2f42 0%,#1c2033 100%);color:#fff;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+  /* Fix 2026-07-20 (Tong quan, y/c #1): Material Design la giao dien PHANG - bo
+     toan bo box-shadow tren cac loai the thong tin cua trang Tong quan, ke ca luc hover. */
+  #page-dash .card,
+  #page-dash .pcard,
+  #page-dash .kcard-hero,
+  #page-dash .paycard,
+  #page-dash .spotlight{box-shadow:none!important}
+  #page-dash .clickable:hover{box-shadow:none!important}
   #page-dash .spotlight::before{content:'';position:absolute;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.08),transparent 70%);top:-80px;right:-60px}
   #page-dash .spotlight-lab{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;opacity:.65;font-weight:600;margin-bottom:6px;position:relative;z-index:1}
   #page-dash .spotlight-name{font-size:19px;font-weight:600;margin-bottom:4px;position:relative;z-index:1}

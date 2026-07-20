@@ -21,13 +21,11 @@ import {
   bannerDate,
   computeDashboardDetail,
   computeDueBars,
-  computeHeat,
   computeKpi,
   computeOverdue,
   computePaycards1,
   computePaycards2,
   computePriority,
-  computeProjectList,
   computePvd,
   computeSpotlight,
   computeStatusBar,
@@ -69,13 +67,11 @@ export function DashboardView({ data }: { data: DashboardRawData }) {
   const priority = useMemo(() => computePriority(tasks), [tasks])
   const dueBars = useMemo(() => computeDueBars(tasks), [tasks])
   const spotlight = useMemo(() => computeSpotlight(tasks, members), [tasks, members])
-  const projectList = useMemo(() => computeProjectList(tasks, projects), [tasks, projects])
   const team = useMemo(() => computeTeam(tasks, members, testItems), [tasks, members, testItems])
   const pvd = useMemo(() => computePvd(projects, pvdMonth), [projects, pvdMonth])
   const paycards1 = useMemo(() => computePaycards1(samples, testItems, customers, quotes), [samples, testItems, customers, quotes])
   const paycards2 = useMemo(() => computePaycards2(equipment), [equipment])
   const overdue = useMemo(() => computeOverdue(tasks, members), [tasks, members])
-  const heat = useMemo(() => computeHeat(equipment, bookings), [equipment, bookings])
   const monthOptions = useMemo(() => pvdMonthOptions(), [])
   const kpiSparklines = useMemo(() => computeKpiSparklines(tasks), [tasks])
   const detail = useMemo(
@@ -191,8 +187,8 @@ export function DashboardView({ data }: { data: DashboardRawData }) {
                 <div className="s" />
               </div>
             </div>
-            <div className="card" style={{ marginBottom: 0, flex: 1 }}>
-              <div className="ch" onClick={() => setDetailType("due-bars")} style={{ cursor: "pointer" }}>
+            <div className="card" style={{ marginBottom: 0, flex: 1, cursor: "pointer" }} onClick={() => setDetailType("due-bars")}>
+              <div className="ch">
                 <div className="ch-l">
                   <div className="ch-ic" style={{ background: "var(--pri-soft)", color: "var(--pri-d)" }}>
                     <svg viewBox="0 0 24 24" {...ICON_STROKE}><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></svg>
@@ -246,15 +242,15 @@ export function DashboardView({ data }: { data: DashboardRawData }) {
                 </span>
               </div>
             </div>
-            <div className="card" style={{ marginBottom: 0, flex: 1 }}>
+            <div className="card" style={{ marginBottom: 0, flex: 1, cursor: "pointer" }} onClick={() => setDetailType("pvd")}>
               <div className="ch">
                 <div className="ch-l">
                   <div className="ch-ic" style={{ background: "var(--neutral-soft)", color: "var(--neutral)" }}>
                     <svg viewBox="0 0 24 24" {...ICON_STROKE}><line x1="12" y1="20" x2="12" y2="10" /><line x1="18" y1="20" x2="18" y2="4" /><line x1="6" y1="20" x2="6" y2="16" /></svg>
                   </div>
-                  <h3 style={{ cursor: "pointer" }} onClick={() => setDetailType("pvd")}>Phân bổ giá trị dự án</h3>
+                  <h3>Phân bổ giá trị dự án</h3>
                 </div>
-                <CustomSelect value={pvdMonth} options={monthOptions} onChange={setPvdMonth} width={166} />
+                <CustomSelect value={pvdMonth} options={monthOptions} onChange={setPvdMonth} width={166} triggerStyle={{ border: "none" }} />
               </div>
               <div className="exp-summary clickable" id="pvd-summary" onClick={() => setDetailType("pvd")} style={{ cursor: "pointer" }}>
                 <div className="pvd-donut-wrap">
@@ -331,15 +327,15 @@ export function DashboardView({ data }: { data: DashboardRawData }) {
             </div>
           </div>
 
-          <div className="card" style={{ marginBottom: 0 }}>
+          <div className="card" style={{ marginBottom: 0, cursor: "pointer" }} onClick={() => setDetailType("workload")}>
             <div className="ch">
               <div className="ch-l">
                 <div className="ch-ic" style={{ background: "var(--neutral-soft)", color: "var(--neutral)" }}>
                   <svg viewBox="0 0 24 24" {...ICON_STROKE}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
                 </div>
-                <h3 style={{ cursor: "pointer" }} onClick={() => setDetailType("workload")}>Khối lượng công việc</h3>
+                <h3>Khối lượng công việc</h3>
               </div>
-              <span style={{ cursor: "pointer", fontSize: 11.5, color: "var(--pri)", fontWeight: 600 }} onClick={() => setShowTeamList((v) => !v)}>
+              <span style={{ cursor: "pointer", fontSize: 11.5, color: "var(--pri)", fontWeight: 600 }} onClick={(e) => { e.stopPropagation(); setShowTeamList((v) => !v) }}>
                 {showTeamList ? "Xem biểu đồ" : "Xem danh sách"}
               </span>
             </div>
@@ -399,7 +395,7 @@ export function DashboardView({ data }: { data: DashboardRawData }) {
             )}
           </div>
 
-          <div className="card" style={{ marginBottom: 0 }}>
+          <div className="card" style={{ marginBottom: 0, cursor: "pointer" }} onClick={() => setDetailType("priority")}>
             <div className="ch">
               <div className="ch-l">
                 <div className="ch-ic" style={{ background: "var(--neutral-soft)", color: "var(--neutral)" }}>
@@ -408,7 +404,7 @@ export function DashboardView({ data }: { data: DashboardRawData }) {
                 <h3>Mức ưu tiên</h3>
               </div>
             </div>
-            <div className="exp-summary clickable" onClick={() => setDetailType("priority")}>
+            <div className="exp-summary clickable">
               <DonutSvg
                 segments={[
                   { value: priority.high, color: "#d9435f" },
@@ -477,13 +473,13 @@ export function DashboardView({ data }: { data: DashboardRawData }) {
           </div>
         </div>
 
-        <div className="card">
+        <div className="card" style={{ cursor: "pointer" }} onClick={() => setDetailType("overdue")}>
           <div className="ch">
             <div className="ch-l">
               <div className="ch-ic" style={{ background: "var(--kred)", color: "var(--red)" }}>
                 <svg viewBox="0 0 24 24" {...ICON_STROKE}><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
               </div>
-              <h3 style={{ cursor: "pointer" }} onClick={() => setDetailType("overdue")}>3 công việc quá hạn lâu nhất</h3>
+              <h3>3 công việc quá hạn lâu nhất</h3>
             </div>
             <span>cần xử lý gấp</span>
           </div>
@@ -504,45 +500,6 @@ export function DashboardView({ data }: { data: DashboardRawData }) {
           {overdue.length === 0 && <div className="empty" style={{ padding: "10px 0" }}>Không có công việc quá hạn.</div>}
         </div>
 
-        <div className="card">
-          <div className="ch">
-            <div className="ch-l" onClick={() => setDetailType("dash-projects")} style={{ cursor: "pointer" }}><h3>Tiến độ theo dự án</h3></div>
-          </div>
-          {projectList.length === 0 ? (
-            <div className="empty" style={{ padding: "10px 0" }}>Chưa có dự án nào có công việc.</div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {projectList.map((p) => (
-                <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={{ fontSize: 12.5, width: 180, flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</span>
-                  <div style={{ flex: 1, background: "var(--surface-small)", borderRadius: 6, overflow: "hidden", height: 10 }}>
-                    <div style={{ width: `${p.pct}%`, background: p.overdue > 0 ? "var(--amber)" : p.pct >= 100 ? "var(--green)" : "var(--pri)", height: "100%" }} />
-                  </div>
-                  <span style={{ fontSize: 11.5, color: "var(--muted)", width: 96, textAlign: "right", flexShrink: 0 }}>{p.done}/{p.total} · {p.pct}%</span>
-                  {p.overdue > 0 && <span className="pill" style={{ color: "var(--red)", background: "var(--red-soft)" }}>{p.overdue} trễ</span>}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="card">
-          <div className="ch">
-            <div className="ch-l" onClick={() => setDetailType("activity")} style={{ cursor: "pointer" }}><h3>Mật độ đặt lịch thiết bị (7 ngày)</h3></div>
-            <span>{heat.readyPct}% sẵn sàng{heat.maintCount > 0 ? ` · ${heat.maintCount} đang bảo trì` : ""}</span>
-          </div>
-          {heat.rows.length === 0 ? (
-            <div className="empty" style={{ padding: "10px 0" }}>Chưa có danh mục thiết bị.</div>
-          ) : (
-            heat.rows.map((r) => (
-              <div key={r.label} className="hb-row" title={`${r.label}: ${r.count} lượt đặt / 7 ngày`}>
-                <span className="hb-lab">{r.label}</span>
-                <span className="hb-track"><span className="hb-fill" style={{ width: `${r.pct}%` }} /></span>
-                <span className="hb-val">{r.count}</span>
-              </div>
-            ))
-          )}
-        </div>
       </section>
       <DashboardDetailModal detail={detail} onClose={() => setDetailType(null)} />
     </PageShell>
