@@ -144,7 +144,7 @@ export function ReportView({
           <div onClick={(e) => e.stopPropagation()} style={{ background: "#fff", borderRadius: 12, padding: 20, width: "min(96vw, 1100px)", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 12px 40px rgba(0,0,0,0.2)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
               <div style={{ fontSize: 16, fontWeight: 700 }}>Báo cáo thử nghiệm · {openProject.name}</div>
-              <button type="button" onClick={closeSpreadsheet} style={{ border: "none", background: "none", fontSize: 18, cursor: "pointer" }}>✕</button>
+              <button type="button" className="modal-x" onClick={closeSpreadsheet} aria-label="Đóng">✕</button>
             </div>
 
             {!isEditingRows ? (

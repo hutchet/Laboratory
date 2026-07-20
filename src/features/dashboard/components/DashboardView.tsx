@@ -22,6 +22,7 @@ import {
   computeDashboardDetail,
   computeDueBars,
   computeKpi,
+  computeKpiTrend,
   computeOverdue,
   computePaycards1,
   computePaycards2,
@@ -74,6 +75,10 @@ export function DashboardView({ data }: { data: DashboardRawData }) {
   const overdue = useMemo(() => computeOverdue(tasks, members), [tasks, members])
   const monthOptions = useMemo(() => pvdMonthOptions(), [])
   const kpiSparklines = useMemo(() => computeKpiSparklines(tasks), [tasks])
+  // Fix 2026-07-20 (ban ae, y/c #2): kpiTrend da duoc tinh san (computeKpiTrend)
+  // nhung truoc gio chua bao gio duoc goi/hien thi (dead code) - noi lai de
+  // dong "so voi tuan truoc" thuc su hien ra duoi moi the KPI hero.
+  const kpiTrend = useMemo(() => computeKpiTrend(tasks), [tasks])
   const detail = useMemo(
     () => (detailType ? computeDashboardDetail(detailType, { tasks, members, projects, equipment, bookings }) : null),
     [detailType, tasks, members, projects, equipment, bookings],
@@ -140,13 +145,15 @@ export function DashboardView({ data }: { data: DashboardRawData }) {
   }
 
   // Port .kcard-trend (so voi tuan truoc) - xem computeKpiTrend trong compute.ts.
-  const renderTrend = (t: KpiTrend) => {
+  // Fix 2026-07-20 (ban ae, y/c #2): thay renderTrend (pill, chua bao gio duoc
+  // goi) bang renderWkChg - chen dong "so voi tuan truoc" mau xanh/do vao ngay
+  // trong .s cua tung the KPI hero, dung class .wk-chg da co san trong CSS.
+  const renderWkChg = (t: KpiTrend) => {
     if (!t) return null
     return (
-      <div className={t.up ? "kcard-trend" : "kcard-trend dn"}>
-        <span className="tri">{t.up ? "▲" : "▼"}</span>
-        {t.pct}%
-      </div>
+      <span className={t.up ? "wk-chg up" : "wk-chg dn"}>
+        {t.up ? "▲" : "▼"} {t.pct}%
+      </span>
     )
   }
 
@@ -164,7 +171,7 @@ export function DashboardView({ data }: { data: DashboardRawData }) {
                   <div className="l">Dự án/nội bộ</div>
                 </div>
                 <div className="kcard-val-row"><div className="v">{kpi.util}%</div>{renderSparkline("util", "#4f7fc7")}</div>
-                <div className="s">theo dự án</div>
+                <div className="s">theo dự án · {renderWkChg(kpiTrend.util)} so với tuần trước</div>
               </div>
               <div className="kcard kg kcard-hero pcard clickable" onClick={() => setDetailType("kpi-active")}>
                 <div className="kcard-top">
@@ -174,7 +181,7 @@ export function DashboardView({ data }: { data: DashboardRawData }) {
                   <div className="l">Công việc đang hoạt động</div>
                 </div>
                 <div className="kcard-val-row"><div className="v">{kpi.active}</div>{renderSparkline("active", "#16a34a")}</div>
-                <div className="s">{kpi.activeOverdueLabel}</div>
+                <div className="s">{kpi.activeOverdueLabel} · {renderWkChg(kpiTrend.active)} so với tuần trước</div>
               </div>
               <div className="kcard kr kcard-hero pcard clickable" onClick={() => setDetailType("kpi-risk")}>
                 <div className="kcard-top">
@@ -184,7 +191,7 @@ export function DashboardView({ data }: { data: DashboardRawData }) {
                   <div className="l">Dự án có rủi ro</div>
                 </div>
                 <div className="kcard-val-row"><div className="v">{kpi.risk}</div>{renderSparkline("risk", "#dc2626")}</div>
-                <div className="s" />
+                <div className="s">{renderWkChg(kpiTrend.risk)} so với tuần trước</div>
               </div>
             </div>
             <div className="card" style={{ marginBottom: 0, flex: 1, cursor: "pointer" }} onClick={() => setDetailType("due-bars")}>

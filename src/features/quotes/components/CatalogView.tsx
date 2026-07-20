@@ -181,7 +181,10 @@ export function CatalogView({ items, personnelConfig, routing }: { items: TestCa
             onClick={() => setBreakdownItem(null)}
           >
             <div onClick={(e) => e.stopPropagation()} style={{ background: "#fff", borderRadius: 12, padding: 20, width: 460, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 12px 40px rgba(0,0,0,0.2)" }}>
-              <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>Cấu thành giá: {breakdownItem.name}</div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 4 }}>
+                <div style={{ fontSize: 16, fontWeight: 700 }}>Cấu thành giá: {breakdownItem.name}</div>
+                <button type="button" className="modal-x" onClick={() => setBreakdownItem(null)} aria-label="Đóng">✕</button>
+              </div>
               <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 12 }}>
                 {b.match ? `Khớp giờ công theo mã “${breakdownItem.code}” từ Định tuyến nhân sự.` : "Chưa có định tuyến giờ công khớp mã này — giờ công = 0."}
               </div>

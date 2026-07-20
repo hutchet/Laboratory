@@ -162,7 +162,11 @@
   .kb,.kp,.kg,.kr{color:#fff}
   .kb .l,.kp .l,.kg .l,.kr .l{color:rgba(255,255,255,.94)}
   .kb .s,.kp .s,.kg .s,.kr .s{color:rgba(255,255,255,.72)}
-  .kcard.kb:not(.kcard-hero),.kcard.kp:not(.kcard-hero),.kcard.kg:not(.kcard-hero),.kcard.kr:not(.kcard-hero){background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow);color:var(--ink)}
+  /* Fix 2026-07-20 (bản ae, y/c #1): chuyển "bỏ shadow" từ CSS scoped theo trang
+     (#page-dash, #page-projects) vào ngay class gốc .kcard/.pcard/.cucard - để
+     khi các trang khác (Trung tâm, Khách hàng...) dùng lại KpiCard/ProjectCard
+     thì tự động PHẲNG giống nhau, không cần vá riêng từng trang nữa. */
+  .kcard.kb:not(.kcard-hero),.kcard.kp:not(.kcard-hero),.kcard.kg:not(.kcard-hero),.kcard.kr:not(.kcard-hero){background:var(--card);border:1px solid var(--line);box-shadow:none;color:var(--ink)}
   .kcard.kb:not(.kcard-hero){border-top:3px solid var(--blue)}
   .kcard.kp:not(.kcard-hero){border-top:3px solid var(--purple)}
   .kcard.kg:not(.kcard-hero){border-top:3px solid var(--green)}
@@ -186,6 +190,16 @@
   .kcard-sm .kcard-icon svg{width:15px;height:15px}
   .kcard .v,.kcard .l,.kcard .s{position:relative;z-index:1}
   .kcard-trend{position:relative;z-index:1;display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;background:rgba(255,255,255,.2);padding:3px 9px;border-radius:20px;margin-top:8px;color:#fff}
+  /* Fix 2026-07-20 (bản ae, y/c #2): bản tổng quát (không scope theo #page-dash) của
+     hàng giá-trị + biểu-đồ-trend-nhỏ (mini sparkline) và dòng "so với tuần trước",
+     để KpiCard dùng chung trên mọi trang (Dự án/Trung tâm/Khách hàng...) có thể
+     hiển thị đúng phong cách the KPI hero ở trang Tổng quan. */
+  .kcard-val-row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+  .kcard-spark{flex:none;display:block;overflow:visible}
+  .kcard .s .wk-chg{font-weight:600}
+  .kcard .s .wk-chg.up{color:var(--green)}
+  .kcard .s .wk-chg.dn{color:var(--red)}
+  .kcard-sm .kcard-trend{margin-top:0;font-size:10.5px;padding:2px 7px}
   .bal-chart{position:relative;padding:8px 4px 0}
   .bal-svg{width:100%;height:150px;display:block;overflow:visible}
   .bal-tooltip{position:absolute;transform:translate(-50%,-100%);background:#1f2533;color:#fff;font-size:11.5px;font-weight:600;padding:6px 10px;border-radius:8px;white-space:nowrap;box-shadow:0 8px 18px -8px rgba(0,0,0,.4);pointer-events:none}
@@ -376,7 +390,7 @@
   .tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
   .proj-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
   @media(max-width:1300px){.proj-grid{grid-template-columns:repeat(3,1fr)}}
-  .pcard{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:13px}
+  .pcard{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:none;display:flex;flex-direction:column;gap:13px}
   .pcard .pt{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
   .pcard .pt h4{font-size:15.5px;font-weight:600;background:var(--surface-control);display:inline-block;padding:4px 10px;border-radius:8px;line-height:1.3}
   .pcard .tags{display:flex;gap:8px;flex-wrap:wrap}
@@ -728,8 +742,8 @@
   .sys-date-field{height:38px;border-radius:var(--radius-control,10px);border:1px solid var(--line);background:var(--surface-control);padding:0 12px;font-size:13px;color:var(--ink);width:100%;box-sizing:border-box}
   .sys-date-field:focus{outline:none;border-color:var(--pri)}
   .material-3 .sys-date-field{border:0;border-radius:var(--ds-control-radius);background:var(--surface-control);height:var(--ds-field-height)}
-  .cucard{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:14px;transition:box-shadow .18s}
-  .cucard:hover{box-shadow:0 12px 32px -10px rgba(20,25,50,.20)}
+  .cucard{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:none;display:flex;flex-direction:column;gap:14px;transition:box-shadow .18s}
+  .cucard:hover{box-shadow:none}
   .cucard-head{display:flex;align-items:flex-start;gap:12px}
   .cu-avatar{width:46px;height:46px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:#fff;flex:none;letter-spacing:-.5px}
   .cucard-title{flex:1;min-width:0}
@@ -2122,7 +2136,7 @@ html[data-viewport="mobile"] .me>div{display:none!important}
   html[data-viewport="mobile"] #pm-overview-grid{grid-template-columns:1fr!important}
 }
 /* end v116 -------------------------------------------------- */
-/* v117.1 ---- .ch>.row toolbar 1L/2R rule (Khấu hao, Chi phí bến đổi …) --- */
+/* v117.1 ---- .ch>.row toolbar 1L/2R rule (Khấu hao, Chi phí b��n đổi …) --- */
 @media(min-width:900px){
   .material-3 .card>.ch>.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
   .material-3 .card>.ch>.row:has(.btn-pri) > *:nth-child(2),
