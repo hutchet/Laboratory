@@ -1,5 +1,6 @@
 "use client"
 import { useMemo, useState, useTransition } from "react"
+import { CustomSelect } from '@/shared/ui/custom-select'
 import { PageShell } from "@/shared/ui/page-shell"
 import { FormModal } from "@/shared/ui/form-modal"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
@@ -65,14 +66,15 @@ export function ProjectsView({ projects, customers, centers }:{ projects:Project
       <div className="section-head">
         <h3>Tất cả dự án</h3>
         <div className="tools">
-          <div style={{display:"flex",gap:6}}>
-            {CHIPS.map(c=>(
-              <button key={c.id} type="button" onClick={()=>{setChip(c.id);setPage(1)}} style={{padding:"6px 14px",borderRadius:999,border:"1px solid #dfe3e8",background:chip===c.id?"#1d5fd6":"#fff",color:chip===c.id?"#fff":"#333",fontSize:12.5,fontWeight:chip===c.id?600:400,cursor:"pointer"}}>{c.label}</button>
-            ))}
-          </div>
+          <CustomSelect
+            value={chip}
+            onChange={(v)=>{setChip(v);setPage(1)}}
+            options={CHIPS.map(c=>({value:c.id,label:c.label}))}
+            width={180}
+          />
           <div style={{position:"relative"}}>
             <input value={q} onChange={e=>{setQ(e.target.value);setPage(1)}} placeholder="Tìm dự án..." style={{padding:"7px 12px 7px 32px",borderRadius:10,border:"1px solid #dfe3e8",fontSize:13,width:200}} />
-            <span className="msr" style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:"#9aa1ab",fontSize:16}}>search</span>
+            <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="#9aa1ab" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",pointerEvents:"none"}}><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
           </div>
           <button type="button" style={{padding:"7px 14px",borderRadius:10,border:"1px solid #dfe3e8",background:"#fff",fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",gap:4}}><span className="msr" style={{fontSize:16}}>filter_list</span>Bộ lọc</button>
           <button type="button" onClick={()=>{setEditing(null);setShowForm(true)}} style={{padding:"7px 16px",borderRadius:10,border:"none",background:"#1d5fd6",color:"#fff",fontWeight:600,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",gap:4}}>

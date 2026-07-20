@@ -3017,7 +3017,7 @@ html[data-viewport="mobile"] .me>div{display:none!important}
    v119.3.4 SCOPED ICONS + TOOLBAR + KPI + PAYROLL + WHITE-STROKE
    ============================================================ */
 /* Material Symbols Rounded ligature icon font */
-.msr{font-family:'Material Symbols Rounded';font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;font-size:22px;line-height:1;display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;user-select:none;font-style:normal;letter-spacing:normal;text-transform:none;white-space:nowrap;-webkit-font-smoothing:antialiased;}
+.msr{font-family:'Material Symbols Rounded';font-variation-settings:'FILL' 0,'wght' 300,'GRAD' 0,'opsz' 24;font-size:22px;line-height:1;display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;user-select:none;font-style:normal;letter-spacing:normal;text-transform:none;white-space:nowrap;-webkit-font-smoothing:antialiased;}
 .msr-svg{width:22px;height:22px;display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .msr-svg *{stroke:inherit;fill:none}
 .msr-btn{position:relative}
@@ -3142,3 +3142,41 @@ html body .center-detail-card > .qs-box, html body .center-detail-card #pm-detai
   .ssb-count-val{font-size:20px;font-weight:700;color:var(--ink)}
   .ssb-count-lab{font-size:10.5px;color:var(--muted);margin-top:2px}
 
+
+/* ===== Material Design 3 overrides for center-card / customer-card ===== */
+.material-3 .center-card{
+  background:var(--md-sys-color-surface-container-low)!important;
+  border:0!important;
+  border-radius:var(--md-sys-shape-large,16px)!important;
+  box-shadow:none!important;
+}
+.material-3 .center-card-head{
+  background:transparent!important;
+  border-bottom:1px solid var(--md-sys-color-outline-variant,#cac4d0)!important;
+}
+.material-3 .center-card-summary{
+  border-top:1px solid var(--md-sys-color-outline-variant,#cac4d0)!important;
+}
+.material-3 .center-card-summary b{
+  color:var(--md-sys-color-primary)!important;
+}
+/* section-head toolbar */
+.section-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:12px;
+  margin-bottom:16px;
+}
+.section-head h3{
+  font-size:15px;
+  font-weight:600;
+  color:var(--ink);
+}
+.section-head .tools{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+}

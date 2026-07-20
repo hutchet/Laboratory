@@ -36,7 +36,7 @@ export function CentersView({ centers }:{ centers:CenterRow[] }) {
       <div className="section-head">
         <h3>Tất cả trung tâm thử nghiệm</h3>
         <div className="tools">
-          <div style={{position:"relative"}}><input value={q} onChange={e=>setQ(e.target.value)} placeholder="Tìm trung tâm..." style={{padding:"7px 12px 7px 32px",borderRadius:10,border:"1px solid #dfe3e8",fontSize:13,width:220}} /><span className="msr" style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",color:"#9aa1ab",fontSize:16}}>search</span></div>
+          <div style={{position:"relative"}}><input value={q} onChange={e=>setQ(e.target.value)} placeholder="Tìm trung tâm..." style={{padding:"7px 12px 7px 32px",borderRadius:10,border:"1px solid #dfe3e8",fontSize:13,width:220}} /><svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="#9aa1ab" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",pointerEvents:"none"}}><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg></div>
         </div>
       </div>
       {filtered.length===0?(<div className="empty">Chưa có trung tâm nào.</div>):(
