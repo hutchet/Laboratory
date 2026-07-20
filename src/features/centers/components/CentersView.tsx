@@ -1,7 +1,8 @@
 "use client"
 import { useMemo, useState, useTransition } from "react"
 import { PageShell } from "@/shared/ui/page-shell"
-import { FormModal } from "@/shared/ui/form-modal"
+import { AddButton } from "@/shared/ui/add-button"
+import { ActionIcon } from "@/shared/ui/icons"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { KpiCard } from "@/shared/ui/kpi-card"
 import { SearchInput } from "@/shared/ui/search-input"
@@ -27,7 +28,7 @@ export function CentersView({ centers }:{ centers:CenterRow[] }) {
   }
   function confirmDelete(){ if(!confirmDeleteId) return; const id=confirmDeleteId; startTransition(async()=>{ await deleteCenter(id); setConfirmDeleteId(null) }) }
   return (
-    <PageShell title="Trung tâm thử nghiệm" actions={<Perm minPerm="manager"><button type="button" onClick={()=>{setEditing(null);setShowForm(true)}} style={{padding:"8px 18px",borderRadius:10,border:"none",background:"#1d5fd6",color:"#fff",fontWeight:600,fontSize:13.5,cursor:"pointer"}}>+ Trung tâm mới</button></Perm>}>
+    <PageShell title="Trung tâm thử nghiệm">
       <div className="kpis" style={{marginBottom:20,display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12}}>
         <KpiCard label="Tổng trung tâm" value={kpis.total} />
         <KpiCard label="Tổng dự án liên kết" value={kpis.totalProjects} tone="warning" />
@@ -38,7 +39,33 @@ export function CentersView({ centers }:{ centers:CenterRow[] }) {
         <h3>Tất cả trung tâm thử nghiệm</h3>
         <div className="tools">
           <SearchInput value={q} onChange={setQ} placeholder="Tìm trung tâm..." width={220} />
+          <Perm minPerm="manager"><AddButton label="Trung tâm mới" onClick={()=>{setEditing(null);setShowForm(v=>!v)}} /></Perm>
         </div>
+      </div>
+      {/* Thẻ thêm/sửa trung tâm — khớp đúng cấu trúc bản gốc taskflow_original.html dòng 3415
+          (<div class="card hidden" id="ct-form">): hiện/ẩn NGAY TRONG luồng trang, dưới nút
+          "+ Trung tâm mới" và trên lưới thẻ trung tâm — KHÔNG phải popup che màn hình (FormModal
+          trước đó sai, cùng dạng lỗi đã sửa ở trang Dự án bản w). */}
+      <div className="card" style={{marginBottom:18,display:showForm?"block":"none"}}>
+        <form id="tf-center-form" onSubmit={e=>{e.preventDefault();handleSubmit(new FormData(e.currentTarget))}}>
+          <div className="row">
+            <div className="field" style={{flex:2,minWidth:220}}><label>Tên trung tâm *</label><input name="name" required defaultValue={editing?.name??""} placeholder="VD: Trung tâm thử nghiệm Pin" /></div>
+            <div className="field" style={{flex:1,minWidth:180}}><label>Người quản lý</label><input name="manager" defaultValue={editing?.manager??""} placeholder="VD: Nguyễn Văn A" /></div>
+            <div className="field" style={{flex:1,minWidth:140}}><label>Số điện thoại</label><input name="phone" defaultValue={editing?.phone??""} placeholder="09xxxxxxxx" /></div>
+          </div>
+          <div className="row" style={{marginTop:10}}>
+            <div className="field" style={{flex:2,minWidth:220}}><label>Địa chỉ</label><input name="address" defaultValue={editing?.address??""} placeholder="Địa chỉ trung tâm" /></div>
+            <div className="field" style={{flex:1,width:"100%"}}><label>Ghi chú</label><input name="notes" defaultValue={editing?.notes??""} placeholder="Ghi chú thêm" /></div>
+          </div>
+          <div className="row" style={{marginTop:10}}>
+            <div className="field" style={{flex:1,minWidth:180}}><label>Giá điện (đ/kWh)</label><input type="number" name="elecPrice" defaultValue={editing?.elecPrice??""} /></div>
+            <div className="field" style={{flex:1,minWidth:220}}><label>Giá thuê nhà xưởng (đ/m²/giờ)</label><input type="number" name="rentPrice" defaultValue={editing?.rentPrice??""} /></div>
+          </div>
+          <div className="row" style={{marginTop:12}}>
+            <button type="submit" className="btn-pri" style={{display:"flex",alignItems:"center",gap:6}} disabled={pending}>{editing?"Lưu thay đổi":(<><ActionIcon name="add" size={16} />Thêm trung tâm</>)}</button>
+            <button type="button" className="btn-line" onClick={()=>{setShowForm(false);setEditing(null)}}>Hủy</button>
+          </div>
+        </form>
       </div>
       {filtered.length===0?(<div className="empty">Chưa có trung tâm nào.</div>):(
         <div className="cu-grid" id="ct-grid">
@@ -87,15 +114,7 @@ export function CentersView({ centers }:{ centers:CenterRow[] }) {
           ))}
         </div>
       )}
-      <FormModal open={showForm} title={editing?"Sửa trung tâm":"Thêm trung tâm mới"} onClose={()=>{setShowForm(false);setEditing(null)}} onSubmit={()=>{const f=document.getElementById("tf-center-form") as HTMLFormElement|null;if(f)handleSubmit(new FormData(f))}} submitting={pending}>
-        <form id="tf-center-form" onSubmit={e=>e.preventDefault()} style={{display:"flex",flexDirection:"column",gap:12}}>
-          <label style={{fontSize:12,fontWeight:600}}>Tên *<input name="name" required defaultValue={editing?.name??""} style={{width:"100%",padding:8,borderRadius:6,border:"1px solid #dfe3e8",marginTop:4}} /></label>
-          <div style={{display:"flex",gap:12}}><label style={{fontSize:12,fontWeight:600,flex:1}}>Phụ trách<input name="manager" defaultValue={editing?.manager??""} style={{width:"100%",padding:8,borderRadius:6,border:"1px solid #dfe3e8",marginTop:4}} /></label><label style={{fontSize:12,fontWeight:600,flex:1}}>Sđt<input name="phone" defaultValue={editing?.phone??""} style={{width:"100%",padding:8,borderRadius:6,border:"1px solid #dfe3e8",marginTop:4}} /></label></div>
-          <label style={{fontSize:12,fontWeight:600}}>Địa chỉ<input name="address" defaultValue={editing?.address??""} style={{width:"100%",padding:8,borderRadius:6,border:"1px solid #dfe3e8",marginTop:4}} /></label>
-          <div style={{display:"flex",gap:12}}><label style={{fontSize:12,fontWeight:600,flex:1}}>Giá điện (đ/kWh)<input type="number" name="elecPrice" defaultValue={editing?.elecPrice??""} style={{width:"100%",padding:8,borderRadius:6,border:"1px solid #dfe3e8",marginTop:4}} /></label><label style={{fontSize:12,fontWeight:600,flex:1}}>Giá thuê nhà xưởng (đ/m²/giờ)<input type="number" name="rentPrice" defaultValue={editing?.rentPrice??""} style={{width:"100%",padding:8,borderRadius:6,border:"1px solid #dfe3e8",marginTop:4}} /></label></div>
-          <label style={{fontSize:12,fontWeight:600}}>Ghi chú<textarea name="notes" defaultValue={editing?.notes??""} style={{width:"100%",padding:8,borderRadius:6,border:"1px solid #dfe3e8",marginTop:4}} /></label>
-        </form>
-      </FormModal>
+
       <ConfirmDialog open={!!confirmDeleteId} title="Xoá trung tâm?" description="Hành động này không thể hoàn tác." danger onConfirm={confirmDelete} onCancel={()=>setConfirmDeleteId(null)} />
     </PageShell>
   )
