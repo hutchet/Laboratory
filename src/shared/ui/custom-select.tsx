@@ -75,6 +75,13 @@ export function CustomSelect({
         {/* Lop nen rieng cua icon mui ten (sys-icon-bg) — lop thu 2, tach biet mau
             voi nen chung cua ca trigger, dung dung cap doi mau .sys-select-arrow
             cua ban goc (globals.css dong ~1612/1622). */}
+        {/* Ban goc CHI dung 1 icon co dinh (chevron-down) roi xoay CA khoi nen
+            (background+icon) 180deg bang CSS transition khi mo — dung .sys-select-arrow
+            trong globals.css dong ~1622 (nen) + v108 dong ~1860 (.sys-custom-select
+            .sys-select-arrow{transition:transform .18s ease} va .open .sys-select-arrow
+            {transform:rotate(180deg)}). Truoc day o day HOAN DOI 2 icon tinh khac nhau
+            (chevronUp/chevronDown) nen chuyen tuc thi, khong co hieu ung xoay tu duoi
+            len tren theo chieu kim dong ho nhu ban goc — nay sua dung theo co che goc. */}
         <span
           style={{
             width: 26,
@@ -86,9 +93,11 @@ export function CustomSelect({
             background: "var(--sys-icon-bg, #dce5ef)",
             color: "var(--sys-icon, #4d596a)",
             flex: "none",
+            transition: "transform .18s ease",
+            transform: open ? "rotate(180deg)" : "none",
           }}
         >
-          <DirectionIcon name={open ? "chevronUp" : "chevronDown"} size={16} />
+          <DirectionIcon name="chevronDown" size={16} />
         </span>
       </button>
       {open && (
