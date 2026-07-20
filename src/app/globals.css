@@ -3194,14 +3194,17 @@ html body .center-detail-card > .qs-box, html body .center-detail-card #pm-detai
 
 /* ===== Shared Component System — bản n ===== */
 
-/* IconButton MD3 */
+/* IconButton MD3 — khop dung rule .material-3 .icon-act cua ban goc (globals.css goc
+   dong ~1408): icon-act LUON co nen tron var(--sys-icon-bg) + mau var(--sys-icon), khong
+   phai chi hien khi hover. Truoc day .icon-btn-md3 de background:transparent mac dinh nen
+   icon Sua/Xoa tren pcard/CustomersView bi "thieu nen icon, icon be" so voi ban goc. */
 .icon-btn-md3{
-  border:none;background:transparent;border-radius:50%;
+  border:none;background:var(--sys-icon-bg,#dce5ef);border-radius:50%;
   display:grid;place-items:center;cursor:pointer;
-  color:var(--muted);transition:background 180ms,color 180ms;
+  color:var(--sys-icon,#4d596a);transition:background 180ms,color 180ms;
   flex:none;
 }
-.icon-btn-md3:hover{background:var(--md-sys-color-surface-container-high,#e9e7ef);color:var(--ink)}
+.icon-btn-md3:hover{background:color-mix(in srgb,var(--sys-icon,#4d596a) 18%,var(--sys-icon-bg,#dce5ef))}
 .icon-btn-md3.danger:hover{background:#fde8e8;color:#c62828}
 .icon-btn-md3 .msr{font-size:18px}
 

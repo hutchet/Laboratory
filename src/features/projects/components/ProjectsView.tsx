@@ -5,7 +5,6 @@ import { SearchInput } from '@/shared/ui/search-input'
 import { AddButton } from '@/shared/ui/add-button'
 import { CustomSelect } from '@/shared/ui/custom-select'
 import { PageShell } from "@/shared/ui/page-shell"
-import { FormModal } from "@/shared/ui/form-modal"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { KpiCard } from "@/shared/ui/kpi-card"
 import { useRouter } from "next/navigation"
@@ -86,8 +85,31 @@ export function ProjectsView({ projects, customers, centers }:{ projects:Project
             width={180}
           />
           <SearchInput value={q} onChange={(v)=>{setQ(v);setPage(1)}} placeholder="Tìm dự án..." width={220} />
-          <AddButton label="Dự án mới" onClick={()=>{setEditing(null);setShowForm(true)}} />
+          <AddButton label="Dự án mới" onClick={()=>{setEditing(null);setShowForm(v=>!v)}} />
         </div>
+      </div>
+      {/* Thẻ thêm/sửa dự án — khớp đúng cấu trúc bản gốc: <div class="card hidden" id="proj-form">
+          hiện/ẩn NGAY TRONG luồng trang (dưới nút "+ Dự án mới", trên lưới thẻ dự án),
+          KHÔNG phải popup che màn hình (FormModal trước đây sai so với taskflow_original.html
+          dòng 3349). */}
+      <div className="card" style={{marginBottom:18,display:showForm?"block":"none"}}>
+        <form id="tf-project-form" onSubmit={e=>{e.preventDefault();handleSubmit(new FormData(e.currentTarget))}}>
+          <div className="row">
+            <div className="field" style={{flex:2,minWidth:240}}><label>Tên dự án *</label><input name="name" required defaultValue={editing?.name??""} placeholder="VD: VinFast" /></div>
+            <div className="field" style={{flex:1,minWidth:200}}><label>Khách hàng</label><select name="customerId" defaultValue={editing?.customerId??""}><option value="">—</option>{customers.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
+            <div className="field" style={{flex:1,minWidth:200}}><label>Trung tâm thử nghiệm</label><select name="centerId" defaultValue={editing?.centerId??""}><option value="">—</option>{centers.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
+          </div>
+          <div className="row" style={{marginTop:12}}>
+            <div className="field" style={{flex:1,minWidth:180}}><label>Ngày bắt đầu</label><input type="date" name="startDate" defaultValue={editing?.startDate?editing.startDate.slice(0,10):""} /></div>
+            <div className="field" style={{flex:1,minWidth:180}}><label>Ngày kết thúc</label><input type="date" name="endDate" defaultValue={editing?.endDate?editing.endDate.slice(0,10):""} /></div>
+            <div className="field" style={{flex:1,minWidth:180}}><label>Giá trị (VNĐ)</label><input name="value" type="number" defaultValue={editing?.value??""} /></div>
+          </div>
+          <p style={{fontSize:"12.5px",color:"var(--muted)",marginTop:10}}>Trạng thái, ưu tiên, tiến độ và deadline được tự động tổng hợp từ các công việc có cùng tên dự án này.</p>
+          <div className="row" style={{marginTop:12}}>
+            <button type="submit" className="btn-pri" disabled={pending}>{editing?"Lưu thay đổi":"+ Thêm dự án"}</button>
+            <button type="button" className="btn-line" onClick={()=>{setShowForm(false);setEditing(null)}}>Hủy</button>
+          </div>
+        </form>
       </div>
       <div className="proj-list-wrap">
       {pageItems.length===0?(
@@ -114,7 +136,7 @@ export function ProjectsView({ projects, customers, centers }:{ projects:Project
                 onPlanClick={()=>router.push(`/plan?project=${p.id}`)}
                 avatars={p.customer?.name?[{name:p.customer.name,color:AV_COLORS[i%AV_COLORS.length]}]:[]}
                 dueDate={fmtDate(p.dueDate)}
-                onEdit={()=>{setEditing(p);setShowForm(true)}}
+                onEdit={()=>{setEditing(p);setShowForm(true);window.scrollTo(0,0)}}
                 onDelete={()=>setConfirmDeleteId(p.id)}
               /></div>
             )
@@ -130,20 +152,6 @@ export function ProjectsView({ projects, customers, centers }:{ projects:Project
           <button className="pg" onClick={()=>setPage(p=>Math.min(pageCount,p+1))} disabled={safePage===pageCount}>›</button>
         </div>
       </div>
-      <FormModal open={showForm} title={editing?"Sửa dự án":"Thêm dự án mới"} onClose={()=>{setShowForm(false);setEditing(null)}} onSubmit={()=>{const f=document.getElementById("tf-project-form") as HTMLFormElement|null;if(f)handleSubmit(new FormData(f))}} submitting={pending}>
-        <form id="tf-project-form" onSubmit={e=>e.preventDefault()} style={{display:"flex",flexDirection:"column",gap:12}}>
-          <label style={{fontSize:12,fontWeight:600}}>Tên dự án *<input name="name" required defaultValue={editing?.name??""} style={{width:"100%",padding:8,borderRadius:6,border:"1px solid #dfe3e8",marginTop:4}} /></label>
-          <div style={{display:"flex",gap:12}}>
-            <label style={{fontSize:12,fontWeight:600,flex:1}}>Khách hàng<select name="customerId" defaultValue={editing?.customerId??""} style={{width:"100%",padding:8,borderRadius:6,border:"1px solid #dfe3e8",marginTop:4}}><option value="">—</option>{customers.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
-            <label style={{fontSize:12,fontWeight:600,flex:1}}>Trung tâm<select name="centerId" defaultValue={editing?.centerId??""} style={{width:"100%",padding:8,borderRadius:6,border:"1px solid #dfe3e8",marginTop:4}}><option value="">—</option>{centers.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
-          </div>
-          <div style={{display:"flex",gap:12}}>
-            <label style={{fontSize:12,fontWeight:600,flex:1}}>Ngày bắt đầu<input type="date" name="startDate" defaultValue={editing?.startDate?editing.startDate.slice(0,10):""} style={{width:"100%",padding:8,borderRadius:6,border:"1px solid #dfe3e8",marginTop:4}} /></label>
-            <label style={{fontSize:12,fontWeight:600,flex:1}}>Ngày kết thúc<input type="date" name="endDate" defaultValue={editing?.endDate?editing.endDate.slice(0,10):""} style={{width:"100%",padding:8,borderRadius:6,border:"1px solid #dfe3e8",marginTop:4}} /></label>
-          </div>
-          <label style={{fontSize:12,fontWeight:600}}>Giá trị (VNĐ)<input name="value" type="number" defaultValue={editing?.value??""} style={{width:"100%",padding:8,borderRadius:6,border:"1px solid #dfe3e8",marginTop:4}} /></label>
-        </form>
-      </FormModal>
       </div>
       <ConfirmDialog open={!!confirmDeleteId} title="Xoá dự án?" description="Hành động này không thể hoàn tác." danger onConfirm={confirmDelete} onCancel={()=>setConfirmDeleteId(null)} />
     </PageShell>
