@@ -82,12 +82,20 @@ export const RESULT_LABEL: Record<string, string> = {
 export const LEVEL_OPTIONS = ["Cell", "Module", "Pack"] as const
 export const TEAM_OPTIONS = ["Performance", "Safety", "Durability", "EMC", "Reliability", "DVP"] as const
 export const TEAM_LABEL: Record<string, string> = {
-  Performance: "Performance",
-  Safety: "Safety",
-  Durability: "Durability",
+  Performance: "Hiệu năng",
+  Safety: "An toàn",
+  Durability: "Độ bền",
   EMC: "EMC",
-  Reliability: "Reliability",
+  Reliability: "Độ tin cậy",
   DVP: "DVP",
+}
+
+// Muc do uu tien - port cua PL_PRIORITIES/PL_PRIORITY_LABEL ban goc (chi co
+// 2 muc, khong phai Cao/Trung binh/Thap).
+export const PRIORITY_OPTIONS = ["Critical", "Normal"] as const
+export const PRIORITY_LABEL: Record<string, string> = {
+  Critical: "Nghiêm trọng",
+  Normal: "Bình thường",
 }
 
 export const RESULT_COLOR: Record<string, string> = {

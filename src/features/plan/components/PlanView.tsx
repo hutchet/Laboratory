@@ -14,7 +14,7 @@ import { GanttChart } from "./GanttChart"
 import { PlanCard } from "./PlanCard"
 import { Perm } from "@/shared/lib/rbac-client"
 import { saveTestItem, deleteTestItem, saveTestPack, deleteTestPack, bulkDeleteTestItems } from "../actions"
-import { RESULT_LABEL, RESULT_COLOR, LEVEL_OPTIONS, TEAM_OPTIONS, TEAM_LABEL, autoStatus, isOverdue, type TestItemRow, type TestPackRow, type TestPlanRow, type Option, type EquipmentOption } from "../types"
+import { RESULT_LABEL, RESULT_COLOR, LEVEL_OPTIONS, TEAM_OPTIONS, TEAM_LABEL, PRIORITY_OPTIONS, PRIORITY_LABEL, autoStatus, isOverdue, type TestItemRow, type TestPackRow, type TestPlanRow, type Option, type EquipmentOption } from "../types"
 
 // Port cua renderPlanOverview() ban goc (dong 7022-7043): 2 donut rieng
 // (theo trang thai tu dong: ongoing/queuing/delay/cancel, va theo ket qua
@@ -192,7 +192,7 @@ export function PlanView({
   const priorityStats = useMemo(() => {
     const map = new Map<string, { done: number; total: number }>()
     scopedItems.forEach((it) => {
-      const key = it.priority || "Chưa gán"
+      const key = it.priority ? (PRIORITY_LABEL[it.priority] ?? it.priority) : "Chưa gán"
       const cur = map.get(key) || { done: 0, total: 0 }
       cur.total++
       if (it.result === "pass") cur.done++
@@ -379,9 +379,9 @@ export function PlanView({
                         const its = scopedItems.filter((it) => it.packId === p.id)
                         const done = its.filter((it) => it.result === "pass").length
                         const pct = its.length ? Math.round((done / its.length) * 100) : 0
-                        const bg = pct >= 100 ? "var(--green)" : pct > 0 ? "#4f6cf7" : "var(--neutral2)"
+                        const bg = pct >= 100 ? "var(--green)" : pct > 0 ? "#4f6cf7" : "var(--muted)"
                         return (
-                          <div key={p.id} className="pl-pack-tile" style={{ background: bg }} title={`Mẫu ${p.code}: ${done}/${its.length} đạt (${pct}%)`}>
+                          <div key={p.id} className="pl-pack-tile" style={{ background: bg }} title={`Mẫu ${p.code}: ${done}/${its.length} đạt`}>
                             <div>{p.code}</div>
                             <div className="pct">{pct}%</div>
                           </div>
@@ -549,9 +549,14 @@ export function PlanView({
             doi doi tuong dang sua (hoac chuyen sang tao moi), React se huy va tao
             lai toan bo form nay tu dau thay vi tai su dung DOM node cu. */}
         <form key={editing?.id ?? "new"} id="tf-plan-form" onSubmit={(e) => e.preventDefault()} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <label style={{ fontSize: 12, fontWeight: 600 }}>Tên bài thử *
-            <input name="name" required defaultValue={editing?.name ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
-          </label>
+          <div style={{ display: "flex", gap: 12 }}>
+            <label style={{ fontSize: 12, fontWeight: 600, flex: 2 }}>Tên bài thử *
+              <input name="name" required defaultValue={editing?.name ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+            </label>
+            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Mã báo cáo
+              <input name="reportCode" defaultValue={editing?.reportCode ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+            </label>
+          </div>
           {!editing && (
             <label style={{ fontSize: 12, fontWeight: 600 }}>Dự án *
               <PlainSelect name="projectId" required defaultValue={projectFilter}>
@@ -599,9 +604,7 @@ export function PlanView({
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Mức độ ưu tiên
               <PlainSelect name="priority" defaultValue={editing?.priority ?? ""}>
                 <option value="">—</option>
-                <option value="Cao">Cao</option>
-                <option value="Trung bình">Trung bình</option>
-                <option value="Thấp">Thấp</option>
+                {PRIORITY_OPTIONS.map((pr) => <option key={pr} value={pr}>{PRIORITY_LABEL[pr]}</option>)}
               </PlainSelect>
             </label>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Tiêu chuẩn
