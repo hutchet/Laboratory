@@ -91,7 +91,17 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             email = member?.email ?? null
           }
           if (!email) return null
-          const user = await db.user.findUnique({ where: { email } })
+          let user = await db.user.findUnique({ where: { email } })
+          // Recovery: if user doesn't exist but a Member with this email does, create User
+          if (!user) {
+            const member = await db.member.findFirst({ where: { email } })
+            if (member) {
+              const hash = await bcrypt.hash(credentials.password as string, 10)
+              user = await db.user.create({
+                data: { email, passwordHash: hash, name: member.name },
+              })
+            }
+          }
           if (!user?.passwordHash) return null
           const valid = await bcrypt.compare(credentials.password as string, user.passwordHash)
           if (!valid) return null
