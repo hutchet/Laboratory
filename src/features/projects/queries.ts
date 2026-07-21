@@ -1,10 +1,19 @@
 import { db } from "@/shared/lib/db"
+import { auth } from "@/shared/lib/auth"
+import { getUserRbacContext, getCenterScopeFilter } from "@/shared/lib/rbac"
 import type { ProjectRow, Option } from "./types"
 
 const PRIORITY_RANK: Record<string, number> = { high: 3, med: 2, low: 1 }
 
+// Phan vung theo Trung tam (thiet ke: Tai khoan 6 cap bac + Phan vung du lieu):
+// Giam doc/Nhom van hanh xem toan bo; Truong phong/Truong nhom/Ky su chi xem du an
+// thuoc Trung tam cua minh; Nguoi xem chi xem cac Trung tam duoc cap ViewerCenterAccess.
 export async function listProjects(): Promise<ProjectRow[]> {
+  const session = await auth()
+  const ctx = session?.user?.id ? await getUserRbacContext(session.user.id) : null
+  const scopeFilter = ctx ? getCenterScopeFilter(ctx, "projects") : {}
   const projects = await db.project.findMany({
+    where: scopeFilter,
     include: {
       customer: true,
       center: true,

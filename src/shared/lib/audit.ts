@@ -27,6 +27,9 @@ export type AuditEntity =
 	| "quality"
 	| "report"
 	| "settings"
+	// Additive (thiet ke 6 cap bac + phan vung Trung tam/Nhom van hanh):
+	| "group"
+	| "viewerAccess"
 
 export type AuditAction = "create" | "update" | "delete" | "other"
 

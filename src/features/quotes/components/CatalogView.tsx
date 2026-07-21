@@ -102,7 +102,7 @@ export function CatalogView({ items, personnelConfig, routing }: { items: TestCa
       render: (it) => (
         <span style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
           <button type="button" onClick={() => setBreakdownItem(it)} style={{ border: "none", background: "none", color: "#1d5fd6", cursor: "pointer" }}>Cấu thành giá</button>
-          <Perm minPerm="manager"><button type="button" onClick={() => openEdit(it)} style={{ border: "none", background: "none", color: "#1d5fd6", cursor: "pointer" }}>Sửa</button>
+          <Perm minPerm="dept_head"><button type="button" onClick={() => openEdit(it)} style={{ border: "none", background: "none", color: "#1d5fd6", cursor: "pointer" }}>Sửa</button>
           <button type="button" onClick={() => setConfirmDeleteId(it.id)} style={{ border: "none", background: "none", color: "#c62828", cursor: "pointer" }}>Xoá</button></Perm>
         </span>
       ),
@@ -117,7 +117,7 @@ export function CatalogView({ items, personnelConfig, routing }: { items: TestCa
           {editMode && (
             <button type="button" disabled={!selected.size} onClick={() => setBulkConfirm(true)} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #c62828", background: "#fff", color: "#c62828", opacity: selected.size ? 1 : 0.5 }}>Xoá mục đã chọn</button>
           )}
-          <Perm minPerm="manager"><button type="button" onClick={toggleEditMode} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #1d5fd6", background: editMode ? "#1d5fd6" : "#fff", color: editMode ? "#fff" : "#1d5fd6" }}>{editMode ? "Xong" : "Chỉnh sửa"}</button>
+          <Perm minPerm="dept_head"><button type="button" onClick={toggleEditMode} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #1d5fd6", background: editMode ? "#1d5fd6" : "#fff", color: editMode ? "#fff" : "#1d5fd6" }}>{editMode ? "Xong" : "Chỉnh sửa"}</button>
           <button type="button" onClick={openNew} style={{ padding: "8px 14px", borderRadius: 8, border: "none", background: "#1d5fd6", color: "#fff" }}>+ Thêm bài thử</button></Perm>
         </span>
       }

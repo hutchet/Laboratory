@@ -5,32 +5,54 @@
 // (khong con dung localStorage gia lap nhu ban goc).
 import { createContext, useContext, useMemo, type ReactNode } from "react"
 
-export type PermRank = "viewer" | "technician" | "manager" | "admin"
+// Nâng cấp từ 4 cấp lên 6 cấp bậc (thiết kế: Tài khoản 6 cấp bậc + Phân vùng dữ liệu
+// theo Trung tâm thử nghiệm & Nhóm vận hành). Giữ "manager"/"admin" làm alias trỏ về
+// dept_head/director để không phải sửa lại toàn bộ chỗ dùng minPerm cũ trong 1 lần.
+export type PermRank = "viewer" | "technician" | "engineer" | "team_lead" | "dept_head" | "director" | "manager" | "admin"
 
 export const PERM_RANK: Record<PermRank, number> = {
   viewer: 0,
   technician: 1,
-  manager: 2,
-  admin: 3,
+  engineer: 2,
+  team_lead: 3,
+  dept_head: 4,
+  manager: 4, // alias cũ = dept_head
+  director: 5,
+  admin: 5, // alias cũ = director
 }
 
-export const PERM_LABELS: Record<PermRank, string> = {
+export const PERM_LABELS: Record<string, string> = {
   viewer: "Người xem",
   technician: "Kỹ thuật viên",
-  manager: "Quản lý",
-  admin: "Quản trị",
+  engineer: "Kỹ sư",
+  team_lead: "Trưởng nhóm",
+  dept_head: "Trưởng phòng",
+  director: "Giám đốc",
+  manager: "Trưởng phòng",
+  admin: "Giám đốc",
 }
 
 export type RBACContextValue = {
   rank: PermRank
   roleNames: string[]
   modulePerms: string[] // dạng "module:action", ví dụ "quote:edit"
+  // Additive (phân vùng theo Trung tâm/Nhóm vận hành) — hiển thị badge/label phía client;
+  // việc lọc dữ liệu thật luôn thực hiện ở server qua getScopeFilter(), không dựa vào các
+  // trường này để bảo vệ dữ liệu.
+  centerId?: string | null
+  centerName?: string | null
+  groupId?: string | null
+  isOperations?: boolean
 }
 
 const RBACContext = createContext<RBACContextValue>({
   rank: "viewer",
   roleNames: [],
   modulePerms: [],
+  centerId: null,
+  centerName: null,
+  groupId: null,
+  isOperations: false,
 })
 
 export function RBACProvider({
@@ -56,7 +78,7 @@ export function useRBAC() {
 }
 
 // Thay cho thuộc tính data-perm="manager" trong bản gốc: bọc quanh nút/khối cần
-// ẩn theo quyền. Ví dụ: <Perm minPerm="manager"><button>Xoá</button></Perm>
+// ẩn theo quyền. Ví dụ: <Perm minPerm="dept_head"><button>Xoá</button></Perm>
 export function Perm({
   minPerm,
   children,
@@ -75,4 +97,13 @@ export function Perm({
 export function RoleBadge({ className }: { className?: string }) {
   const { label } = useRBAC()
   return <span className={className}>{label}</span>
+}
+
+// Additive — badge hiển thị Trung tâm/Nhóm vận hành hiện tại của người dùng, dùng ở
+// đầu các trang Tầng 2-3 (bên cạnh RoleBadge) để nhắc phạm vi dữ liệu đang xem.
+export function ScopeBadge({ className }: { className?: string }) {
+  const { centerName, isOperations, rank } = useRBAC()
+  if (rank === "director" || rank === "admin") return <span className={className}>Toàn bộ các Trung tâm</span>
+  if (isOperations) return <span className={className}>Nhóm vận hành (xem chéo Trung tâm)</span>
+  return <span className={className}>{centerName || "Chưa gán Trung tâm"}</span>
 }

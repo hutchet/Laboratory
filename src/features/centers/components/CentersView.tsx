@@ -8,19 +8,40 @@ import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { KpiCard } from "@/shared/ui/kpi-card"
 import { SearchInput } from "@/shared/ui/search-input"
 import { Perm } from "@/shared/lib/rbac-client"
-import { saveCenter, deleteCenter } from "../actions"
-import type { CenterRow } from "../types"
+import { saveCenter, deleteCenter, saveGroup, deleteGroup, grantViewerAccess, revokeViewerAccess } from "../actions"
+import type { CenterRow, GroupRow, ViewerAccessGrant, ViewerCandidate } from "../types"
 
 function fmtVal(v:number){ if(v>=1e9) return `${(v/1e9).toLocaleString("vi-VN",{maximumFractionDigits:1})} tỷ đ`; if(v>=1e6) return `${Math.round(v/1e6).toLocaleString("vi-VN")} triệu đ`; if(v>0) return `${v.toLocaleString("vi-VN")} đ`; return "0 đ" }
 function initials(name:string){ return name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase() }
 const AV_COLORS=["#2e7d32","#1d5fd6","#7c3aed","#c62828","#e37c13"]
 
-export function CentersView({ centers }:{ centers:CenterRow[] }) {
+export function CentersView({ centers, groups = [], memberOptions = [], viewerCandidates = [], viewerGrants = [] }:{ centers:CenterRow[]; groups?: GroupRow[]; memberOptions?: Array<{ id: string; name: string }>; viewerCandidates?: ViewerCandidate[]; viewerGrants?: ViewerAccessGrant[] }) {
   const [q,setQ]=useState("")
   const [editing,setEditing]=useState<CenterRow|null>(null)
   const [showForm,setShowForm]=useState(false)
   const [confirmDeleteId,setConfirmDeleteId]=useState<string|null>(null)
   const [pending,startTransition]=useTransition()
+  // Thiet ke: Tai khoan 6 cap bac + Phan vung du lieu theo Trung tam thu nghiem &
+  // Nhom van hanh (Section 3 va 12): quan ly Nhom van hanh theo tung Trung tam.
+  const [openGroupsFor,setOpenGroupsFor]=useState<string|null>(null)
+  const [editingGroup,setEditingGroup]=useState<GroupRow|null>(null)
+  const [confirmDeleteGroupId,setConfirmDeleteGroupId]=useState<string|null>(null)
+  // Thiet ke: Tai khoan 6 cap bac + Phan vung du lieu theo Trung tam thu nghiem &
+  // Nhom van hanh (Section 11): cap quyen xem (read-only) them Trung tam cho viewer.
+  const [openViewersFor,setOpenViewersFor]=useState<string|null>(null)
+  const [confirmRevokeId,setConfirmRevokeId]=useState<string|null>(null)
+  function handleGrantSubmit(centerId:string, fd:FormData){
+    const userId=String(fd.get("viewerUserId")||"")
+    if(!userId) return
+    startTransition(async()=>{ await grantViewerAccess({userId,centerId}) })
+  }
+  function confirmRevoke(){ if(!confirmRevokeId) return; const id=confirmRevokeId; startTransition(async()=>{ await revokeViewerAccess(id); setConfirmRevokeId(null) }) }
+  function handleGroupSubmit(centerId:string, fd:FormData){
+    const input={id:editingGroup?.id,name:String(fd.get("gname")||""),centerId,teamLeadId:String(fd.get("teamLeadId")||"")||null}
+    if(!input.name) return
+    startTransition(async()=>{ await saveGroup(input); setEditingGroup(null) })
+  }
+  function confirmDeleteGroup(){ if(!confirmDeleteGroupId) return; const id=confirmDeleteGroupId; startTransition(async()=>{ await deleteGroup(id); setConfirmDeleteGroupId(null) }) }
   const kpis=useMemo(()=>({total:centers.length,totalProjects:centers.reduce((s,c)=>s+c.projectCount,0),totalValue:centers.reduce((s,c)=>s+c.totalValue,0),totalCustomerLinks:centers.reduce((s,c)=>s+c.customerCount,0)}),[centers])
   const filtered=useMemo(()=>centers.filter(c=>!q||c.name.toLowerCase().includes(q.toLowerCase())),[centers,q])
   function handleSubmit(fd:FormData){
@@ -40,7 +61,7 @@ export function CentersView({ centers }:{ centers:CenterRow[] }) {
         <h3>Tất cả trung tâm thử nghiệm</h3>
         <div className="tools">
           <SearchInput value={q} onChange={setQ} placeholder="Tìm trung tâm..." width={220} />
-          <Perm minPerm="manager"><AddButton label="Trung tâm mới" onClick={()=>{setEditing(null);setShowForm(v=>!v)}} /></Perm>
+          <Perm minPerm="dept_head"><AddButton label="Trung tâm mới" onClick={()=>{setEditing(null);setShowForm(v=>!v)}} /></Perm>
         </div>
       </div>
       {/* Thẻ thêm/sửa trung tâm — khớp đúng cấu trúc bản gốc taskflow_original.html dòng 3415
@@ -107,12 +128,92 @@ export function CentersView({ centers }:{ centers:CenterRow[] }) {
                 <div className="cu-divider" />
                 <div className="cu-stat"><span className="cu-stat-v" style={{color:"var(--amber)"}}>{fmtVal(c.totalValue)}</span><span className="cu-stat-l">Giá trị</span></div>
               </div>
+              <div style={{padding:"10px 14px 14px",borderTop:"1px solid #eef0f3"}}>
+                <button type="button" onClick={()=>{setOpenGroupsFor(openGroupsFor===c.id?null:c.id);setEditingGroup(null)}} style={{border:"none",background:"none",color:"#1d5fd6",fontSize:12,fontWeight:600,cursor:"pointer",padding:0}}>
+                  {openGroupsFor===c.id?"▲ Ẩn nhóm vận hành":`▼ Nhóm vận hành (${groups.filter(g=>g.centerId===c.id).length})`}
+                </button>
+                {openGroupsFor===c.id&&(
+                  <div style={{marginTop:10}}>
+                    {groups.filter(g=>g.centerId===c.id).map(g=>(
+                      <div key={g.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid #f4f4f5"}}>
+                        <div>
+                          <div style={{fontSize:13,fontWeight:600}}>{g.name}</div>
+                          <div style={{fontSize:11,color:"#6b7280"}}>Trưởng nhóm: {g.teamLeadName??"Chưa có"} · {g.memberCount} thành viên</div>
+                        </div>
+                        <Perm minPerm="dept_head">
+                          <span style={{display:"flex",gap:6}}>
+                            <IconButton icon="edit" variant="ghost" size={26} title="Sửa nhóm" onClick={()=>setEditingGroup(g)} />
+                            <IconButton icon="delete" variant="danger" size={26} title="Xoá nhóm" onClick={()=>setConfirmDeleteGroupId(g.id)} />
+                          </span>
+                        </Perm>
+                      </div>
+                    ))}
+                    {groups.filter(g=>g.centerId===c.id).length===0&&(
+                      <div style={{fontSize:12,color:"#9ca3af",fontStyle:"italic",padding:"6px 0"}}>Trung tâm này chưa có nhóm vận hành nào.</div>
+                    )}
+                    <Perm minPerm="dept_head">
+                      <form onSubmit={e=>{e.preventDefault();handleGroupSubmit(c.id,new FormData(e.currentTarget));e.currentTarget.reset()}} style={{display:"flex",gap:8,marginTop:10,flexWrap:"wrap",alignItems:"flex-end"}}>
+                        <div className="field" style={{flex:1,minWidth:140}}>
+                          <label style={{fontSize:11}}>{editingGroup&&editingGroup.centerId===c.id?"Sửa tên nhóm":"Tên nhóm mới"}</label>
+                          <input name="gname" required defaultValue={editingGroup&&editingGroup.centerId===c.id?editingGroup.name:""} placeholder="VD: Nhóm vận hành A" />
+                        </div>
+                        <div className="field" style={{flex:1,minWidth:140}}>
+                          <label style={{fontSize:11}}>Trưởng nhóm</label>
+                          <select name="teamLeadId" defaultValue={editingGroup&&editingGroup.centerId===c.id?editingGroup.teamLeadId??"":""}>
+                            <option value="">— Chưa có —</option>
+                            {memberOptions.map(m=><option key={m.id} value={m.id}>{m.name}</option>)}
+                          </select>
+                        </div>
+                        <button type="submit" className="btn-pri" style={{padding:"7px 12px",fontSize:12}} disabled={pending}>{editingGroup&&editingGroup.centerId===c.id?"Lưu":"Thêm"}</button>
+                        {editingGroup&&editingGroup.centerId===c.id&&<button type="button" className="btn-line" style={{padding:"7px 12px",fontSize:12}} onClick={()=>setEditingGroup(null)}>Huỷ</button>}
+                      </form>
+                    </Perm>
+                  </div>
+                )}
+                <Perm minPerm="dept_head">
+                  <button type="button" onClick={()=>setOpenViewersFor(openViewersFor===c.id?null:c.id)} style={{border:"none",background:"none",color:"#1d5fd6",fontSize:12,fontWeight:600,cursor:"pointer",padding:0,marginTop:8,display:"block"}}>
+                    {openViewersFor===c.id?"▲ Ẩn quyền xem":`▼ Quyền xem (viewer) (${viewerGrants.filter(v=>v.centerId===c.id).length})`}
+                  </button>
+                  {openViewersFor===c.id&&(
+                    <div style={{marginTop:10}}>
+                      {viewerGrants.filter(v=>v.centerId===c.id).map(v=>(
+                        <div key={v.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid #f4f4f5"}}>
+                          <div>
+                            <div style={{fontSize:13,fontWeight:600}}>{v.viewerName}</div>
+                            <div style={{fontSize:11,color:"#6b7280"}}>{v.viewerEmail??""}</div>
+                          </div>
+                          <IconButton icon="delete" variant="danger" size={26} title="Thu hồi quyền xem" onClick={()=>setConfirmRevokeId(v.id)} />
+                        </div>
+                      ))}
+                      {viewerGrants.filter(v=>v.centerId===c.id).length===0&&(
+                        <div style={{fontSize:12,color:"#9ca3af",fontStyle:"italic",padding:"6px 0"}}>Chưa cấp quyền xem trung tâm này cho tài khoản “Chỉ xem” nào.</div>
+                      )}
+                      {viewerCandidates.length===0?(
+                        <div style={{fontSize:12,color:"#9ca3af",fontStyle:"italic",padding:"6px 0"}}>Chưa có tài khoản “Chỉ xem” nào để cấp quyền (tạo ở trang Thành viên với vai trò “Chỉ xem”).</div>
+                      ):(
+                        <form onSubmit={e=>{e.preventDefault();handleGrantSubmit(c.id,new FormData(e.currentTarget));e.currentTarget.reset()}} style={{display:"flex",gap:8,marginTop:10,flexWrap:"wrap",alignItems:"flex-end"}}>
+                          <div className="field" style={{flex:1,minWidth:180}}>
+                            <label style={{fontSize:11}}>Cấp quyền xem cho</label>
+                            <select name="viewerUserId" required defaultValue="">
+                              <option value="" disabled>— Chọn tài khoản Chỉ xem —</option>
+                              {viewerCandidates.map(v=><option key={v.userId} value={v.userId}>{v.name}{v.email?` (${v.email})`:""}</option>)}
+                            </select>
+                          </div>
+                          <button type="submit" className="btn-pri" style={{padding:"7px 12px",fontSize:12}} disabled={pending}>Cấp quyền</button>
+                        </form>
+                      )}
+                    </div>
+                  )}
+                </Perm>
+              </div>
             </div>
           ))}
         </div>
       )}
 
       <ConfirmDialog open={!!confirmDeleteId} title="Xoá trung tâm?" description="Hành động này không thể hoàn tác." danger onConfirm={confirmDelete} onCancel={()=>setConfirmDeleteId(null)} />
+      <ConfirmDialog open={!!confirmDeleteGroupId} title="Xoá nhóm vận hành?" description="Các thành viên thuộc nhóm này sẽ mất liên kết nhóm (vẫn giữ liên kết Trung tâm). Hành động này không thể hoàn tác." danger onConfirm={confirmDeleteGroup} onCancel={()=>setConfirmDeleteGroupId(null)} />
+      <ConfirmDialog open={!!confirmRevokeId} title="Thu hồi quyền xem?" description="Tài khoản này sẽ không còn xem được dữ liệu của trung tâm này nữa." danger onConfirm={confirmRevoke} onCancel={()=>setConfirmRevokeId(null)} />
     </PageShell>
   )
 }

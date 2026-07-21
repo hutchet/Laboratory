@@ -40,7 +40,7 @@ export function CustomersView({ customers }:{ customers:CustomerRow[] }) {
         <h3>Tất cả khách hàng</h3>
         <div className="tools">
           <SearchInput value={q} onChange={setQ} placeholder="Tìm khách hàng..." width={220} />
-          <Perm minPerm="manager"><AddButton label="Khách hàng mới" onClick={()=>{setEditing(null);setShowForm(v=>!v)}} /></Perm>
+          <Perm minPerm="dept_head"><AddButton label="Khách hàng mới" onClick={()=>{setEditing(null);setShowForm(v=>!v)}} /></Perm>
         </div>
       </div>
       {/* Thẻ thêm/sửa khách hàng — chuẩn hóa khớp Dự án/Trung tâm: hiện/ẩn NGAY TRONG luồng trang,

@@ -1,8 +1,16 @@
 import { db } from "@/shared/lib/db"
+import { auth } from "@/shared/lib/auth"
+import { getUserRbacContext, getScopeFilter } from "@/shared/lib/rbac"
 import type { AuditPlanRow, AuditPhaseRow, AuditItemRow } from "./types"
 
+// "auditplan" la module cross-cutting cua Nhom van hanh (OPERATIONS_CROSS_CENTER_MODULES)
+// nen Nhom van hanh xem duoc toan bo bat ke Trung tam/Nhom cua ho.
 export async function listAuditPlans(): Promise<AuditPlanRow[]> {
+  const session = await auth()
+  const ctx = session?.user?.id ? await getUserRbacContext(session.user.id) : null
+  const scopeFilter = ctx ? getScopeFilter(ctx, "auditplan") : {}
   const rows = await db.auditPlan.findMany({
+    where: scopeFilter,
     include: { _count: { select: { items: true, phases: true } } },
     orderBy: { id: "desc" },
   })

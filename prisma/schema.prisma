@@ -17,9 +17,20 @@ model User {
   image         String?
   passwordHash  String?
 
+  // Additive (thiết kế 6 cấp bậc + phân vùng theo Trung tâm/Nhóm vận hành): đồng bộ
+  // 1-chiều từ Member cùng email (xem syncUserRoleForMember trong features/members/actions.ts)
+  // — dùng để tính getScopeFilter() ngay trong session, không phải query lại Member mỗi request.
+  centerId     String?
+  groupId      String?
+  isOperations Boolean @default(false)
+
+  center Center? @relation(fields: [centerId], references: [id])
+  group  Group?  @relation(fields: [groupId], references: [id])
+
   accounts  Account[]
   sessions  Session[]
   userRoles UserRole[]
+  viewerCenterAccess ViewerCenterAccess[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -126,6 +137,11 @@ model Task {
   assigneeId  String?
   projectId   String?
   dueDate     DateTime?
+  // Additive (phân vùng theo Trung tâm/Nhóm) — stamp khi tạo mới theo center/group của
+  // người tạo, dùng để lọc hiển thị theo getScopeFilter(). Lưu riêng để lọc được cả Task
+  // không gắn Project.
+  centerId    String?
+  groupId     String?
 
   project Project? @relation(fields: [projectId], references: [id])
 
@@ -139,10 +155,20 @@ model Member {
   code       String?
   role       String?
   gender     String?
-  team       String?
+  team       String? // legacy, giữ để tương thích dữ liệu cũ — không dùng để phân quyền nữa
   accessRole String?
   email      String?  @unique
   phone      String?
+
+  // Additive (thiết kế 6 cấp bậc + phân vùng Trung tâm/Nhóm): centerId/groupId xác định
+  // phạm vi dữ liệu thành viên được thấy; isOperations=true bỏ qua phân vùng Trung tâm cho
+  // các module vận hành ngang (Equipment/Booking/Khấu hao/Chi phí biến đổi/Quality/AuditPlan).
+  centerId     String?
+  groupId      String?
+  isOperations Boolean @default(false)
+
+  center Center? @relation(fields: [centerId], references: [id])
+  group  Group?  @relation(fields: [groupId], references: [id])
 
   testItems TestItem[]
 
@@ -184,6 +210,42 @@ model Center {
   equipment         Equipment[]
   equipmentBookings EquipmentBooking[]
   projects          Project[]
+  // Additive (thiết kế 6 cấp bậc + phân vùng Trung tâm/Nhóm):
+  groups             Group[]
+  members            Member[]
+  users              User[]
+  viewerCenterAccess ViewerCenterAccess[]
+}
+
+// Additive — Nhóm (Group) nằm trong 1 Trung tâm, do Trưởng nhóm (team_lead) quản lý.
+// Dùng để gán thành viên (Kỹ sư/KTV) vào 1 nhóm cụ thể trong Trung tâm.
+model Group {
+  id         String  @id @default(cuid())
+  name       String
+  centerId   String
+  teamLeadId String?
+
+  center  Center   @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  members Member[]
+  users   User[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Additive — cấp quyền xem (đọc, không chỉnh sửa) cho Người xem (viewer) vào các Trung
+// tâm cụ thể ngoài phạm vi mặc định (mặc định viewer không thấy Trung tâm nào).
+model ViewerCenterAccess {
+  id       String @id @default(cuid())
+  userId   String
+  centerId String
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  center Center @relation(fields: [centerId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, centerId])
 }
 
 model Equipment {
@@ -329,6 +391,9 @@ model TestCatalogItem {
   sampleQty  String?
   leadTime   String?
   price      Float?
+  // Additive — chỉ để gắn thẻ/hiển thị theo Trung tâm (Tầng 2, xem thiết kế mục 12), KHÔNG
+  // dùng để chặn quyền xem/ghi — để trống = "Chung toàn lab".
+  centerId   String?
 
   createdAt DateTime @default(now())
 }
@@ -340,6 +405,8 @@ model PersonnelRateConfig {
   leadRate    Float  @default(0)
   mgrRate     Float  @default(0)
   overheadPct Float  @default(0)
+  // Additive — gắn thẻ hiển thị theo Trung tâm (display-only, xem thiết kế mục 12).
+  centerId    String?
 }
 
 model PersonnelRouting {
@@ -350,6 +417,8 @@ model PersonnelRouting {
   setupHours  String?
   testHours   String?
   reportHours String?
+  // Additive — gắn thẻ hiển thị theo Trung tâm (display-only, xem thiết kế mục 12).
+  centerId    String?
 
   createdAt DateTime @default(now())
 }
@@ -360,6 +429,8 @@ model DepreciationAsset {
   assetGroup  String?
   totalValue  Float?
   years       Float?
+  // Additive — gắn thẻ hiển thị theo Trung tâm (display-only, xem thiết kế mục 12).
+  centerId    String?
 
   createdAt DateTime @default(now())
 }
@@ -369,6 +440,8 @@ model VariableCost {
   costType    String
   description String?
   amount      Float?
+  // Additive — gắn thẻ hiển thị theo Trung tâm (display-only, xem thiết kế mục 12).
+  centerId    String?
 
   createdAt DateTime @default(now())
 }
@@ -378,6 +451,10 @@ model AuditPlan {
   title       String
   scheduledAt DateTime?
   status      String?
+  // Additive — nullable: kế hoạch có thể áp dụng riêng 1 Trung tâm (lọc theo
+  // getScopeFilter) hoặc để trống = áp dụng toàn lab (Operations/Director luôn thấy hết).
+  centerId    String?
+  groupId     String?
 
   logs   AuditLog[]
   phases AuditPhase[]
@@ -458,6 +535,11 @@ model PurchaseItem {
   owner     String? // Người phụ trách (tên thành viên)
   lab       String? // Trung tâm
   tfslink   String? // Liên kết TFS
+
+  // Additive (phân vùng theo Trung tâm/Nhóm) — trường thật dùng để lọc quyền xem/ghi,
+  // khác với "lab" (text tự do, chỉ hiển thị/gộp nhóm như bản gốc).
+  centerId  String?
+  groupId   String?
 }
 
 // ================== SAMPLES (LIMS) ==================
@@ -475,6 +557,9 @@ model Sample {
   group           String?
   status          String? // received | testing | completed | returned (empty = auto)
   receivedAt      DateTime?
+  // Additive (phân vùng theo Trung tâm/Nhóm) — stamp khi tạo mới, dùng để lọc theo getScopeFilter().
+  centerId        String?
+  groupId         String?
 
   customer  Customer?   @relation(fields: [customerId], references: [id])
   project   Project?    @relation(fields: [projectId], references: [id])

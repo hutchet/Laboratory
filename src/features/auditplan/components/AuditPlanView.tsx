@@ -148,7 +148,7 @@ export function AuditPlanView({
     { key: "status", header: "Trạng thái", render: (p) => <StatusBadge label={AUDIT_STATUS_LABEL[p.status ?? ""] ?? p.status ?? "—"} tone={planStatusTone(p.status)} /> },
     {
       key: "actions", header: "", align: "right",
-      render: (p) => <Perm minPerm="manager"><button type="button" onClick={() => setConfirmDeletePlanId(p.id)} style={{ border: "none", background: "none", color: "#c62828", cursor: "pointer" }}>Xoá</button></Perm>,
+      render: (p) => <Perm minPerm="dept_head"><button type="button" onClick={() => setConfirmDeletePlanId(p.id)} style={{ border: "none", background: "none", color: "#c62828", cursor: "pointer" }}>Xoá</button></Perm>,
     },
   ]
 
@@ -166,7 +166,7 @@ export function AuditPlanView({
       key: "actions", header: "", align: "right",
       render: (it) => (
         <span style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-          <Perm minPerm="manager"><button type="button" onClick={() => { setEditingItem(it); setShowItemForm(true) }} style={{ border: "none", background: "none", color: "#1d5fd6", cursor: "pointer" }}>Sửa</button>
+          <Perm minPerm="dept_head"><button type="button" onClick={() => { setEditingItem(it); setShowItemForm(true) }} style={{ border: "none", background: "none", color: "#1d5fd6", cursor: "pointer" }}>Sửa</button>
           <button type="button" onClick={() => setConfirmDeleteItemId(it.id)} style={{ border: "none", background: "none", color: "#c62828", cursor: "pointer" }}>Xoá</button></Perm>
         </span>
       ),
@@ -280,7 +280,7 @@ export function AuditPlanView({
         <h3 style={{ fontSize: 14, margin: 0 }}>Hạng mục kiểm toán</h3>
         <div style={{ display: "flex", gap: 8 }}>
           <button type="button" onClick={exportCsv} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid #dfe3e8", background: "#fff" }}>Xuất Excel (CSV)</button>
-          <Perm minPerm="manager"><button type="button" onClick={() => setShowPhaseForm(true)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid #1d5fd6", background: "#fff", color: "#1d5fd6" }}>+ Giai đoạn</button>
+          <Perm minPerm="dept_head"><button type="button" onClick={() => setShowPhaseForm(true)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid #1d5fd6", background: "#fff", color: "#1d5fd6" }}>+ Giai đoạn</button>
           <button type="button" onClick={() => { setEditingItem(null); setShowItemForm(true) }} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: "#1d5fd6", color: "#fff" }}>+ Thêm hạng mục</button></Perm>
         </div>
       </div>

@@ -24,7 +24,14 @@ async function requirePermission(action: "create" | "edit" | "delete") {
 // không có User tương ứng nên tài khoản đó không đăng nhập được. Hàm dưới đây đồng bộ
 // thật: tạo/cập nhật User theo email + gán đúng 1 Role (theo tên accessRole, đã có sẵn
 // từ prisma/seed.ts) vào UserRole, thay cho toàn bộ role cũ của user đó.
-async function syncUserRoleForMember(email: string | null, accessRole: string | null, password?: string | null) {
+async function syncUserRoleForMember(
+  email: string | null,
+  accessRole: string | null,
+  password: string | null | undefined,
+  centerId: string | null,
+  groupId: string | null,
+  isOperations: boolean,
+) {
   if (!email) return
   const roleName = accessRole || "viewer"
   const role = await db.role.findUnique({ where: { name: roleName } })
@@ -33,10 +40,11 @@ async function syncUserRoleForMember(email: string | null, accessRole: string | 
   if (!user) {
     if (!password) return // chưa từng có tài khoản đăng nhập và không đặt mật khẩu mới thì không tạo được
     const passwordHash = await bcrypt.hash(password, 10)
-    user = await db.user.create({ data: { email, passwordHash } })
-  } else if (password) {
-    const passwordHash = await bcrypt.hash(password, 10)
-    await db.user.update({ where: { id: user.id }, data: { passwordHash } })
+    user = await db.user.create({ data: { email, passwordHash, centerId, groupId, isOperations } })
+  } else {
+    const updateData: { passwordHash?: string; centerId: string | null; groupId: string | null; isOperations: boolean } = { centerId, groupId, isOperations }
+    if (password) updateData.passwordHash = await bcrypt.hash(password, 10)
+    await db.user.update({ where: { id: user.id }, data: updateData })
   }
   await db.userRole.deleteMany({ where: { userId: user.id } })
   await db.userRole.create({ data: { userId: user.id, roleId: role.id } })
@@ -51,6 +59,11 @@ export type SaveMemberInput = {
   team?: string | null
   accessRole?: string | null
   password?: string | null
+  // Thiet ke: Tai khoan 6 cap bac + Phan vung du lieu theo Trung tam thu nghiem &
+  // Nhom van hanh.
+  centerId?: string | null
+  groupId?: string | null
+  isOperations?: boolean
 }
 
 export async function saveMember(input: SaveMemberInput) {
@@ -62,6 +75,9 @@ export async function saveMember(input: SaveMemberInput) {
     gender: input.gender || null,
     team: input.team || null,
     accessRole: input.accessRole || "viewer",
+    centerId: input.centerId || null,
+    groupId: input.groupId || null,
+    isOperations: !!input.isOperations,
   }
   if (input.id) {
     await db.member.update({ where: { id: input.id }, data })
@@ -71,7 +87,7 @@ export async function saveMember(input: SaveMemberInput) {
     await logAudit("member", "create", data.name, `Thêm thành viên mới “${data.name}” (#${created.id})`)
   }
   try {
-    await syncUserRoleForMember(data.email, data.accessRole, input.password)
+    await syncUserRoleForMember(data.email, data.accessRole, input.password, data.centerId, data.groupId, data.isOperations)
   } catch (e) {
     // Không để lỗi đồng bộ RBAC (ví dụ seed chưa chạy) làm hỏng việc lưu thành viên —
     // ghi log để biết, nhưng Member vẫn được lưu như bình thường.

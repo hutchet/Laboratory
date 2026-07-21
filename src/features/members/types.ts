@@ -8,12 +8,37 @@ export type MemberRow = {
   accessRole: string | null
   email: string | null
   phone: string | null
+  // Thiet ke: Tai khoan 6 cap bac + Phan vung du lieu theo Trung tam thu nghiem &
+  // Nhom van hanh. centerId/groupId quyet dinh pham vi du lieu duoc thay; isOperations
+  // = true cho phep xem/thao tac cheo Trung tam voi cac module cross-cutting.
+  centerId: string | null
+  groupId: string | null
+  isOperations: boolean
+  centerName: string | null
+  groupName: string | null
 }
 
+// 6 cap bac moi + giu lai 5 ten vai tro cu (alias) de tuong thich Role/UserRole da co
+// tren Neon truoc khi nang cap.
 export const ACCESS_ROLE_LABEL: Record<string, string> = {
-  admin: "Quản trị",
-  manager: "Quản lý",
+  director: "Giám đốc",
+  dept_head: "Trưởng phòng",
+  team_lead: "Trưởng nhóm",
+  engineer: "Kỹ sư",
   technician: "Kỹ thuật viên",
-  quote_staff: "Nhân viên báo giá",
   viewer: "Chỉ xem",
+  // Alias voi ten vai tro cu (van con trong Role/UserRole tren Neon, xem rbac.ts)
+  admin: "Giám đốc",
+  manager: "Trưởng phòng",
+  quote_staff: "Nhân viên báo giá",
 }
+
+export const NEW_ACCESS_ROLE_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: "director", label: "Giám đốc" },
+  { value: "dept_head", label: "Trưởng phòng" },
+  { value: "team_lead", label: "Trưởng nhóm" },
+  { value: "engineer", label: "Kỹ sư" },
+  { value: "technician", label: "Kỹ thuật viên" },
+  { value: "quote_staff", label: "Nhân viên báo giá" },
+  { value: "viewer", label: "Chỉ xem" },
+]

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { auth } from "@/shared/lib/auth"
 import { db } from "@/shared/lib/db"
-import { can } from "@/shared/lib/rbac"
+import { can, getUserRbacContext, assertScopedAccess } from "@/shared/lib/rbac"
 import { logAudit } from "@/shared/lib/audit"
 import { AP_SEED_DATA } from "./seed-data"
 
@@ -13,32 +13,49 @@ async function requirePermission(action: "create" | "edit" | "delete") {
   if (!userId) throw new Error("Không có quyền: chưa đăng nhập")
   const allowed = await can(userId, "auditplan", action)
   if (!allowed) throw new Error("Không có quyền thực hiện hành động này")
+  return userId
 }
 
 export type SaveAuditPlanInput = { id?: string; title: string; scheduledAt?: string | null; status?: string | null }
 
 export async function saveAuditPlan(input: SaveAuditPlanInput) {
-  await requirePermission(input.id ? "edit" : "create")
-  const data = { title: input.title, scheduledAt: input.scheduledAt ? new Date(input.scheduledAt) : null, status: input.status || "planned" }
+  const userId = await requirePermission(input.id ? "edit" : "create")
+  const data: Record<string, unknown> = { title: input.title, scheduledAt: input.scheduledAt ? new Date(input.scheduledAt) : null, status: input.status || "planned" }
   if (input.id) {
+    const existing = await db.auditPlan.findUnique({ where: { id: input.id } })
+    const ctx = await getUserRbacContext(userId)
+    assertScopedAccess(ctx, "auditplan", existing)
     await db.auditPlan.update({ where: { id: input.id }, data })
   } else {
-    const created = await db.auditPlan.create({ data })
+    const ctx = await getUserRbacContext(userId)
+    data.centerId = ctx.centerId ?? null
+    data.groupId = ctx.groupId ?? null
+    const created = await db.auditPlan.create({ data: data as Parameters<typeof db.auditPlan.create>[0]["data"] })
     await logAudit("auditplan", "create", created.title, `Thêm kế hoạch kiểm toán “${created.title}”`)
   }
   revalidatePath("/auditplan")
 }
 
 export async function deleteAuditPlan(id: string) {
-  await requirePermission("delete")
+  const userId = await requirePermission("delete")
+  const existing = await db.auditPlan.findUnique({ where: { id } })
+  const ctx = await getUserRbacContext(userId)
+  assertScopedAccess(ctx, "auditplan", existing)
   await db.auditPlan.delete({ where: { id } })
   revalidatePath("/auditplan")
 }
 
 export type SaveAuditPhaseInput = { id?: string; auditPlanId: string; name: string; order?: number | null }
 
+async function assertAuditPlanScope(userId: string, auditPlanId: string) {
+  const plan = await db.auditPlan.findUnique({ where: { id: auditPlanId } })
+  const ctx = await getUserRbacContext(userId)
+  assertScopedAccess(ctx, "auditplan", plan)
+}
+
 export async function saveAuditPhase(input: SaveAuditPhaseInput) {
-  await requirePermission(input.id ? "edit" : "create")
+  const userId = await requirePermission(input.id ? "edit" : "create")
+  await assertAuditPlanScope(userId, input.auditPlanId)
   const data = { auditPlanId: input.auditPlanId, name: input.name, order: input.order ?? null }
   if (input.id) await db.auditPhase.update({ where: { id: input.id }, data: { name: data.name, order: data.order } })
   else await db.auditPhase.create({ data })
@@ -46,7 +63,9 @@ export async function saveAuditPhase(input: SaveAuditPhaseInput) {
 }
 
 export async function deleteAuditPhase(id: string) {
-  await requirePermission("delete")
+  const userId = await requirePermission("delete")
+  const phase = await db.auditPhase.findUnique({ where: { id } })
+  if (phase) await assertAuditPlanScope(userId, phase.auditPlanId)
   await db.auditPhase.delete({ where: { id } })
   revalidatePath("/auditplan")
 }
@@ -66,7 +85,8 @@ export type SaveAuditItemInput = {
 }
 
 export async function saveAuditItem(input: SaveAuditItemInput) {
-  await requirePermission(input.id ? "edit" : "create")
+  const userId = await requirePermission(input.id ? "edit" : "create")
+  await assertAuditPlanScope(userId, input.auditPlanId)
   const data = {
     auditPlanId: input.auditPlanId,
     phaseId: input.phaseId || null,
@@ -85,7 +105,9 @@ export async function saveAuditItem(input: SaveAuditItemInput) {
 }
 
 export async function deleteAuditItem(id: string) {
-  await requirePermission("delete")
+  const userId = await requirePermission("delete")
+  const item = await db.auditItem.findUnique({ where: { id } })
+  if (item) await assertAuditPlanScope(userId, item.auditPlanId)
   await db.auditItem.delete({ where: { id } })
   revalidatePath("/auditplan")
 }

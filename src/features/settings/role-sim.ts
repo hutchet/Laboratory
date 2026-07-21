@@ -14,6 +14,10 @@ export const SIM_ROLE_COOKIE = "tf_active_role_v1"
 export async function getSimRole(): Promise<SimRole> {
   const jar = await cookies()
   const v = jar.get(SIM_ROLE_COOKIE)?.value
-  if (v === "admin" || v === "manager" || v === "technician" || v === "viewer") return v
+  if (v === "director" || v === "dept_head" || v === "team_lead" || v === "engineer" || v === "technician" || v === "viewer") return v
+  // Tương thích ngược với cookie cũ (4 cấp) đã lưu trên trình duyệt người dùng trước khi
+  // nâng cấp lên 6 cấp bậc.
+  if (v === "admin") return "director"
+  if (v === "manager") return "dept_head"
   return ""
 }

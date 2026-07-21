@@ -288,7 +288,7 @@ export function PlanView({
           <h3>Mẫu thử nghiệm và bài thử</h3>
           <span>{scopedPacks.length} mẫu</span>
         </div>
-        <Perm minPerm="manager">
+        <Perm minPerm="dept_head">
           <div style={{ marginBottom: 14 }}><AddButton label="Thêm mẫu" onClick={() => setShowPackForm(true)} /></div>
         </Perm>
         {scopedPacks.length === 0 ? (
@@ -307,7 +307,7 @@ export function PlanView({
                   <Perm minPerm="technician">
                     <button type="button" className="btn-line" style={{ padding: "6px 10px", fontSize: 12 }} onClick={() => openNewItemForPack(p.id)}>+ Bài test</button>
                   </Perm>
-                  <Perm minPerm="manager">
+                  <Perm minPerm="dept_head">
                     <button type="button" className="txt-act del" onClick={() => setConfirmDeletePackId(p.id)}>Xóa mẫu</button>
                   </Perm>
                 </div>

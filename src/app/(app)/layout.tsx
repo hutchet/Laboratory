@@ -46,11 +46,13 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   // trong trang Cài đặt (tf_active_role_v1, xem features/settings/role-sim.ts), CHỈ ghi
   // đè trường rank hiển thị UI — modulePerms dùng cho canModule()/Server Action vẫn giữ
   // đúng quyền thật, không bị giả lập chi phối.
-  let rbacValue: { rank: RankName; roleNames: string[]; modulePerms: string[] } = { rank: "viewer", roleNames: [], modulePerms: [] }
+  let rbacValue: { rank: RankName; roleNames: string[]; modulePerms: string[]; centerId: string | null; centerName: string | null; groupId: string | null; isOperations: boolean } = {
+    rank: "viewer", roleNames: [], modulePerms: [], centerId: null, centerName: null, groupId: null, isOperations: false,
+  }
   if (session?.user?.id) {
     const ctx = await getUserRbacContext(session.user.id)
     const simRole = await getSimRole()
-    rbacValue = { ...ctx, rank: simRole || ctx.rank }
+    rbacValue = { ...ctx, rank: (simRole as RankName) || ctx.rank }
   }
   const overdueTasks = await listOverdueTasksForNotif()
 

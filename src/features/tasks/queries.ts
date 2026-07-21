@@ -1,8 +1,16 @@
 import { db } from "@/shared/lib/db"
+import { auth } from "@/shared/lib/auth"
+import { getUserRbacContext, getScopeFilter } from "@/shared/lib/rbac"
 import type { TaskRow, Option } from "./types"
 
+// Phan vung theo Trung tam/Nhom van hanh: Task co ca centerId va groupId nen dung
+// getScopeFilter (Truong nhom/Ky su/KTV chi thay task cua Nhom minh; Truong phong thay
+// toan bo Trung tam; Giam doc/Nhom van hanh thay toan bo).
 export async function listTasks(): Promise<TaskRow[]> {
-  const tasks = await db.task.findMany({ include: { project: true }, orderBy: { createdAt: "desc" } })
+  const session = await auth()
+  const ctx = session?.user?.id ? await getUserRbacContext(session.user.id) : null
+  const scopeFilter = ctx ? getScopeFilter(ctx, "tasks") : {}
+  const tasks = await db.task.findMany({ where: scopeFilter, include: { project: true }, orderBy: { createdAt: "desc" } })
   return tasks.map((t) => ({
     id: t.id,
     title: t.title,

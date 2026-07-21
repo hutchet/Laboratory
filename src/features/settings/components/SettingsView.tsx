@@ -177,10 +177,16 @@ export function SettingsView({ settings }: { settings: AppSettings }) {
         </div>
         <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 6, lineHeight: 1.6 }}>
           Vai trò hiện tại: <b style={{ color: "var(--ink)" }}>{settings.activeRoleLabel}</b><br />
-          <b>Quản trị</b>: toàn quyền, kể cả quản lý thành viên/phân quyền.<br />
-          <b>Quản lý</b>: tạo/sửa/xóa dự án, thiết bị, mẫu, bài thử — trừ quản lý thành viên.<br />
-          <b>Kỹ thuật viên</b>: đặt lịch thiết bị, thêm/cập nhật kết quả bài thử — không được tạo/xóa mẫu, thiết bị, dự án.<br />
-          <b>Người xem</b>: chỉ xem, không chỉnh sửa được.
+          {/* Thiet ke: Tai khoan 6 cap bac + Phan vung du lieu theo Trung tam thu nghiem &
+              Nhom van hanh (Section 2): 6 cap bac chinh + 1 vai tro chuyen trach bao gia. */}
+          <b>Giám đốc</b>: toàn quyền trên tất cả Trung tâm, kể cả quản lý thành viên/phân quyền.<br />
+          <b>Trưởng phòng</b>: quản lý toàn bộ dữ liệu trong Trung tâm phụ trách (dự án, mẫu, thiết bị, mua hàng, kế hoạch kiểm toán), tạo Nhóm vận hành và thành viên trong Trung tâm.<br />
+          <b>Trưởng nhóm</b>: quản lý dữ liệu trong Nhóm vận hành của mình (tạo/sửa công việc, mẫu, mua hàng).<br />
+          <b>Kỹ sư</b>: cập nhật công việc và mẫu được giao trong phạm vi Trung tâm/Nhóm của mình.<br />
+          <b>Kỹ thuật viên</b>: đặt lịch thiết bị, xem công việc — không được tạo/xóa mẫu, thiết bị, dự án.<br />
+          <b>Nhân viên báo giá</b>: chuyên trách báo giá và khách hàng, không thuộc hệ thứ bậc chính.<br />
+          <b>Chỉ xem</b>: chỉ xem, không chỉnh sửa được.<br />
+          Thành viên thuộc <b>Nhóm vận hành</b> (đánh dấu đặc biệt ở trang Thành viên) được xem chéo dữ liệu thiết bị, khấu hao, chi phí biến đổi, chất lượng và kế hoạch kiểm toán giữa tất cả Trung tâm, thay vì chỉ giới hạn trong Trung tâm của mình.
         </div>
         <div className="note" style={{ marginTop: 12 }}>
           Khác với bản gốc (chạy 1 mình trên máy, không có server): ứng dụng này có RBAC thật theo

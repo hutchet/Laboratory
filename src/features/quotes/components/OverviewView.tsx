@@ -85,7 +85,7 @@ export function OverviewView({ quotes, customers, projects }: { quotes: QuoteRow
       key: "actions", header: "", align: "right",
       render: (it) => (
         <span style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-          <Perm minPerm="manager"><button type="button" onClick={() => openEdit(it)} style={{ border: "none", background: "none", color: "#1d5fd6", cursor: "pointer" }}>Sửa</button>
+          <Perm minPerm="dept_head"><button type="button" onClick={() => openEdit(it)} style={{ border: "none", background: "none", color: "#1d5fd6", cursor: "pointer" }}>Sửa</button>
           <button type="button" onClick={() => setConfirmDeleteId(it.id)} style={{ border: "none", background: "none", color: "#c62828", cursor: "pointer" }}>Xoá</button></Perm>
         </span>
       ),
@@ -99,7 +99,7 @@ export function OverviewView({ quotes, customers, projects }: { quotes: QuoteRow
         <span style={{ display: "flex", gap: 8 }}>
           <button type="button" onClick={exportExcel} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #1d5fd6", background: "#fff", color: "#1d5fd6" }}>Xuất Excel</button>
           <button type="button" onClick={() => window.print()} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #1d5fd6", background: "#fff", color: "#1d5fd6" }}>Xuất PDF</button>
-          <Perm minPerm="manager"><button type="button" onClick={openNew} style={{ padding: "8px 14px", borderRadius: 8, border: "none", background: "#1d5fd6", color: "#fff" }}>+ Thêm báo giá</button></Perm>
+          <Perm minPerm="dept_head"><button type="button" onClick={openNew} style={{ padding: "8px 14px", borderRadius: 8, border: "none", background: "#1d5fd6", color: "#fff" }}>+ Thêm báo giá</button></Perm>
         </span>
       }
       filters={<FilterBar search={{ value: q, onChange: setQ, placeholder: "Tìm báo giá..." }} />}

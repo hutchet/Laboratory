@@ -1,9 +1,40 @@
 import { auth } from "@/shared/lib/auth"
 import { db } from "@/shared/lib/db"
 import type { MemberRow } from "./types"
+import type { Option } from "@/features/projects/types"
 
 export async function listMembers(): Promise<MemberRow[]> {
-  return db.member.findMany({ orderBy: { name: "asc" } })
+  const rows = await db.member.findMany({ orderBy: { name: "asc" }, include: { center: true, group: true } })
+  return rows.map((m) => ({
+    id: m.id,
+    name: m.name,
+    code: m.code,
+    role: m.role,
+    gender: m.gender,
+    team: m.team,
+    accessRole: m.accessRole,
+    email: m.email,
+    phone: m.phone,
+    centerId: m.centerId,
+    groupId: m.groupId,
+    isOperations: m.isOperations,
+    centerName: m.center?.name ?? null,
+    groupName: m.group?.name ?? null,
+  }))
+}
+
+// Dung cho dropdown chon Trung tam / Nhom trong form Thanh vien.
+export async function listCenterOptions(): Promise<Option[]> {
+  return db.center.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } })
+}
+
+export async function listGroupOptions(centerId?: string | null): Promise<Array<Option & { centerId: string }>> {
+  const groups = await db.group.findMany({
+    where: centerId ? { centerId } : undefined,
+    select: { id: true, name: true, centerId: true },
+    orderBy: { name: "asc" },
+  })
+  return groups
 }
 
 export type CurrentMemberInfo = {

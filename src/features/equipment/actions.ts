@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { auth } from "@/shared/lib/auth"
 import { db } from "@/shared/lib/db"
-import { can } from "@/shared/lib/rbac"
+import { can, getUserRbacContext, assertScopedAccess } from "@/shared/lib/rbac"
 import { logAudit } from "@/shared/lib/audit"
 
 async function requirePermission(action: "create" | "edit" | "delete") {
@@ -12,6 +12,19 @@ async function requirePermission(action: "create" | "edit" | "delete") {
   if (!userId) throw new Error("Không có quyền: chưa đăng nhập")
   const allowed = await can(userId, "equipment", action)
   if (!allowed) throw new Error("Không có quyền thực hiện hành động này")
+  return userId
+}
+
+// Equipment/Booking la module cross-cutting (OPERATIONS_CROSS_CENTER_MODULES) — thanh
+// vien Nhom van hanh (isOperations) va Giam doc thay/sua duoc moi Trung tam. Truong
+// phong (dept_head) khong thuoc Nhom van hanh thi van chi duoc sua thiet bi/lich dat
+// cua dung Trung tam minh phu trach — ham nay ep centerId khi tao moi va chan sua/xoa
+// ngoai pham vi, giong assertScopedAccess nhung rieng cho Equipment/Booking (khong co
+// groupId, chi co centerId).
+async function scopedEquipmentCenterId(userId: string, requested?: string | null): Promise<string | null> {
+  const ctx = await getUserRbacContext(userId)
+  if (ctx.rank === "director" || ctx.isOperations) return requested || null
+  return ctx.centerId ?? null
 }
 
 export type SaveEquipmentInput = {
@@ -33,7 +46,7 @@ export type SaveEquipmentInput = {
 }
 
 export async function saveEquipment(input: SaveEquipmentInput) {
-  await requirePermission(input.id ? "edit" : "create")
+  const userId = await requirePermission(input.id ? "edit" : "create")
   const data = {
     name: input.name,
     code: input.code || null,
@@ -43,7 +56,7 @@ export async function saveEquipment(input: SaveEquipmentInput) {
     qty: input.qty ?? null,
     status: input.status || "active",
     room: input.room || null,
-    centerId: input.centerId || null,
+    centerId: await scopedEquipmentCenterId(userId, input.centerId),
     hourlyRate: input.hourlyRate ?? null,
     calLast: input.calLast ? new Date(input.calLast) : null,
     calInterval: input.calInterval ?? null,
@@ -51,6 +64,9 @@ export async function saveEquipment(input: SaveEquipmentInput) {
     calVendor: input.calVendor || null,
   }
   if (input.id) {
+    const existing = await db.equipment.findUnique({ where: { id: input.id } })
+    const ctx = await getUserRbacContext(userId)
+    assertScopedAccess(ctx, "equipment", existing)
     await db.equipment.update({ where: { id: input.id }, data })
   } else {
     await db.equipment.create({ data })
@@ -61,15 +77,20 @@ export async function saveEquipment(input: SaveEquipmentInput) {
 }
 
 export async function deleteEquipment(id: string) {
-  await requirePermission("delete")
+  const userId = await requirePermission("delete")
   const existing = await db.equipment.findUnique({ where: { id } })
+  const ctx = await getUserRbacContext(userId)
+  assertScopedAccess(ctx, "equipment", existing)
   await db.equipment.delete({ where: { id } })
   await logAudit("equipment", "delete", existing?.name || id, `Xoá thiết bị “${existing?.name || id}”`)
   revalidatePath("/equipment")
 }
 
 export async function bulkDeleteEquipment(ids: string[]) {
-  await requirePermission("delete")
+  const userId = await requirePermission("delete")
+  const ctx = await getUserRbacContext(userId)
+  const existingList = await db.equipment.findMany({ where: { id: { in: ids } } })
+  for (const item of existingList) assertScopedAccess(ctx, "equipment", item)
   await db.equipment.deleteMany({ where: { id: { in: ids } } })
   await logAudit("equipment", "delete", `${ids.length} thiết bị`, `Xoá hàng loạt ${ids.length} thiết bị đã chọn`)
   revalidatePath("/equipment")
@@ -87,7 +108,7 @@ export type SaveBookingInput = {
 }
 
 export async function saveBooking(input: SaveBookingInput) {
-  await requirePermission(input.id ? "edit" : "create")
+  const userId = await requirePermission(input.id ? "edit" : "create")
   const start = new Date(input.startTime)
   const end = new Date(input.endTime)
   // Port cua cac buoc kiem tra trong saveBookingForm ban goc (dong 6756-6776):
@@ -100,6 +121,15 @@ export async function saveBooking(input: SaveBookingInput) {
   if (!equipment) throw new Error("Không tìm thấy thiết bị.")
   if (equipment.status === "maintenance") {
     throw new Error("Thiết bị này đang bảo trì, không thể đặt lịch.")
+  }
+  // Lich dat luon theo dung Trung tam cua thiet bi — khong nhan centerId tuy y tu client.
+  {
+    const ctx = await getUserRbacContext(userId)
+    assertScopedAccess(ctx, "bookings", equipment)
+    if (input.id) {
+      const existingBooking = await db.equipmentBooking.findUnique({ where: { id: input.id } })
+      assertScopedAccess(ctx, "bookings", existingBooking)
+    }
   }
   const conflict = await db.equipmentBooking.findFirst({
     where: {
@@ -116,7 +146,7 @@ export async function saveBooking(input: SaveBookingInput) {
   }
   const data = {
     equipmentId: input.equipmentId,
-    centerId: input.centerId || null,
+    centerId: equipment.centerId,
     startTime: start,
     endTime: end,
     bookedBy: input.bookedBy || null,
@@ -133,7 +163,10 @@ export async function saveBooking(input: SaveBookingInput) {
 }
 
 export async function deleteBooking(id: string) {
-  await requirePermission("delete")
+  const userId = await requirePermission("delete")
+  const existing = await db.equipmentBooking.findUnique({ where: { id } })
+  const ctx = await getUserRbacContext(userId)
+  assertScopedAccess(ctx, "bookings", existing)
   await db.equipmentBooking.delete({ where: { id } })
   await logAudit("equipment", "delete", id, "Xoá lịch đặt thiết bị")
   revalidatePath("/equipment")

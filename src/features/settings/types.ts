@@ -26,12 +26,16 @@ export function fontStackFor(key: FontKey): string {
 export type AppTheme = { mode: ThemeMode; font: FontKey }
 
 // Giả lập vai trò CHỈ ở lớp hiển thị UI (xem role-sim.ts). "" = theo vai trò thật của tài khoản.
-export type SimRole = "" | "admin" | "manager" | "technician" | "viewer"
+// Nâng cấp lên 6 cấp bậc (thiết kế: Tài khoản 6 cấp bậc + Phân vùng dữ liệu theo Trung
+// tâm thử nghiệm & Nhóm vận hành).
+export type SimRole = "" | "director" | "dept_head" | "team_lead" | "engineer" | "technician" | "viewer"
 
 export const SIM_ROLE_OPTIONS: Array<{ value: SimRole; label: string }> = [
   { value: "", label: "Theo Quản trị viên mặc định" },
-  { value: "admin", label: "Quản trị" },
-  { value: "manager", label: "Quản lý" },
+  { value: "director", label: "Giám đốc" },
+  { value: "dept_head", label: "Trưởng phòng" },
+  { value: "team_lead", label: "Trưởng nhóm" },
+  { value: "engineer", label: "Kỹ sư" },
   { value: "technician", label: "Kỹ thuật viên" },
   { value: "viewer", label: "Người xem" },
 ]

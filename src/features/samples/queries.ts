@@ -1,9 +1,15 @@
 import { db } from "@/shared/lib/db"
+import { auth } from "@/shared/lib/auth"
+import { getUserRbacContext, getScopeFilter } from "@/shared/lib/rbac"
 import type { SampleRow, Option } from "./types"
 import { sampleAutoStatus } from "./types"
 
 export async function listSamples(): Promise<SampleRow[]> {
+  const session = await auth()
+  const ctx = session?.user?.id ? await getUserRbacContext(session.user.id) : null
+  const scopeFilter = ctx ? getScopeFilter(ctx, "samples") : {}
   const samples = await db.sample.findMany({
+    where: scopeFilter,
     include: {
       customer: true,
       project: true,

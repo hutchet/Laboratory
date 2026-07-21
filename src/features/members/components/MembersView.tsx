@@ -9,24 +9,37 @@ import { AvatarInitials } from "@/shared/ui/avatar-initials"
 import { StatusBadge } from "@/shared/ui/status-badge"
 import { Perm } from "@/shared/lib/rbac-client"
 import { saveMember, deleteMember } from "../actions"
-import { ACCESS_ROLE_LABEL, type MemberRow } from "../types"
+import { ACCESS_ROLE_LABEL, NEW_ACCESS_ROLE_OPTIONS, type MemberRow } from "../types"
 import type { CurrentMemberInfo } from "../queries"
+import type { Option } from "@/features/projects/types"
 
 function initials(name: string) {
   return name.split(/\s+/).filter(Boolean).slice(-2).map((w) => w[0]).join("").toUpperCase()
 }
 
-export function MembersView({ members, currentMember }: { members: MemberRow[]; currentMember?: CurrentMemberInfo }) {
+export function MembersView({
+  members,
+  currentMember,
+  centerOptions = [],
+  groupOptions = [],
+}: {
+  members: MemberRow[]
+  currentMember?: CurrentMemberInfo
+  centerOptions?: Option[]
+  groupOptions?: Array<Option & { centerId: string }>
+}) {
   const [q, setQ] = useState("")
   const [editing, setEditing] = useState<MemberRow | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [formCenterId, setFormCenterId] = useState<string>("")
   const [pending, startTransition] = useTransition()
 
   const filtered = useMemo(() => members.filter((m) => !q || m.name.toLowerCase().includes(q.toLowerCase())), [members, q])
+  const groupOptionsForForm = useMemo(() => groupOptions.filter((g) => !formCenterId || g.centerId === formCenterId), [groupOptions, formCenterId])
 
-  function openNew() { setEditing(null); setShowForm(true) }
-  function openEdit(m: MemberRow) { setEditing(m); setShowForm(true) }
+  function openNew() { setEditing(null); setFormCenterId(""); setShowForm(true) }
+  function openEdit(m: MemberRow) { setEditing(m); setFormCenterId(m.centerId ?? ""); setShowForm(true) }
   function handleSubmit(formData: FormData) {
     const input = {
       id: editing?.id,
@@ -37,6 +50,9 @@ export function MembersView({ members, currentMember }: { members: MemberRow[]; 
       team: String(formData.get("team") || ""),
       accessRole: String(formData.get("accessRole") || "viewer"),
       password: String(formData.get("password") || "") || undefined,
+      centerId: String(formData.get("centerId") || "") || null,
+      groupId: String(formData.get("groupId") || "") || null,
+      isOperations: formData.get("isOperations") === "on",
     }
     startTransition(async () => { await saveMember(input); setShowForm(false); setEditing(null) })
   }
@@ -66,13 +82,20 @@ export function MembersView({ members, currentMember }: { members: MemberRow[]; 
         return <span style={{ ...tone, fontSize: 11, fontWeight: 600, borderRadius: 999, padding: "3px 10px" }}>{m.gender || "—"}</span>
       },
     },
-    { key: "team", header: "Nhóm", render: (m) => m.team ?? "—" },
+    { key: "team", header: "Nhóm (tằng)", render: (m) => m.team ?? "—" },
+    {
+      key: "center", header: "Trung tâm",
+      render: (m) => m.isOperations
+        ? <StatusBadge label="Nhóm vận hành (xem chéo)" tone="success" />
+        : (m.centerName ?? "—"),
+    },
+    { key: "group", header: "Nhóm vận hành", render: (m) => m.groupName ?? "—" },
     { key: "accessRole", header: "Quyền", render: (m) => <StatusBadge label={ACCESS_ROLE_LABEL[m.accessRole ?? "viewer"] ?? m.accessRole ?? "—"} tone="info" /> },
     {
       key: "actions", header: "", align: "right",
       render: (m) => (
         <span style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-          <Perm minPerm="admin"><button type="button" onClick={() => openEdit(m)} style={{ border: "none", background: "none", color: "#1d5fd6", cursor: "pointer" }}>Sửa</button>
+          <Perm minPerm="director"><button type="button" onClick={() => openEdit(m)} style={{ border: "none", background: "none", color: "#1d5fd6", cursor: "pointer" }}>Sửa</button>
           <button type="button" onClick={() => setConfirmDeleteId(m.id)} style={{ border: "none", background: "none", color: "#c62828", cursor: "pointer" }}>Xoá</button></Perm>
         </span>
       ),
@@ -82,7 +105,7 @@ export function MembersView({ members, currentMember }: { members: MemberRow[]; 
   return (
     <PageShell
       title="Thành viên"
-      actions={<Perm minPerm="admin"><button type="button" onClick={openNew} style={{ padding: "8px 14px", borderRadius: 8, border: "none", background: "#1d5fd6", color: "#fff" }}>+ Thêm thành viên</button></Perm>}
+      actions={<Perm minPerm="director"><button type="button" onClick={openNew} style={{ padding: "8px 14px", borderRadius: 8, border: "none", background: "#1d5fd6", color: "#fff" }}>+ Thêm thành viên</button></Perm>}
       filters={<FilterBar search={{ value: q, onChange: setQ, placeholder: "Tìm thành viên..." }} />}
     >
       {currentMember && (
@@ -128,6 +151,24 @@ export function MembersView({ members, currentMember }: { members: MemberRow[]; 
           <label style={{ fontSize: 12, fontWeight: 600 }}>Email
             <input name="email" type="email" defaultValue={editing?.email ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
           </label>
+          <div style={{ display: "flex", gap: 12 }}>
+            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Trung tâm
+              <select name="centerId" value={formCenterId} onChange={(e) => setFormCenterId(e.target.value)} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
+                <option value="">— Chưa gán —</option>
+                {centerOptions.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </label>
+            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Nhóm vận hành (trong Trung tâm)
+              <select name="groupId" defaultValue={editing?.groupId ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
+                <option value="">— Chưa gán —</option>
+                {groupOptionsForForm.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+              </select>
+            </label>
+          </div>
+          <label style={{ fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 8 }}>
+            <input type="checkbox" name="isOperations" defaultChecked={editing?.isOperations ?? false} />
+            Thuộc Nhóm vận hành (xem chéo tất cả Trung tâm ở các module dùng chung: thiết bị, khấu hao, chi phí biến đổi, chất lượng, kế hoạch kiểm toán)
+          </label>
           <label style={{ fontSize: 12, fontWeight: 600 }}>Giới tính
             <select name="gender" defaultValue={editing?.gender ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
               <option value="">—</option>
@@ -137,11 +178,7 @@ export function MembersView({ members, currentMember }: { members: MemberRow[]; 
           </label>
           <label style={{ fontSize: 12, fontWeight: 600 }}>Phân quyền
             <select name="accessRole" defaultValue={editing?.accessRole ?? "viewer"} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
-              <option value="admin">Quản trị</option>
-              <option value="manager">Quản lý</option>
-              <option value="technician">Kỹ thuật viên</option>
-              <option value="quote_staff">Nhân viên báo giá</option>
-              <option value="viewer">Chỉ xem</option>
+              {NEW_ACCESS_ROLE_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
             </select>
           </label>
           {/* Sửa lỗi phát hiện khi rà lại P0: trước đây không có cách nào tạo/đổi mật khẩu

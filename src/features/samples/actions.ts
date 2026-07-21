@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { auth } from "@/shared/lib/auth"
 import { db } from "@/shared/lib/db"
-import { can } from "@/shared/lib/rbac"
+import { can, getUserRbacContext, assertScopedAccess } from "@/shared/lib/rbac"
 import { logAudit } from "@/shared/lib/audit"
 
 async function requirePermission(action: "create" | "edit" | "delete") {
@@ -12,6 +12,7 @@ async function requirePermission(action: "create" | "edit" | "delete") {
   if (!userId) throw new Error("Không có quyền: chưa đăng nhập")
   const allowed = await can(userId, "samples", action)
   if (!allowed) throw new Error("Không có quyền thực hiện hành động này")
+  return userId
 }
 
 export type SaveSampleInput = {
@@ -29,8 +30,8 @@ export type SaveSampleInput = {
 }
 
 export async function saveSample(input: SaveSampleInput) {
-  await requirePermission(input.id ? "edit" : "create")
-  const data = {
+  const userId = await requirePermission(input.id ? "edit" : "create")
+  const data: Record<string, unknown> = {
     code: input.code,
     name: input.code,
     serialNumber: input.serialNumber || null,
@@ -44,10 +45,18 @@ export async function saveSample(input: SaveSampleInput) {
     receivedAt: input.receivedAt ? new Date(input.receivedAt) : null,
   }
   if (input.id) {
+    const existing = await db.sample.findUnique({ where: { id: input.id } })
+    const ctx = await getUserRbacContext(userId)
+    assertScopedAccess(ctx, "samples", existing)
     await db.sample.update({ where: { id: input.id }, data })
   } else {
-    await db.sample.create({ data })
-    await logAudit("sample", "create", data.code, `Thêm mẫu mới “${data.code}”`)
+    // Gan centerId/groupId (khac field "group" tu do o tren) theo Trung tam/Nhom cua
+    // nguoi tao — dung cho phan vung du lieu getScopeFilter, khong doi hien thi cu.
+    const ctx = await getUserRbacContext(userId)
+    data.centerId = ctx.centerId ?? null
+    data.groupId = ctx.groupId ?? null
+    const created = await db.sample.create({ data: data as Parameters<typeof db.sample.create>[0]["data"] })
+    await logAudit("sample", "create", created.code||"", `Thêm mẫu mới “${created.code||""}”`)
   }
   revalidatePath("/samples")
   revalidatePath("/plan")
@@ -55,8 +64,10 @@ export async function saveSample(input: SaveSampleInput) {
 }
 
 export async function deleteSample(id: string) {
-  await requirePermission("delete")
+  const userId = await requirePermission("delete")
   const existing = await db.sample.findUnique({ where: { id } })
+  const ctx = await getUserRbacContext(userId)
+  assertScopedAccess(ctx, "samples", existing)
   await db.sample.delete({ where: { id } })
   await logAudit("sample", "delete", existing?.code || id, `Xoá mẫu “${existing?.code || id}”`)
   revalidatePath("/samples")
