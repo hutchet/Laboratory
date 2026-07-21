@@ -300,7 +300,7 @@ export function PlanView({
                   </div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600, marginBottom: 8, textAlign: "center" }}>Tỷ lệ đạt / kh��ng đạt</div>
+                  <div style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600, marginBottom: 8, textAlign: "center" }}>Tỷ lệ đạt / không đạt</div>
                   <div className="pl-donut-inline">
                     <DonutSvg size={110} segments={resultDonutSegments} />
                     <div className="pl-legend-side">

@@ -1529,7 +1529,7 @@ html[data-theme="dark"] body.material-3 .chip.active,html[data-theme="dark"] bod
 
 
 /* =========================================================
-   v82 �� DASHBOARD, BOOKING, COUNT TAG, SEARCH AND LANGUAGE
+   v82 — DASHBOARD, BOOKING, COUNT TAG, SEARCH AND LANGUAGE
    ========================================================= */
 /* Dashboard: reserve enough height for all KPI text */
 .material-3 #dash-top-grid{grid-template-rows:152px minmax(270px,1fr)!important}
@@ -2135,7 +2135,7 @@ html[data-viewport="mobile"] .me>div{display:none!important}
   html[data-viewport="mobile"] #pm-overview-grid{grid-template-columns:1fr!important}
 }
 /* end v116 -------------------------------------------------- */
-/* v117.1 ---- .ch>.row toolbar 1L/2R rule (Khấu hao, Chi phí b��n đổi …) --- */
+/* v117.1 ---- .ch>.row toolbar 1L/2R rule (Khấu hao, Chi phí biến đổi …) --- */
 @media(min-width:900px){
   .material-3 .card>.ch>.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
   .material-3 .card>.ch>.row:has(.btn-pri) > *:nth-child(2),
@@ -2389,7 +2389,7 @@ html[data-viewport="mobile"] .me>div{display:none!important}
     z-index: 5 !important;
     background: var(--md-sys-color-surface-container-low, #f4f5f9) !important;
   }
-  /* Chỉ card có .qs-box/.rtable-wrap trực tiếp bên trong mới ��p fit viewport */
+  /* Chỉ card có .qs-box/.rtable-wrap trực tiếp bên trong mới áp fit viewport */
   .material-3 #page-quote-catalog > .card:has(> .qs-box),
   .material-3 #page-quote-catalog > .card:has(> .rtable-wrap),
   .material-3 #page-quote-personnel > .card:has(.qs-box),
@@ -2456,7 +2456,7 @@ html[data-viewport="mobile"] .me>div{display:none!important}
 
 /* v118.9 --- Fix 2 lỗi: (1) bảng bare-table (không có .qs-box/.rtable-wrap wrap) vẫn tràn viewport, (2) legend ISO 17025 (.pl-donut-wrap) kéo lên top */
 @media (min-width: 900px) {
-  /* (1a) Card chứa bảng bất kỳ (bare table hoặc qs-box/rtable-wrap) ��� max-height viewport, overflow trực tiếp trên card */
+  /* (1a) Card chứa bảng bất kỳ (bare table hoặc qs-box/rtable-wrap) — max-height viewport, overflow trực tiếp trên card */
   .material-3 .main .card:has(> table),
   .material-3 .main .card:has(> .qs-box),
   .material-3 .main .card:has(> .rtable-wrap),

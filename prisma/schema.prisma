@@ -566,6 +566,9 @@ model Sample {
   customer  Customer?   @relation(fields: [customerId], references: [id])
   project   Project?    @relation(fields: [projectId], references: [id])
   testItems TestItem[]
+  // Dong bo 1 chieu: 1 mau (Sample) duoc quan ly o trang "Quan ly mau" se tu dong
+  // sinh/cap nhat 1 goi thu (TestPack) tuong ung o trang Ke hoach (khong can bam "+ Them mau").
+  testPack  TestPack?
 
   createdAt DateTime @default(now())
 }
@@ -591,8 +594,12 @@ model TestPack {
   code       String
   serial     String?
   qty        Int?    @default(1)
+  // Khi khac null: goi thu nay duoc dong bo tuダ 1 dong "Mau" o trang Quan ly mau
+  // (xem samples/actions.ts::saveSample). Goi "thu cong" (khong gan mau) van co sampleId = null.
+  sampleId   String? @unique
 
   testPlan TestPlan   @relation(fields: [testPlanId], references: [id], onDelete: Cascade)
+  sample   Sample?    @relation(fields: [sampleId], references: [id])
   items    TestItem[]
 
   createdAt DateTime @default(now())
@@ -608,6 +615,8 @@ model TestItem {
   equipmentId String?
   name        String
   priority    String?
+  sampleLevel String? // Cap do mau: Cell | Module | Pack (PL_LEVELS ban goc)
+  team        String? // Nhom phu trach: Performance | Safety | Durability | EMC | Reliability | DVP (PL_TEAMS ban goc)
   standard    String?
   assignee    String?
   picId       String?

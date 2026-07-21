@@ -1,6 +1,7 @@
 "use client"
 import { useMemo, useState, useTransition } from "react"
 import { PageShell } from "@/shared/ui/page-shell"
+import { AddButton } from "@/shared/ui/add-button"
 import { FilterBar } from "@/shared/ui/filter-bar"
 import { DataTable, type DataTableColumn } from "@/shared/ui/data-table"
 import { FormModal } from "@/shared/ui/form-modal"
@@ -94,31 +95,36 @@ export function SamplesView({ samples, customers, projects }: { samples: SampleR
     },
   ]
 
+  // Fix thu tu: KPI phai hien TRUOC toolbar/filter (giong Du an/Khach hang/Trung tam) -
+  // khong dung props actions/filters cua PageShell nua (thu tu co dinh actions->filters->children
+  // luon day KPI xuong duoi toolbar). Chuyen toan bo vao children voi kpis-tier + section-head,
+  // dung chung AddButton chuan thay nut bespoke cu.
   return (
-    <PageShell
-      title="Quản lý Mẫu"
-      actions={<Perm minPerm="technician"><button type="button" onClick={openNew} style={{ padding: "8px 14px", borderRadius: 8, border: "none", background: "#1d5fd6", color: "#fff" }}>+ Thêm mẫu</button></Perm>}
-      filters={
-        <FilterBar search={{ value: q, onChange: setQ, placeholder: "Tìm mã mẫu, seri, dự án..." }}>
-          <ChipFilterDropdown
-            value={statusFilter}
-            onChange={setStatusFilter}
-            options={[{ value: "all", label: "Tất cả" } as ChipFilterOption, ...SAMPLE_STATUS_ORDER.map((s) => ({ value: s, label: SAMPLE_STATUS_LABEL[s] }))]}
-          />
-          <CustomSelect
-            value={customerFilter}
-            onChange={setCustomerFilter}
-            options={[{value:"",label:"Tất cả khách hàng"},...customers.map(c=>({value:c.id,label:c.name}))]}
-            width={180}
-          />
-        </FilterBar>
-      }
-    >
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(160px, 1fr))", gap: 12, marginBottom: 18 }}>
+    <PageShell title="Quản lý Mẫu">
+      <div className="kpis-tier" style={{ marginBottom: 20 }}>
         <KpiCard label="Tổng số mẫu" value={kpis.total} />
         <KpiCard label="Đang thử nghiệm" value={kpis.testing} tone="warning" />
         <KpiCard label="Hoàn thành" value={kpis.done} tone="success" />
         <KpiCard label="Mới nhận, chưa xếp lịch" value={kpis.received} tone="danger" />
+      </div>
+      <div className="section-head">
+        <h3>Tất cả mẫu</h3>
+        <div className="tools">
+          <FilterBar search={{ value: q, onChange: setQ, placeholder: "Tìm mã mẫu, seri, dự án..." }}>
+            <ChipFilterDropdown
+              value={statusFilter}
+              onChange={setStatusFilter}
+              options={[{ value: "all", label: "Tất cả" } as ChipFilterOption, ...SAMPLE_STATUS_ORDER.map((s) => ({ value: s, label: SAMPLE_STATUS_LABEL[s] }))]}
+            />
+            <CustomSelect
+              value={customerFilter}
+              onChange={setCustomerFilter}
+              options={[{value:"",label:"Tất cả khách hàng"},...customers.map(c=>({value:c.id,label:c.name}))]}
+              width={180}
+            />
+          </FilterBar>
+          <Perm minPerm="technician"><AddButton label="Thêm mẫu" onClick={openNew} /></Perm>
+        </div>
       </div>
 
       {groups.length === 0 ? (
