@@ -40,7 +40,7 @@ export function PlainSelect({
           background: "var(--surface-control, #fff)",
           color: "inherit",
           fontFamily: "inherit",
-          fontSize: "inherit",
+          fontSize: 14,
           cursor: disabled ? "default" : "pointer",
           ...style,
         }}
