@@ -1,10 +1,10 @@
 "use client"
-import { useMemo, useState, useTransition } from "react"
+import { useEffect, useMemo, useState, useTransition } from "react"
 import { PageShell } from "@/shared/ui/page-shell"
 import { FilterBar } from "@/shared/ui/filter-bar"
 import { DataTable, type DataTableColumn } from "@/shared/ui/data-table"
 import { FormModal } from "@/shared/ui/form-modal"
-import { PlainSelect } from "@/shared/ui/plain-select"
+import { CustomSelect } from "@/shared/ui/custom-select"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { StatusBadge } from "@/shared/ui/status-badge"
 import { Perm } from "@/shared/lib/rbac-client"
@@ -39,6 +39,18 @@ export function OverviewView({ quotes, customers, projects }: { quotes: QuoteRow
   const [showForm, setShowForm] = useState(false)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
+
+  const [qCustomerId, setQCustomerId] = useState("")
+  const [qProjectId, setQProjectId] = useState("")
+  const [qStatus, setQStatus] = useState("draft")
+
+  useEffect(() => {
+    if (showForm) {
+      setQCustomerId(editing?.customerId ?? "")
+      setQProjectId(editing?.projectId ?? "")
+      setQStatus(editing?.status ?? "draft")
+    }
+  }, [showForm, editing])
 
   const filtered = useMemo(() => quotes.filter((it) => !q || it.title.toLowerCase().includes(q.toLowerCase())), [quotes, q])
 
@@ -118,19 +130,18 @@ export function OverviewView({ quotes, customers, projects }: { quotes: QuoteRow
           <label style={{ fontSize: 12, fontWeight: 600 }}>Tên báo giá *
             <input name="title" required defaultValue={editing?.title ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
           </label>
-          <div style={{ display: "flex", gap: 12 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Khách hàng
-              <PlainSelect name="customerId" defaultValue={editing?.customerId ?? ""}>
-                <option value="">—</option>
-                {customers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </PlainSelect>
-            </label>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Dự án
-              <PlainSelect name="projectId" defaultValue={editing?.projectId ?? ""}>
-                <option value="">—</option>
-                {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </PlainSelect>
-            </label>
+          <input type="hidden" name="customerId" value={qCustomerId} />
+          <input type="hidden" name="projectId" value={qProjectId} />
+          <input type="hidden" name="status" value={qStatus} />
+          <div className="row">
+            <div className="field" style={{ flex: 1 }}>
+              <label>Khách hàng</label>
+              <CustomSelect value={qCustomerId} onChange={setQCustomerId} width="100%" options={[{ value: "", label: "—" }, ...customers.map((c) => ({ value: c.id, label: c.name }))]} />
+            </div>
+            <div className="field" style={{ flex: 1 }}>
+              <label>Dự án</label>
+              <CustomSelect value={qProjectId} onChange={setQProjectId} width="100%" options={[{ value: "", label: "—" }, ...projects.map((p) => ({ value: p.id, label: p.name }))]} />
+            </div>
           </div>
           <div style={{ display: "flex", gap: 12 }}>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Ngày báo giá
@@ -144,14 +155,10 @@ export function OverviewView({ quotes, customers, projects }: { quotes: QuoteRow
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Tổng tiền
               <input type="number" name="totalAmount" defaultValue={editing?.totalAmount ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
             </label>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Trạng thái
-              <PlainSelect name="status" defaultValue={editing?.status ?? "draft"}>
-                <option value="draft">Bản nháp</option>
-                <option value="sent">Đã gửi</option>
-                <option value="approved">Đã duyệt</option>
-                <option value="rejected">Bị từ chối</option>
-              </PlainSelect>
-            </label>
+            <div className="field" style={{ flex: 1 }}>
+              <label>Trạng thái</label>
+              <CustomSelect value={qStatus} onChange={setQStatus} width="100%" options={[{ value: "draft", label: "Bản nháp" }, { value: "sent", label: "Đã gửi" }, { value: "approved", label: "Đã duyệt" }, { value: "rejected", label: "Bị từ chối" }]} />
+            </div>
           </div>
         </form>
       </FormModal>

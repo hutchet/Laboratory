@@ -13,6 +13,7 @@ export function CustomSelect({
   onChange,
   width,
   triggerStyle,
+  disabled,
 }: {
   value: string
   options: SelectOption[]
@@ -21,6 +22,7 @@ export function CustomSelect({
   // Cho phep tuy chinh style rieng cua nut trigger (vd: bo border cho 1 vi tri cu the)
   // ma khong lam thay doi mac dinh cua CustomSelect o cac trang khac.
   triggerStyle?: CSSProperties
+  disabled?: boolean
 }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -50,7 +52,8 @@ export function CustomSelect({
           .sys-select-trigger cua ban goc (globals.css dong ~1615). */}
       <button
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        disabled={disabled}
+        onClick={() => { if (!disabled) setOpen((o) => !o) }}
         style={{
           display: "flex",
           alignItems: "center",
@@ -66,7 +69,8 @@ export function CustomSelect({
           fontSize: 13,
           fontWeight: 600,
           fontFamily: "inherit",
-          cursor: "pointer",
+          cursor: disabled ? "not-allowed" : "pointer",
+          opacity: disabled ? 0.6 : 1,
           whiteSpace: "nowrap",
           ...triggerStyle,
         }}

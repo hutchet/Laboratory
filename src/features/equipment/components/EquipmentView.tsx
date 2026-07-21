@@ -1,5 +1,5 @@
 "use client"
-import { useMemo, useState, useTransition } from "react"
+import { useEffect, useMemo, useState, useTransition } from "react"
 import { PageShell } from "@/shared/ui/page-shell"
 import { FilterBar } from "@/shared/ui/filter-bar"
 import { DataTable, type DataTableColumn } from "@/shared/ui/data-table"
@@ -7,7 +7,7 @@ import { FormModal } from "@/shared/ui/form-modal"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { StatusBadge } from "@/shared/ui/status-badge"
 import { ChipFilterDropdown, type ChipFilterOption } from "@/shared/ui/chip-filter"
-import { PlainSelect } from "@/shared/ui/plain-select"
+import { CustomSelect } from "@/shared/ui/custom-select"
 import { Perm } from "@/shared/lib/rbac-client"
 import { saveEquipment, deleteEquipment, bulkDeleteEquipment } from "../actions"
 import { EQUIPMENT_STATUS_LABEL, CAL_STATUS_LABEL, equipmentCalStatus, type EquipmentRow, type Option } from "../types"
@@ -35,6 +35,18 @@ export function EquipmentView({ equipment, centers }: { equipment: EquipmentRow[
   const [bulkConfirm, setBulkConfirm] = useState(false)
   const [editMode, setEditMode] = useState(false)
   const [pending, startTransition] = useTransition()
+
+  // CustomSelect dieu khien bang state, khong tu sinh input "name" nhu <select>
+  // goc - dong bo lai moi khi mo form (cung mau sua nhu PlanView ban ba).
+  const [eqCenterId, setEqCenterId] = useState("")
+  const [eqStatus, setEqStatus] = useState("active")
+
+  useEffect(() => {
+    if (showForm) {
+      setEqCenterId(editing?.centerId ?? "")
+      setEqStatus(editing?.status ?? "active")
+    }
+  }, [showForm, editing])
 
   // Ported from the original app's eqCategories()/renderEqChips() (line 6522-6528
   // of the original HTML): a chip-dropdown listing distinct equipment categories.
@@ -172,69 +184,76 @@ export function EquipmentView({ equipment, centers }: { equipment: EquipmentRow[
         submitting={pending}
       >
         <form key={editing?.id ?? "new"} id="tf-equipment-form" onSubmit={(e) => e.preventDefault()} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <label style={{ fontSize: 12, fontWeight: 600 }}>Tên thiết bị *
-            <input name="name" required defaultValue={editing?.name ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
-          </label>
-          <div style={{ display: "flex", gap: 12 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Mã
-              <input name="code" defaultValue={editing?.code ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
-            </label>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Phân loại
+          <input type="hidden" name="centerId" value={eqCenterId} />
+          <input type="hidden" name="status" value={eqStatus} />
+          <div className="field">
+            <label>Tên thiết bị *</label>
+            <input name="name" required defaultValue={editing?.name ?? ""} />
+          </div>
+          <div className="row">
+            <div className="field" style={{ flex: 1 }}>
+              <label>Mã</label>
+              <input name="code" defaultValue={editing?.code ?? ""} />
+            </div>
+            <div className="field" style={{ flex: 1 }}>
+              <label>Phân loại</label>
               {/* Port cua eq-cat/eq-cat-list ban goc (dong 3712, 6701): input tu do +
                   danh sach goi y (datalist) tu cac danh muc da co, khong ep chon 1 gia tri co san. */}
-              <input name="category" list="eq-cat-list" placeholder="VD: Thiết bị đo lường" defaultValue={editing?.category ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+              <input name="category" list="eq-cat-list" placeholder="VD: Thiết bị đo lường" defaultValue={editing?.category ?? ""} />
               <datalist id="eq-cat-list">
                 {categoryDatalistOptions.map((c) => <option key={c} value={c} />)}
               </datalist>
-            </label>
+            </div>
           </div>
-          <div style={{ display: "flex", gap: 12 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Hãng sản xuất
-              <input name="manufacturer" defaultValue={editing?.manufacturer ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
-            </label>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Dòng máy
-              <input name="model" defaultValue={editing?.model ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
-            </label>
+          <div className="row">
+            <div className="field" style={{ flex: 1 }}>
+              <label>Hãng sản xuất</label>
+              <input name="manufacturer" defaultValue={editing?.manufacturer ?? ""} />
+            </div>
+            <div className="field" style={{ flex: 1 }}>
+              <label>Dòng máy</label>
+              <input name="model" defaultValue={editing?.model ?? ""} />
+            </div>
           </div>
-          <div style={{ display: "flex", gap: 12 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Trung tâm
-              <PlainSelect name="centerId" defaultValue={editing?.centerId ?? ""}>
-                <option value="">—</option>
-                {centers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </PlainSelect>
-            </label>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Phòng
-              <input name="room" defaultValue={editing?.room ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
-            </label>
+          <div className="row">
+            <div className="field" style={{ flex: 1 }}>
+              <label>Trung tâm</label>
+              <CustomSelect value={eqCenterId} onChange={setEqCenterId} width="100%" options={[{ value: "", label: "—" }, ...centers.map((c) => ({ value: c.id, label: c.name }))]} />
+            </div>
+            <div className="field" style={{ flex: 1 }}>
+              <label>Phòng</label>
+              <input name="room" defaultValue={editing?.room ?? ""} />
+            </div>
           </div>
-          <div style={{ display: "flex", gap: 12 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Đơn giá/giờ
-              <input name="hourlyRate" type="number" defaultValue={editing?.hourlyRate ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
-            </label>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Trạng thái
-              <PlainSelect name="status" defaultValue={editing?.status ?? "active"}>
-                <option value="active">Hoạt động</option>
-                <option value="maintenance">Bảo trì</option>
-                <option value="broken">Hỏng</option>
-                <option value="idle">Ngừng dùng</option>
-              </PlainSelect>
-            </label>
+          <div className="row">
+            <div className="field" style={{ flex: 1 }}>
+              <label>Đơn giá/giờ</label>
+              <input name="hourlyRate" type="number" defaultValue={editing?.hourlyRate ?? ""} />
+            </div>
+            <div className="field" style={{ flex: 1 }}>
+              <label>Trạng thái</label>
+              <CustomSelect value={eqStatus} onChange={setEqStatus} width="100%" options={[{ value: "active", label: "Hoạt động" }, { value: "maintenance", label: "Bảo trì" }, { value: "broken", label: "Hỏng" }, { value: "idle", label: "Ngừng dùng" }]} />
+            </div>
           </div>
-          <div style={{ display: "flex", gap: 12, borderTop: "1px solid #dfe3e8", paddingTop: 12 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Ngày hiệu chuẩn gần nhất
-              <input type="date" name="calLast" defaultValue={editing?.calLast ? editing.calLast.slice(0, 10) : ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
-            </label>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Chu kỳ hiệu chuẩn (tháng)
-              <input type="number" name="calInterval" min={1} placeholder="VD: 12" defaultValue={editing?.calInterval ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
-            </label>
+          <div className="row" style={{ borderTop: "1px solid #dfe3e8", paddingTop: 12 }}>
+            <div className="field" style={{ flex: 1 }}>
+              <label>Ngày hiệu chuẩn gần nhất</label>
+              <input type="date" name="calLast" defaultValue={editing?.calLast ? editing.calLast.slice(0, 10) : ""} />
+            </div>
+            <div className="field" style={{ flex: 1 }}>
+              <label>Chu kỳ hiệu chuẩn (tháng)</label>
+              <input type="number" name="calInterval" min={1} placeholder="VD: 12" defaultValue={editing?.calInterval ?? ""} />
+            </div>
           </div>
-          <div style={{ display: "flex", gap: 12 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Số chứng chỉ hiệu chuẩn
-              <input name="calCert" placeholder="VD: CAL-2026-0012" defaultValue={editing?.calCert ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
-            </label>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Đơn vị hiệu chuẩn
-              <input name="calVendor" placeholder="VD: Quatest 3" defaultValue={editing?.calVendor ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
-            </label>
+          <div className="row">
+            <div className="field" style={{ flex: 1 }}>
+              <label>Số chứng chỉ hiệu chuẩn</label>
+              <input name="calCert" placeholder="VD: CAL-2026-0012" defaultValue={editing?.calCert ?? ""} />
+            </div>
+            <div className="field" style={{ flex: 1 }}>
+              <label>Đơn vị hiệu chuẩn</label>
+              <input name="calVendor" placeholder="VD: Quatest 3" defaultValue={editing?.calVendor ?? ""} />
+            </div>
           </div>
         </form>
       </FormModal>

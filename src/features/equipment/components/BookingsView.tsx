@@ -1,10 +1,10 @@
 "use client"
-import { useMemo, useState, useTransition, type CSSProperties } from "react"
+import { useEffect, useMemo, useState, useTransition, type CSSProperties } from "react"
 import { PageShell } from "@/shared/ui/page-shell"
 import { KpiCard } from "@/shared/ui/kpi-card"
 import { FormModal } from "@/shared/ui/form-modal"
 import { ArrowButton } from "@/shared/ui/arrow-button"
-import { PlainSelect } from "@/shared/ui/plain-select"
+import { CustomSelect } from "@/shared/ui/custom-select"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { saveBooking, deleteBooking } from "../actions"
 import type { BookingRow, EquipmentRow, Option } from "../types"
@@ -62,6 +62,16 @@ export function BookingsView({
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
   const [formError, setFormError] = useState<string | null>(null)
+
+  const [bkEquipmentId, setBkEquipmentId] = useState("")
+  const [bkCenterId, setBkCenterId] = useState("")
+
+  useEffect(() => {
+    if (showForm) {
+      setBkEquipmentId(editing?.equipmentId ?? slotPrefill?.equipmentId ?? "")
+      setBkCenterId(editing?.centerId ?? "")
+    }
+  }, [showForm, editing, slotPrefill])
 
   const categories = useMemo(() => {
     const set = new Set<string>()
@@ -261,37 +271,40 @@ export function BookingsView({
               {formError}
             </div>
           )}
-          <label style={{ fontSize: 12, fontWeight: 600 }}>Thiết bị *
-            <PlainSelect name="equipmentId" required defaultValue={editing?.equipmentId ?? slotPrefill?.equipmentId ?? ""} style={fieldStyle}>
-              <option value="">—</option>
-              {readyEquipment.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
-            </PlainSelect>
-          </label>
-          <div style={{ display: "flex", gap: 12 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Bắt đầu *
-              <input type="datetime-local" name="startTime" required defaultValue={editing?.startTime ? editing.startTime.slice(0, 16) : (slotPrefill?.startTime ?? "")} style={fieldStyle} />
-            </label>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Kết thúc *
-              <input type="datetime-local" name="endTime" required defaultValue={editing?.endTime ? editing.endTime.slice(0, 16) : (slotPrefill?.endTime ?? "")} style={fieldStyle} />
-            </label>
+          <input type="hidden" name="equipmentId" value={bkEquipmentId} />
+          <input type="hidden" name="centerId" value={bkCenterId} />
+          <div className="field">
+            <label>Thiết bị *</label>
+            <CustomSelect value={bkEquipmentId} onChange={setBkEquipmentId} width="100%" options={[{ value: "", label: "—" }, ...readyEquipment.map((o) => ({ value: o.id, label: o.name }))]} />
           </div>
-          <label style={{ fontSize: 12, fontWeight: 600 }}>Trung tâm
-            <PlainSelect name="centerId" defaultValue={editing?.centerId ?? ""} style={fieldStyle}>
-              <option value="">—</option>
-              {centers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </PlainSelect>
-          </label>
-          <div style={{ display: "flex", gap: 12 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Người đặt *
-              <input name="bookedBy" required defaultValue={editing?.bookedBy ?? ""} style={fieldStyle} />
-            </label>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Bộ phận
-              <input name="department" defaultValue={editing?.department ?? ""} style={fieldStyle} />
-            </label>
+          <div className="row">
+            <div className="field" style={{ flex: 1 }}>
+              <label>Bắt đầu *</label>
+              <input type="datetime-local" name="startTime" required defaultValue={editing?.startTime ? editing.startTime.slice(0, 16) : (slotPrefill?.startTime ?? "")} />
+            </div>
+            <div className="field" style={{ flex: 1 }}>
+              <label>Kết thúc *</label>
+              <input type="datetime-local" name="endTime" required defaultValue={editing?.endTime ? editing.endTime.slice(0, 16) : (slotPrefill?.endTime ?? "")} />
+            </div>
           </div>
-          <label style={{ fontSize: 12, fontWeight: 600 }}>Mục đích
-            <input name="purpose" defaultValue={editing?.purpose ?? ""} style={fieldStyle} />
-          </label>
+          <div className="field">
+            <label>Trung tâm</label>
+            <CustomSelect value={bkCenterId} onChange={setBkCenterId} width="100%" options={[{ value: "", label: "—" }, ...centers.map((c) => ({ value: c.id, label: c.name }))]} />
+          </div>
+          <div className="row">
+            <div className="field" style={{ flex: 1 }}>
+              <label>Người đặt *</label>
+              <input name="bookedBy" required defaultValue={editing?.bookedBy ?? ""} />
+            </div>
+            <div className="field" style={{ flex: 1 }}>
+              <label>Bộ phận</label>
+              <input name="department" defaultValue={editing?.department ?? ""} />
+            </div>
+          </div>
+          <div className="field">
+            <label>Mục đích</label>
+            <input name="purpose" defaultValue={editing?.purpose ?? ""} />
+          </div>
         </form>
       </FormModal>
 

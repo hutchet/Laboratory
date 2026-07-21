@@ -1,5 +1,5 @@
 "use client"
-import { useMemo, useState, useTransition } from "react"
+import { useEffect, useMemo, useState, useTransition } from "react"
 import { PageShell } from "@/shared/ui/page-shell"
 import { AddButton } from "@/shared/ui/add-button"
 import { FilterBar } from "@/shared/ui/filter-bar"
@@ -9,7 +9,7 @@ import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { StatusBadge } from "@/shared/ui/status-badge"
 import { KpiCard } from "@/shared/ui/kpi-card"
 import { IconButton } from "@/shared/ui/icon-button"
-import { PlainSelect } from "@/shared/ui/plain-select"
+import { CustomSelect } from "@/shared/ui/custom-select"
 import { Perm } from "@/shared/lib/rbac-client"
 import { saveSample, deleteSample } from "../actions"
 import { SAMPLE_STATUS_LABEL, SAMPLE_STATUS_ORDER, groupSamplesByProject, type SampleRow, type Option } from "../types"
@@ -28,6 +28,20 @@ export function SamplesView({ samples, customers, projects }: { samples: SampleR
   const [showForm, setShowForm] = useState(false)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
+
+  // CustomSelect dieu khien bang state, khong tu sinh input "name" nhu <select>
+  // goc - dong bo lai moi khi mo form (cung mau sua nhu PlanView ban ba).
+  const [sProjectId, setSProjectId] = useState("")
+  const [sCustomerId, setSCustomerId] = useState("")
+  const [sStatus, setSStatus] = useState("")
+
+  useEffect(() => {
+    if (showForm) {
+      setSProjectId(editing?.projectId ?? "")
+      setSCustomerId(editing?.customerId ?? "")
+      setSStatus(editing?.status ?? "")
+    }
+  }, [showForm, editing])
 
   const kpis = useMemo(() => {
     const total = samples.length
@@ -165,45 +179,47 @@ export function SamplesView({ samples, customers, projects }: { samples: SampleR
         submitting={pending}
       >
         <form key={editing?.id ?? "new"} id="tf-sample-form" onSubmit={(e) => e.preventDefault()} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <label style={{ fontSize: 12, fontWeight: 600 }}>Mã mẫu *
-            <input name="code" required defaultValue={editing?.code ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
-          </label>
-          <div style={{ display: "flex", gap: 12 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Số seri
-              <input name="serialNumber" defaultValue={editing?.serialNumber ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
-            </label>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Số lượng
-              <input name="qty" type="number" min={1} defaultValue={editing?.qty ?? 1} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
-            </label>
+          <input type="hidden" name="projectId" value={sProjectId} />
+          <input type="hidden" name="customerId" value={sCustomerId} />
+          <input type="hidden" name="status" value={sStatus} />
+          <div className="field">
+            <label>Mã mẫu *</label>
+            <input name="code" required defaultValue={editing?.code ?? ""} />
           </div>
-          <div style={{ display: "flex", gap: 12 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Dự án
-              <PlainSelect name="projectId" defaultValue={editing?.projectId ?? ""}>
-                <option value="">—</option>
-                {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </PlainSelect>
-            </label>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Khách hàng
-              <PlainSelect name="customerId" defaultValue={editing?.customerId ?? ""}>
-                <option value="">—</option>
-                {customers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </PlainSelect>
-            </label>
+          <div className="row">
+            <div className="field" style={{ flex: 1 }}>
+              <label>Số seri</label>
+              <input name="serialNumber" defaultValue={editing?.serialNumber ?? ""} />
+            </div>
+            <div className="field" style={{ flex: 1 }}>
+              <label>Số lượng</label>
+              <input name="qty" type="number" min={1} defaultValue={editing?.qty ?? 1} />
+            </div>
           </div>
-          <div style={{ display: "flex", gap: 12 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Vị trí lưu
-              <input name="storageLocation" defaultValue={editing?.storageLocation ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
-            </label>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Ngày nhận
-              <input type="date" name="receivedAt" defaultValue={editing?.receivedAt ? editing.receivedAt.slice(0, 10) : ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
-            </label>
+          <div className="row">
+            <div className="field" style={{ flex: 1 }}>
+              <label>Dự án</label>
+              <CustomSelect value={sProjectId} onChange={setSProjectId} width="100%" options={[{ value: "", label: "—" }, ...projects.map((p) => ({ value: p.id, label: p.name }))]} />
+            </div>
+            <div className="field" style={{ flex: 1 }}>
+              <label>Khách hàng</label>
+              <CustomSelect value={sCustomerId} onChange={setSCustomerId} width="100%" options={[{ value: "", label: "—" }, ...customers.map((c) => ({ value: c.id, label: c.name }))]} />
+            </div>
           </div>
-          <label style={{ fontSize: 12, fontWeight: 600 }}>Trạng thái mẫu
-            <PlainSelect name="status" defaultValue={editing?.status ?? ""}>
-              <option value="">— Tự động —</option>
-              {SAMPLE_STATUS_ORDER.map((s) => <option key={s} value={s}>{SAMPLE_STATUS_LABEL[s]}</option>)}
-            </PlainSelect>
-          </label>
+          <div className="row">
+            <div className="field" style={{ flex: 1 }}>
+              <label>Vị trí lưu</label>
+              <input name="storageLocation" defaultValue={editing?.storageLocation ?? ""} />
+            </div>
+            <div className="field" style={{ flex: 1 }}>
+              <label>Ngày nhận</label>
+              <input type="date" name="receivedAt" defaultValue={editing?.receivedAt ? editing.receivedAt.slice(0, 10) : ""} />
+            </div>
+          </div>
+          <div className="field">
+            <label>Trạng thái mẫu</label>
+            <CustomSelect value={sStatus} onChange={setSStatus} width="100%" options={[{ value: "", label: "— Tự động —" }, ...SAMPLE_STATUS_ORDER.map((s) => ({ value: s, label: SAMPLE_STATUS_LABEL[s] }))]} />
+          </div>
           <div style={{ fontSize: 12, color: "#9aa1ab" }}>Để trống để trạng thái tự suy ra từ tiến độ bài thử liên kết (giống hành vi bản gốc); chỉ chọn thủ công khi cần ghi đè.</div>
         </form>
       </FormModal>

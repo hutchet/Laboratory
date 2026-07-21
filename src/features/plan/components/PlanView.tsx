@@ -9,7 +9,6 @@ import { KpiCard } from "@/shared/ui/kpi-card"
 import { DonutSvg } from "@/shared/ui/donut-svg"
 import { DateField } from "@/shared/ui/date-field"
 import { IconButton } from "@/shared/ui/icon-button"
-import { PlainSelect } from "@/shared/ui/plain-select"
 import { CustomSelect } from "@/shared/ui/custom-select"
 import { GanttChart } from "./GanttChart"
 import { PlanCard } from "./PlanCard"
@@ -51,6 +50,8 @@ export function PlanView({
   const [editingPack, setEditingPack] = useState<TestPackRow | null>(null)
   const [newItemPackId, setNewItemPackId] = useState<string>("")
   const [confirmDeletePackId, setConfirmDeletePackId] = useState<string | null>(null)
+  const [pProjectId, setPProjectId] = useState("")
+  const [pCode, setPCode] = useState("")
   // Ban ao: bo cong cu chinh sua hang loat bai thu trong khu "Mau thu nghiem
   // va bai thu" - bat/tat bang nut "Chinh sua"/"Xong", chon nhieu qua
   // checkbox roi xoa 1 lan qua bulkDeleteTestItems.
@@ -75,6 +76,11 @@ export function PlanView({
   const [tiDuration, setTiDuration] = useState(1)
   const [tiActualStart, setTiActualStart] = useState("")
   const [tiActualEnd, setTiActualEnd] = useState("")
+  useEffect(() => {
+    if (!showPackForm) return
+    setPProjectId(projectFilter ?? "")
+    setPCode(editingPack?.code ?? "")
+  }, [showPackForm, editingPack, projectFilter])
   useEffect(() => {
     if (!showForm) return
     setTiProjectId(editing?.testPlan?.project?.id ?? projectFilter ?? "")
@@ -705,18 +711,16 @@ export function PlanView({
         submitting={pending}
       >
         <form key={editingPack?.id ?? "new-pack"} id="tf-pack-form" onSubmit={(e) => e.preventDefault()} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <label style={{ fontSize: 12, fontWeight: 600 }}>Dự án *
-            <PlainSelect name="projectId" required disabled={!!editingPack} defaultValue={projectFilter}>
-              <option value="">—</option>
-              {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </PlainSelect>
-          </label>
-          <label style={{ fontSize: 12, fontWeight: 600 }}>Mã mẫu *
-            <PlainSelect name="code" required defaultValue={editingPack?.code ?? ""}>
-              <option value="">—</option>
-              {samples.map((s) => <option key={s.id} value={s.name}>{s.name}</option>)}
-            </PlainSelect>
-          </label>
+          <input type="hidden" name="projectId" value={pProjectId} />
+          <div className="field">
+            <label>Dự án *</label>
+            <CustomSelect value={pProjectId} onChange={setPProjectId} width="100%" disabled={!!editingPack} options={[{ value: "", label: "—" }, ...projects.map((p) => ({ value: p.id, label: p.name }))]} />
+          </div>
+          <input type="hidden" name="code" value={pCode} />
+          <div className="field">
+            <label>Mã mẫu *</label>
+            <CustomSelect value={pCode} onChange={setPCode} width="100%" options={[{ value: "", label: "—" }, ...samples.map((s) => ({ value: s.name, label: s.name }))]} />
+          </div>
           <div style={{ display: "flex", gap: 12 }}>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Số seri
               <input name="serial" defaultValue={editingPack?.serial ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />

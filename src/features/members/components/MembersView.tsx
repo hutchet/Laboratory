@@ -7,8 +7,8 @@ import { FormModal } from "@/shared/ui/form-modal"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { AvatarInitials } from "@/shared/ui/avatar-initials"
 import { StatusBadge } from "@/shared/ui/status-badge"
+import { CustomSelect } from "@/shared/ui/custom-select"
 import { Perm } from "@/shared/lib/rbac-client"
-import { PlainSelect } from "@/shared/ui/plain-select"
 import { saveMember, deleteMember, resetMemberPassword } from "../actions"
 import { ACCESS_ROLE_LABEL, NEW_ACCESS_ROLE_OPTIONS, type MemberRow } from "../types"
 import type { CurrentMemberInfo } from "../queries"
@@ -34,6 +34,9 @@ export function MembersView({
   const [showForm, setShowForm] = useState(false)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [formCenterId, setFormCenterId] = useState<string>("")
+  const [mGroupId, setMGroupId] = useState<string>("")
+  const [mGender, setMGender] = useState<string>("")
+  const [mAccessRole, setMAccessRole] = useState<string>("")
   const [pending, startTransition] = useTransition()
   // Additive — đặt lại mật khẩu đăng nhập cho thành viên (yêu cầu: admin có quyền
   // reset mật khẩu của user). Chỉ hiện với Perm minPerm="dept_head" ở cột hành động.
@@ -178,19 +181,17 @@ export function MembersView({
           <label style={{ fontSize: 12, fontWeight: 600 }}>Email
             <input name="email" type="email" defaultValue={editing?.email ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
           </label>
-          <div style={{ display: "flex", gap: 12 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Trung tâm
-              <PlainSelect name="centerId" defaultValue={formCenterId} onChange={(e) => setFormCenterId(e.target.value)}>
-                <option value="">— Chưa gán —</option>
-                {centerOptions.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </PlainSelect>
-            </label>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Nhóm vận hành (trong Trung tâm)
-              <PlainSelect name="groupId" defaultValue={editing?.groupId ?? ""}>
-                <option value="">— Chưa gán —</option>
-                {groupOptionsForForm.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
-              </PlainSelect>
-            </label>
+          <input type="hidden" name="centerId" value={formCenterId} />
+          <input type="hidden" name="groupId" value={mGroupId} />
+          <div className="row">
+            <div className="field" style={{ flex: 1 }}>
+              <label>Trung tâm</label>
+              <CustomSelect value={formCenterId} onChange={setFormCenterId} width="100%" options={[{ value: "", label: "— Chưa gán —" }, ...centerOptions.map((c) => ({ value: c.id, label: c.name }))]} />
+            </div>
+            <div className="field" style={{ flex: 1 }}>
+              <label>Nhóm vận hành (trong Trung tâm)</label>
+              <CustomSelect value={mGroupId} onChange={setMGroupId} width="100%" options={[{ value: "", label: "— Chưa gán —" }, ...groupOptionsForForm.map((g) => ({ value: g.id, label: g.name }))]} />
+            </div>
           </div>
           <label style={{ fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 8 }}>
             <input type="checkbox" name="isOperations" defaultChecked={editing?.isOperations ?? false} />
@@ -200,18 +201,16 @@ export function MembersView({
             <input type="checkbox" name="allCenters" defaultChecked={editing?.allCenters ?? false} />
             Toàn bộ Trung tâm (xem/thao tác dữ liệu ở TẤT CẢ Trung tâm, mọi module — không giới hạn theo Trung tâm/Nhóm, không đổi Phân quyền)
           </label>
-          <label style={{ fontSize: 12, fontWeight: 600 }}>Giới tính
-            <PlainSelect name="gender" defaultValue={editing?.gender ?? ""}>
-              <option value="">—</option>
-              <option value="Nam">Nam</option>
-              <option value="Nữ">Nữ</option>
-            </PlainSelect>
-          </label>
-          <label style={{ fontSize: 12, fontWeight: 600 }}>Phân quyền
-            <PlainSelect name="accessRole" defaultValue={editing?.accessRole ?? "viewer"}>
-              {NEW_ACCESS_ROLE_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-            </PlainSelect>
-          </label>
+          <input type="hidden" name="gender" value={mGender} />
+          <input type="hidden" name="accessRole" value={mAccessRole} />
+          <div className="field">
+            <label>Giới tính</label>
+            <CustomSelect value={mGender} onChange={setMGender} width="100%" options={[{ value: "", label: "—" }, { value: "Nam", label: "Nam" }, { value: "Nữ", label: "Nữ" }]} />
+          </div>
+          <div className="field">
+            <label>Phân quyền</label>
+            <CustomSelect value={mAccessRole} onChange={setMAccessRole} width="100%" options={NEW_ACCESS_ROLE_OPTIONS.map((opt) => ({ value: opt.value, label: opt.label }))} />
+          </div>
           {/* Sửa lỗi phát hiện khi rà lại P0: trước đây không có cách nào tạo/đổi mật khẩu
               đăng nhập thật (User.passwordHash) từ trang này, nên đổi "Phân quyền" ở trên
               chỉ đổi phần hiển thị, không đổi được quyền thực thi ở server. Ô này là tuỳ chọn —

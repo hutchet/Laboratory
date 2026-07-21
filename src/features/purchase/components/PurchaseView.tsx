@@ -1,11 +1,11 @@
 "use client"
 import { useMemo, useState, useTransition } from "react"
+import { CustomSelect } from "@/shared/ui/custom-select"
 import { PageShell } from "@/shared/ui/page-shell"
 import { FilterBar } from "@/shared/ui/filter-bar"
 import { DataTable, type DataTableColumn } from "@/shared/ui/data-table"
 import { KpiCard } from "@/shared/ui/kpi-card"
 import { FormModal } from "@/shared/ui/form-modal"
-import { PlainSelect } from "@/shared/ui/plain-select"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { StatusBadge } from "@/shared/ui/status-badge"
 import { savePurchaseItem, deletePurchaseItem, bulkDeletePurchaseItems } from "../actions"
@@ -312,6 +312,10 @@ function PurchaseFormModal({
   onClose: () => void
   onSubmit: (formData: FormData) => void
 }) {
+  const [pOwner, setPOwner] = useState(editing?.owner ?? "")
+  const [pLab, setPLab] = useState(editing?.lab ?? "")
+  const [pStatus, setPStatus] = useState(editing?.status ?? "")
+
   return (
     <FormModal
       open
@@ -322,26 +326,25 @@ function PurchaseFormModal({
       width={720}
     >
       <form key={editing?.id ?? "new"} id="tf-purchase-form" onSubmit={(e) => e.preventDefault()} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-        <label style={{ fontSize: 12, fontWeight: 600 }}>Phòng mua hàng
-          <input name="pic" defaultValue={editing?.pic ?? ""} placeholder="PIC ngoài lab" style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
-        </label>
-        <label style={{ fontSize: 12, fontWeight: 600 }}>Người phụ trách
-          <PlainSelect name="owner" defaultValue={editing?.owner ?? ""}>
-            <option value="">— Chọn người phụ trách —</option>
-            {members.map((m) => <option key={m.id} value={m.name}>{m.name}</option>)}
-          </PlainSelect>
-        </label>
-        <label style={{ fontSize: 12, fontWeight: 600 }}>Trung tâm
-          <PlainSelect name="lab" defaultValue={editing?.lab ?? ""}>
-            <option value="">— Chọn trung tâm —</option>
-            {centers.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
-          </PlainSelect>
-        </label>
-        <label style={{ fontSize: 12, fontWeight: 600 }}>Trạng thái
-          <PlainSelect name="status" defaultValue={editing?.status ?? ""}>
-            {["", "On-going", "Done", "Chậm", "Hủy"].map((s) => <option key={s} value={s}>{s || "—"}</option>)}
-          </PlainSelect>
-        </label>
+        <input type="hidden" name="owner" value={pOwner} />
+        <input type="hidden" name="lab" value={pLab} />
+        <input type="hidden" name="status" value={pStatus} />
+        <div className="field">
+          <label>Phòng mua hàng</label>
+          <input name="pic" defaultValue={editing?.pic ?? ""} placeholder="PIC ngoài lab" />
+        </div>
+        <div className="field">
+          <label>Người phụ trách</label>
+          <CustomSelect value={pOwner} onChange={setPOwner} width="100%" options={[{ value: "", label: "— Chọn người phụ trách —" }, ...members.map((m) => ({ value: m.name, label: m.name }))]} />
+        </div>
+        <div className="field">
+          <label>Trung tâm</label>
+          <CustomSelect value={pLab} onChange={setPLab} width="100%" options={[{ value: "", label: "— Chọn trung tâm —" }, ...centers.map((c) => ({ value: c.name, label: c.name }))]} />
+        </div>
+        <div className="field">
+          <label>Trạng thái</label>
+          <CustomSelect value={pStatus} onChange={setPStatus} width="100%" options={["", "On-going", "Done", "Chậm", "Hủy"].map((s) => ({ value: s, label: s || "—" }))} />
+        </div>
         <label style={{ fontSize: 12, fontWeight: 600, gridColumn: "1 / -1" }}>Tên hạng mục *
           <input name="name" required defaultValue={editing?.name ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
         </label>

@@ -1,11 +1,11 @@
 "use client"
-import { useMemo, useState, useTransition } from "react"
+import { useEffect, useMemo, useState, useTransition } from "react"
 import { PageShell } from "@/shared/ui/page-shell"
 import { FilterBar } from "@/shared/ui/filter-bar"
 import { KpiCard } from "@/shared/ui/kpi-card"
 import { DataTable, type DataTableColumn } from "@/shared/ui/data-table"
 import { FormModal } from "@/shared/ui/form-modal"
-import { PlainSelect } from "@/shared/ui/plain-select"
+import { CustomSelect } from "@/shared/ui/custom-select"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { StatusBadge } from "@/shared/ui/status-badge"
 import { Perm } from "@/shared/lib/rbac-client"
@@ -66,7 +66,25 @@ export function AuditPlanView({
   const [editingOverviewTitle, setEditingOverviewTitle] = useState(false)
   const [overviewTitleDraft, setOverviewTitleDraft] = useState(overviewTitle)
 
+  // CustomSelect dieu khien bang state (cung mau sua nhu PlanView ban ba) —
+  // ap dung cho tat ca select trong trang nay: filter chon ke hoach + 3 form popup.
+  const [planFormStatus, setPlanFormStatus] = useState("planned")
+  const [phaseFormPlanId, setPhaseFormPlanId] = useState("")
+  const [itemFormPlanId, setItemFormPlanId] = useState("")
+  const [itemFormPhaseId, setItemFormPhaseId] = useState("")
+  const [itemFormStatus, setItemFormStatus] = useState("planned")
+
   const visiblePlanId = activePlanId || plans[0]?.id || ""
+
+  useEffect(() => { if (showPlanForm) setPlanFormStatus("planned") }, [showPlanForm])
+  useEffect(() => { if (showPhaseForm) setPhaseFormPlanId(visiblePlanId) }, [showPhaseForm, visiblePlanId])
+  useEffect(() => {
+    if (showItemForm) {
+      setItemFormPlanId(editingItem?.auditPlanId ?? visiblePlanId)
+      setItemFormPhaseId(editingItem?.phaseId ?? "")
+      setItemFormStatus(editingItem?.status ?? "planned")
+    }
+  }, [showItemForm, editingItem, visiblePlanId])
   const scopedItems = useMemo(
     () => items.filter((it) => (!visiblePlanId || it.auditPlanId === visiblePlanId) && (!search || it.name.toLowerCase().includes(search.toLowerCase()) || (it.assignee ?? "").toLowerCase().includes(search.toLowerCase()))),
     [items, visiblePlanId, search],
@@ -286,9 +304,7 @@ export function AuditPlanView({
         </div>
       </div>
       <FilterBar search={{ value: search, onChange: setSearch, placeholder: "Tìm theo tên hạng mục hoặc phụ trách…" }}>
-        <PlainSelect value={visiblePlanId} onChange={(e) => setActivePlanId(e.target.value)} wrapStyle={{ marginTop: 0 }}>
-          {plans.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
-        </PlainSelect>
+        <CustomSelect value={visiblePlanId} onChange={setActivePlanId} width={220} options={plans.map((p) => ({ value: p.id, label: p.title }))} />
       </FilterBar>
       <DataTable columns={itemColumns} rows={scopedItems} rowKey={(it) => it.id} loading={pending} emptyTitle="Chưa có hạng mục nào" />
 
@@ -300,24 +316,21 @@ export function AuditPlanView({
           <label style={{ fontSize: 12, fontWeight: 600 }}>Ngày dự kiến
             <input type="date" name="scheduledAt" style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
           </label>
-          <label style={{ fontSize: 12, fontWeight: 600 }}>Trạng thái
-            <PlainSelect name="status" defaultValue="planned">
-              <option value="planned">Đã lập kế hoạch</option>
-              <option value="in_progress">Đang thực hiện</option>
-              <option value="done">Hoàn thành</option>
-            </PlainSelect>
-          </label>
+          <input type="hidden" name="status" value={planFormStatus} />
+          <div className="field">
+            <label>Trạng thái</label>
+            <CustomSelect value={planFormStatus} onChange={setPlanFormStatus} width="100%" options={[{ value: "planned", label: "Đã lập kế hoạch" }, { value: "in_progress", label: "Đang thực hiện" }, { value: "done", label: "Hoàn thành" }]} />
+          </div>
         </form>
       </FormModal>
 
       <FormModal open={showPhaseForm} title="Thêm giai đoạn" onClose={() => setShowPhaseForm(false)} onSubmit={() => { const f = document.getElementById("tf-auditphase-form") as HTMLFormElement | null; if (f) submitPhase(new FormData(f)) }} submitting={pending}>
         <form id="tf-auditphase-form" onSubmit={(e) => e.preventDefault()} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <label style={{ fontSize: 12, fontWeight: 600 }}>Kế hoạch *
-            <PlainSelect name="auditPlanId" required defaultValue={visiblePlanId}>
-              <option value="">—</option>
-              {plans.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
-            </PlainSelect>
-          </label>
+          <input type="hidden" name="auditPlanId" value={phaseFormPlanId} />
+          <div className="field">
+            <label>Kế hoạch *</label>
+            <CustomSelect value={phaseFormPlanId} onChange={setPhaseFormPlanId} width="100%" options={[{ value: "", label: "—" }, ...plans.map((p) => ({ value: p.id, label: p.title }))]} />
+          </div>
           <label style={{ fontSize: 12, fontWeight: 600 }}>Tên giai đoạn *
             <input name="name" required style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
           </label>
@@ -329,18 +342,16 @@ export function AuditPlanView({
 
       <FormModal open={showItemForm} title={editingItem ? "Sửa hạng mục" : "Thêm hạng mục"} onClose={() => { setShowItemForm(false); setEditingItem(null) }} onSubmit={() => { const f = document.getElementById("tf-audititem-form") as HTMLFormElement | null; if (f) submitItem(new FormData(f)) }} submitting={pending}>
         <form key={editingItem?.id ?? "new"} id="tf-audititem-form" onSubmit={(e) => e.preventDefault()} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <label style={{ fontSize: 12, fontWeight: 600 }}>Kế hoạch *
-            <PlainSelect name="auditPlanId" required defaultValue={editingItem?.auditPlanId ?? visiblePlanId}>
-              <option value="">—</option>
-              {plans.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
-            </PlainSelect>
-          </label>
-          <label style={{ fontSize: 12, fontWeight: 600 }}>Giai đoạn
-            <PlainSelect name="phaseId" defaultValue={editingItem?.phaseId ?? ""}>
-              <option value="">—</option>
-              {phases.map((ph) => <option key={ph.id} value={ph.id}>{ph.name}</option>)}
-            </PlainSelect>
-          </label>
+          <input type="hidden" name="auditPlanId" value={itemFormPlanId} />
+          <input type="hidden" name="phaseId" value={itemFormPhaseId} />
+          <div className="field">
+            <label>Kế hoạch *</label>
+            <CustomSelect value={itemFormPlanId} onChange={setItemFormPlanId} width="100%" options={[{ value: "", label: "—" }, ...plans.map((p) => ({ value: p.id, label: p.title }))]} />
+          </div>
+          <div className="field">
+            <label>Giai đoạn</label>
+            <CustomSelect value={itemFormPhaseId} onChange={setItemFormPhaseId} width="100%" options={[{ value: "", label: "—" }, ...phases.map((ph) => ({ value: ph.id, label: ph.name }))]} />
+          </div>
           <label style={{ fontSize: 12, fontWeight: 600 }}>Tên hạng mục *
             <input name="name" required defaultValue={editingItem?.name ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
           </label>
@@ -348,13 +359,11 @@ export function AuditPlanView({
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Phụ trách
               <input name="assignee" defaultValue={editingItem?.assignee ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
             </label>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Trạng thái
-              <PlainSelect name="status" defaultValue={editingItem?.status ?? "planned"}>
-                <option value="planned">Đã lập kế hoạch</option>
-                <option value="in_progress">Đang thực hiện</option>
-                <option value="done">Hoàn thành</option>
-              </PlainSelect>
-            </label>
+            <div className="field" style={{ flex: 1 }}>
+              <label>Trạng thái</label>
+              <input type="hidden" name="status" value={itemFormStatus} />
+              <CustomSelect value={itemFormStatus} onChange={setItemFormStatus} width="100%" options={[{ value: "planned", label: "Đã lập kế hoạch" }, { value: "in_progress", label: "Đang thực hiện" }, { value: "done", label: "Hoàn thành" }]} />
+            </div>
           </div>
           <div style={{ display: "flex", gap: 12 }}>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Bắt đầu KH

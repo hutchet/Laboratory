@@ -1,5 +1,5 @@
 "use client"
-import { useMemo, useState, useTransition } from "react"
+import { useEffect, useMemo, useState, useTransition } from "react"
 import { PageShell } from "@/shared/ui/page-shell"
 import { FilterBar } from "@/shared/ui/filter-bar"
 import { DataTable, type DataTableColumn } from "@/shared/ui/data-table"
@@ -8,7 +8,7 @@ import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { StatusBadge } from "@/shared/ui/status-badge"
 import { AvatarInitials } from "@/shared/ui/avatar-initials"
 import { ChipFilterDropdown, type ChipFilterOption } from "@/shared/ui/chip-filter"
-import { PlainSelect } from "@/shared/ui/plain-select"
+import { CustomSelect } from "@/shared/ui/custom-select"
 import { saveTask, deleteTask } from "../actions"
 import { STATUS_LABEL, PRIORITY_LABEL, type TaskRow, type Option } from "../types"
 
@@ -73,6 +73,23 @@ export function TasksView({ tasks, projects, members, initialQuery }: TasksViewP
   const [showForm, setShowForm] = useState(false)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
+
+  // CustomSelect la component dieu khien bang state (khong tu sinh input co
+  // "name" nhu <select> goc) - dong bo lai moi khi mo form de tranh loi giu
+  // du lieu cu tu bai thu truoc (cung nguyen nhan da fix o PlanView ban ba).
+  const [tProjectId, setTProjectId] = useState("")
+  const [tAssigneeId, setTAssigneeId] = useState("")
+  const [tPriority, setTPriority] = useState("med")
+  const [tStatus, setTStatus] = useState("todo")
+
+  useEffect(() => {
+    if (showForm) {
+      setTProjectId(editing?.projectId ?? "")
+      setTAssigneeId(editing?.assigneeId ?? "")
+      setTPriority(editing?.priority ?? "med")
+      setTStatus(editing?.status ?? "todo")
+    }
+  }, [showForm, editing])
 
   const memberName = (id: string | null) => members.find((m) => m.id === id)?.name ?? "—"
 
@@ -237,55 +254,41 @@ export function TasksView({ tasks, projects, members, initialQuery }: TasksViewP
         submitting={pending}
       >
         <form key={editing?.id ?? "new"} id="tf-task-form" onSubmit={(e) => e.preventDefault()} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <label style={{ fontSize: 12, fontWeight: 600 }}>
-            Tên công việc *
-            <input name="title" required defaultValue={editing?.title ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
-          </label>
-          <label style={{ fontSize: 12, fontWeight: 600 }}>
-            Mô tả
-            <textarea name="description" defaultValue={editing?.description ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
-          </label>
-          <div style={{ display: "flex", gap: 12 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>
-              Dự án
-              <PlainSelect name="projectId" defaultValue={editing?.projectId ?? ""}>
-                <option value="">—</option>
-                {projects.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </PlainSelect>
-            </label>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>
-              Phụ trách
-              <PlainSelect name="assigneeId" defaultValue={editing?.assigneeId ?? ""}>
-                <option value="">—</option>
-                {members.map((m) => (
-                  <option key={m.id} value={m.id}>{m.name}</option>
-                ))}
-              </PlainSelect>
-            </label>
+          <input type="hidden" name="projectId" value={tProjectId} />
+          <input type="hidden" name="assigneeId" value={tAssigneeId} />
+          <input type="hidden" name="priority" value={tPriority} />
+          <input type="hidden" name="status" value={tStatus} />
+          <div className="field">
+            <label>Tên công việc *</label>
+            <input name="title" required defaultValue={editing?.title ?? ""} />
           </div>
-          <div style={{ display: "flex", gap: 12 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>
-              Ưu tiên
-              <PlainSelect name="priority" defaultValue={editing?.priority ?? "med"}>
-                <option value="high">Cao</option>
-                <option value="med">Trung bình</option>
-                <option value="low">Thấp</option>
-              </PlainSelect>
-            </label>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>
-              Trạng thái
-              <PlainSelect name="status" defaultValue={editing?.status ?? "todo"}>
-                <option value="todo">Chưa làm</option>
-                <option value="doing">Đang làm</option>
-                <option value="done">Hoàn thành</option>
-              </PlainSelect>
-            </label>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>
-              Hạn chốt
-              <input type="date" name="dueDate" defaultValue={editing?.dueDate ? editing.dueDate.slice(0, 10) : ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
-            </label>
+          <div className="field">
+            <label>Mô tả</label>
+            <textarea name="description" defaultValue={editing?.description ?? ""} />
+          </div>
+          <div className="row">
+            <div className="field" style={{ flex: 1 }}>
+              <label>Dự án</label>
+              <CustomSelect value={tProjectId} onChange={setTProjectId} width="100%" options={[{ value: "", label: "—" }, ...projects.map((p) => ({ value: p.id, label: p.name }))]} />
+            </div>
+            <div className="field" style={{ flex: 1 }}>
+              <label>Phụ trách</label>
+              <CustomSelect value={tAssigneeId} onChange={setTAssigneeId} width="100%" options={[{ value: "", label: "—" }, ...members.map((m) => ({ value: m.id, label: m.name }))]} />
+            </div>
+          </div>
+          <div className="row">
+            <div className="field" style={{ flex: 1 }}>
+              <label>Ưu tiên</label>
+              <CustomSelect value={tPriority} onChange={setTPriority} width="100%" options={[{ value: "high", label: "Cao" }, { value: "med", label: "Trung bình" }, { value: "low", label: "Thấp" }]} />
+            </div>
+            <div className="field" style={{ flex: 1 }}>
+              <label>Trạng thái</label>
+              <CustomSelect value={tStatus} onChange={setTStatus} width="100%" options={[{ value: "todo", label: "Chưa làm" }, { value: "doing", label: "Đang làm" }, { value: "done", label: "Hoàn thành" }]} />
+            </div>
+            <div className="field" style={{ flex: 1 }}>
+              <label>Hạn chốt</label>
+              <input type="date" name="dueDate" defaultValue={editing?.dueDate ? editing.dueDate.slice(0, 10) : ""} />
+            </div>
           </div>
         </form>
       </FormModal>
