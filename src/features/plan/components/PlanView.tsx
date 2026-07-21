@@ -580,38 +580,12 @@ export function PlanView({
             </label>
           </div>
           <div style={{ display: "flex", gap: 12 }}>
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 5 }}>
-              <label style={{ fontSize: 12, fontWeight: 600 }}>Thiết bị thử nghiệm
-                <PlainSelect name="equipmentId" defaultValue={tiEquipmentId} onChange={(e) => setTiEquipmentId(e.target.value)}>
-                  <option value="">— Không chọn —</option>
-                  {equipmentOptions.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
-                </PlainSelect>
-              </label>
-              {tiEquipmentInfo && (
-                <div style={{ fontSize: 12, color: "var(--muted)", background: "var(--bg)", borderRadius: 8, padding: "8px 10px" }}>
-                  <b>{tiEquipmentInfo.name}</b>{tiEquipmentInfo.category ? " · " + tiEquipmentInfo.category : ""} · Trạng thái: {tiEquipmentInfo.status === "maintenance" ? "Đang bảo trì" : "Sẵn sàng"} · SL: {tiEquipmentInfo.qty ?? 1}
-                </div>
-              )}
-            </div>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Phụ trách
-              <PlainSelect name="picId" defaultValue={editing?.picId ?? ""}>
-                <option value="">—</option>
-                {memberOptions.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
-              </PlainSelect>
-            </label>
-          </div>
-          <div style={{ display: "flex", gap: 12 }}>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Mức độ ưu tiên
               <PlainSelect name="priority" defaultValue={editing?.priority ?? ""}>
                 <option value="">—</option>
                 {PRIORITY_OPTIONS.map((pr) => <option key={pr} value={pr}>{PRIORITY_LABEL[pr]}</option>)}
               </PlainSelect>
             </label>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Tiêu chuẩn
-              <input name="standard" defaultValue={editing?.standard ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
-            </label>
-          </div>
-          <div style={{ display: "flex", gap: 12 }}>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Cấp độ mẫu
               <PlainSelect name="sampleLevel" defaultValue={editing?.sampleLevel ?? ""}>
                 <option value="">—</option>
@@ -625,19 +599,17 @@ export function PlanView({
               </PlainSelect>
             </label>
           </div>
-          <label style={{ fontSize: 12, fontWeight: 600 }}>Kết quả
-            <PlainSelect name="result" defaultValue={editing?.result ?? ""}>
-              <option value="">(tự động)</option>
-              <option value="pass">Đạt</option>
-              <option value="fail">Không đạt</option>
-              <option value="cancel">Hủy</option>
-            </PlainSelect>
-          </label>
-          {seqWarning && (
-            <div style={{ background: "#fff4e5", border: "1px solid #f0c36d", color: "#8a5a00", borderRadius: 6, padding: "8px 10px", fontSize: 12 }}>
-              ⚠ {seqWarning}
-            </div>
-          )}
+          <div style={{ display: "flex", gap: 12 }}>
+            <label style={{ fontSize: 12, fontWeight: 600, flex: 2 }}>Tiêu chuẩn
+              <input name="standard" defaultValue={editing?.standard ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+            </label>
+            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Phụ trách
+              <PlainSelect name="picId" defaultValue={editing?.picId ?? ""}>
+                <option value="">—</option>
+                {memberOptions.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+              </PlainSelect>
+            </label>
+          </div>
           <div style={{ display: "flex", gap: 12 }}>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Kế hoạch bắt đầu
               <DateField name="planStart" value={tiPlanStart} onChange={setTiPlanStart} style={{ width: "100%", marginTop: 4 }} />
@@ -658,9 +630,37 @@ export function PlanView({
             <div style={{ flex: 1 }}>Thời lượng thực tế: <b>{tiDurationDays != null ? (tiDurationDays + " ngày") : "—"}</b></div>
             <div style={{ flex: 1 }}>Kết thúc dự kiến: <b>{tiExpectedEnd ?? "—"}</b></div>
           </div>
-          <label style={{ fontSize: 12, fontWeight: 600 }}>Tiến độ (%)
-            <input type="number" min={0} max={100} name="progress" defaultValue={editing?.progress ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
-          </label>
+          {seqWarning && (
+            <div style={{ background: "#fff4e5", border: "1px solid #f0c36d", color: "#8a5a00", borderRadius: 6, padding: "8px 10px", fontSize: 12 }}>
+              ⚠ {seqWarning}
+            </div>
+          )}
+          <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+            <label style={{ fontSize: 12, fontWeight: 600 }}>Thiết bị thử nghiệm
+              <PlainSelect name="equipmentId" defaultValue={tiEquipmentId} onChange={(e) => setTiEquipmentId(e.target.value)}>
+                <option value="">— Không chọn —</option>
+                {equipmentOptions.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
+              </PlainSelect>
+            </label>
+            {tiEquipmentInfo && (
+              <div style={{ fontSize: 12, color: "var(--muted)", background: "var(--bg)", borderRadius: 8, padding: "8px 10px" }}>
+                <b>{tiEquipmentInfo.name}</b>{tiEquipmentInfo.category ? " · " + tiEquipmentInfo.category : ""} · Trạng thái: {tiEquipmentInfo.status === "maintenance" ? "Đang bảo trì" : "Sẵn sàng"} · SL: {tiEquipmentInfo.qty ?? 1}
+              </div>
+            )}
+          </div>
+          <div style={{ display: "flex", gap: 12 }}>
+            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Tiến độ (%)
+              <input type="number" min={0} max={100} name="progress" defaultValue={editing?.progress ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+            </label>
+            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Kết quả
+              <PlainSelect name="result" defaultValue={editing?.result ?? ""}>
+                <option value="">(tự động)</option>
+                <option value="pass">Đạt</option>
+                <option value="fail">Không đạt</option>
+                <option value="cancel">Hủy</option>
+              </PlainSelect>
+            </label>
+          </div>
           <label style={{ fontSize: 12, fontWeight: 600 }}>Ghi chú
             <textarea name="note" defaultValue={editing?.note ?? ""} rows={3} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4, resize: "vertical" }} />
           </label>
