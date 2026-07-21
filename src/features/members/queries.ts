@@ -1,7 +1,7 @@
 import { auth } from "@/shared/lib/auth"
 import { db } from "@/shared/lib/db"
 import type { MemberRow } from "./types"
-import type { Option } from "@/shared/types/common"
+import type { Option } from "@/features/projects/types"
 
 export async function listMembers(): Promise<MemberRow[]> {
   const rows = await db.member.findMany({ orderBy: { name: "asc" }, include: { center: true, group: true } })
@@ -18,6 +18,7 @@ export async function listMembers(): Promise<MemberRow[]> {
     centerId: m.centerId,
     groupId: m.groupId,
     isOperations: m.isOperations,
+    allCenters: m.allCenters,
     centerName: m.center?.name ?? null,
     groupName: m.group?.name ?? null,
   }))

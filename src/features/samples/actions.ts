@@ -56,7 +56,7 @@ export async function saveSample(input: SaveSampleInput) {
     data.centerId = ctx.centerId ?? null
     data.groupId = ctx.groupId ?? null
     const created = await db.sample.create({ data: data as Parameters<typeof db.sample.create>[0]["data"] })
-    await logAudit("sample", "create", created.code||"", `Thêm mẫu mới “${created.code||""}”`)
+    await logAudit("sample", "create", created.code || "", `Thêm mẫu mới “${created.code}”`)
   }
   revalidatePath("/samples")
   revalidatePath("/plan")

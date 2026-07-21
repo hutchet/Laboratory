@@ -31,6 +31,7 @@ async function syncUserRoleForMember(
   centerId: string | null,
   groupId: string | null,
   isOperations: boolean,
+  allCenters: boolean,
 ) {
   if (!email) return
   const roleName = accessRole || "viewer"
@@ -40,9 +41,9 @@ async function syncUserRoleForMember(
   if (!user) {
     if (!password) return // chưa từng có tài khoản đăng nhập và không đặt mật khẩu mới thì không tạo được
     const passwordHash = await bcrypt.hash(password, 10)
-    user = await db.user.create({ data: { email, passwordHash, centerId, groupId, isOperations } })
+    user = await db.user.create({ data: { email, passwordHash, centerId, groupId, isOperations, allCenters } })
   } else {
-    const updateData: { passwordHash?: string; centerId: string | null; groupId: string | null; isOperations: boolean } = { centerId, groupId, isOperations }
+    const updateData: { passwordHash?: string; centerId: string | null; groupId: string | null; isOperations: boolean; allCenters: boolean } = { centerId, groupId, isOperations, allCenters }
     if (password) updateData.passwordHash = await bcrypt.hash(password, 10)
     await db.user.update({ where: { id: user.id }, data: updateData })
   }
@@ -64,6 +65,7 @@ export type SaveMemberInput = {
   centerId?: string | null
   groupId?: string | null
   isOperations?: boolean
+  allCenters?: boolean
 }
 
 export async function saveMember(input: SaveMemberInput) {
@@ -78,6 +80,7 @@ export async function saveMember(input: SaveMemberInput) {
     centerId: input.centerId || null,
     groupId: input.groupId || null,
     isOperations: !!input.isOperations,
+    allCenters: !!input.allCenters,
   }
   if (input.id) {
     await db.member.update({ where: { id: input.id }, data })
@@ -87,7 +90,7 @@ export async function saveMember(input: SaveMemberInput) {
     await logAudit("member", "create", data.name, `Thêm thành viên mới “${data.name}” (#${created.id})`)
   }
   try {
-    await syncUserRoleForMember(data.email, data.accessRole, input.password, data.centerId, data.groupId, data.isOperations)
+    await syncUserRoleForMember(data.email, data.accessRole, input.password, data.centerId, data.groupId, data.isOperations, data.allCenters)
   } catch (e) {
     // Không để lỗi đồng bộ RBAC (ví dụ seed chưa chạy) làm hỏng việc lưu thành viên —
     // ghi log để biết, nhưng Member vẫn được lưu như bình thường.

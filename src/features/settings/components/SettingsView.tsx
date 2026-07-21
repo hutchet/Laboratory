@@ -98,7 +98,7 @@ export function SettingsView({ settings }: { settings: AppSettings }) {
       try {
         const data = await requestFullBackup()
         const stamp = new Date().toISOString().replace(/[:T]/g, "-").slice(0, 16)
-        downloadJson(`taskflow-backup-${stamp}.json`, data)
+        downloadJson(`vinfast-backup-${stamp}.json`, data)
         router.refresh()
       } catch (e) {
         setError(e instanceof Error ? e.message : "Có lỗi xảy ra")
@@ -270,7 +270,7 @@ export function SettingsView({ settings }: { settings: AppSettings }) {
           <span>ℹ️</span>
           <div>
             Tính năng này thuộc bản HTML gốc chạy 1 mình trên máy (không có server), dùng để tự sao
-            lưu ra một thư mục cạnh file taskflow.html. Ứng dụng này đã có cơ sở dữ liệu server thật
+            lưu ra một thư mục cạnh file dữ liệu gốc. Ứng dụng này đã có cơ sở dữ liệu server thật
             (Postgres) làm nơi lưu trữ chính, nên tính năng thư mục offline không còn áp dụng — dùng
             Sao lưu/Khôi phục ở trên thay thế.
           </div>

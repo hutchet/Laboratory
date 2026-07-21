@@ -76,6 +76,9 @@ export type RbacContext = {
   centerName: string | null
   groupId: string | null
   isOperations: boolean
+  // Additive — xem/thao tac TOAN BO Trung tam o MOI module, khong phu thuoc rank (khac
+  // isOperations chi bo qua phan vung cho cac module cross-cutting o tren).
+  allCenters: boolean
   // Danh sach centerId ma 1 Nguoi xem (viewer) duoc cap quyen xem rieng (ViewerCenterAccess).
   viewerCenterIds: string[]
 }
@@ -99,6 +102,7 @@ export async function getUserRbacContext(userId: string): Promise<RbacContext> {
   const centerName = member?.center?.name ?? user?.center?.name ?? null
   const groupId = member?.groupId ?? user?.groupId ?? null
   const isOperations = member?.isOperations ?? user?.isOperations ?? false
+  const allCenters = member?.allCenters ?? user?.allCenters ?? false
   const viewerAccess = await db.viewerCenterAccess.findMany({ where: { userId }, select: { centerId: true } })
   return {
     userId,
@@ -109,6 +113,7 @@ export async function getUserRbacContext(userId: string): Promise<RbacContext> {
     centerName,
     groupId,
     isOperations,
+    allCenters,
     viewerCenterIds: viewerAccess.map((v) => v.centerId),
   }
 }
@@ -138,6 +143,7 @@ export const OPERATIONS_CROSS_CENTER_MODULES = new Set<string>([
 //   quyen ghi (chan o requirePermission()/can(), khong phai o day).
 export function getScopeFilter(ctx: RbacContext, scopeModule: string): Record<string, unknown> {
   if (ctx.rank === "director") return {}
+  if (ctx.allCenters) return {}
   if (ctx.isOperations && OPERATIONS_CROSS_CENTER_MODULES.has(scopeModule)) return {}
   if (ctx.rank === "dept_head") {
     return { centerId: ctx.centerId ?? "__none__" }
@@ -156,6 +162,7 @@ export function getScopeFilter(ctx: RbacContext, scopeModule: string): Record<st
 // groupId" (Task/Sample/PurchaseItem).
 export function getCenterScopeFilter(ctx: RbacContext, scopeModule: string): Record<string, unknown> {
   if (ctx.rank === "director") return {}
+  if (ctx.allCenters) return {}
   if (ctx.isOperations && OPERATIONS_CROSS_CENTER_MODULES.has(scopeModule)) return {}
   if (ctx.rank === "viewer") {
     return { centerId: { in: ctx.viewerCenterIds.length ? ctx.viewerCenterIds : ["__none__"] } }
@@ -185,6 +192,7 @@ export function assertScopedAccess(
 ): void {
   if (!record) return
   if (ctx.rank === "director") return
+  if (ctx.allCenters) return
   if (ctx.isOperations && OPERATIONS_CROSS_CENTER_MODULES.has(scopeModule)) return
   if (ctx.rank === "viewer") {
     // Viewer khong co quyen ghi (da chan o can()/requirePermission tu truoc) -- neu loi vao

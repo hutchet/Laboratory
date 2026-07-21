@@ -24,6 +24,8 @@ export type ProjectRow = {
   planStats: { hasPlan: boolean; planId: string | null; testCount: number; staffCount: number } | null
 }
 
+export type Option = { id: string; name: string }
+
 export const PROJECT_STATUS_LABEL: Record<string, string> = {
   not_started: "Chưa bắt đầu",
   doing: "Đang thực hiện",
@@ -35,5 +37,3 @@ export const PROJECT_PRIORITY_LABEL: Record<string, string> = {
   med: "Trung bình",
   low: "Thấp",
 }
-// Re-export for backward compatibility
-export type { Option } from "@/shared/types/common"

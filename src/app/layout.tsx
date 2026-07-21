@@ -6,7 +6,7 @@ import type { FontKey, Language, ThemeMode } from "@/features/settings/types"
 import { LANG_COOKIE } from "@/shared/lib/i18n"
 import { I18nApplier } from "@/shared/ui/i18n-applier"
 
-export const metadata = { title: "TaskFlow", description: "TaskFlow v2" }
+export const metadata = { title: "VinFast", description: "Trung tâm thử nghiệm VinFast" }
 
 // Script chan render (dat truoc <body>), port 1:1 y tuong vfDevicePrefMode()/
 // vfSystemPrefersDark() ban goc (dong ~7530-7534, 8207): khi mode="device" thi

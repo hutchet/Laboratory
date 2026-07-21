@@ -123,7 +123,7 @@ export function TasksView({ tasks, projects, members, initialQuery }: TasksViewP
       PRIORITY_LABEL[t.priority ?? "med"],
       STATUS_LABEL[t.status ?? "todo"],
     ])
-    downloadCsv("taskflow-tasks.csv", [header, ...rows])
+    downloadCsv("vinfast-tasks.csv", [header, ...rows])
   }
 
   function openNew() {

@@ -23,6 +23,7 @@ model User {
   centerId     String?
   groupId      String?
   isOperations Boolean @default(false)
+  allCenters   Boolean @default(false)
 
   center Center? @relation(fields: [centerId], references: [id])
   group  Group?  @relation(fields: [groupId], references: [id])
@@ -166,6 +167,7 @@ model Member {
   centerId     String?
   groupId      String?
   isOperations Boolean @default(false)
+  allCenters   Boolean @default(false)
 
   center Center? @relation(fields: [centerId], references: [id])
   group  Group?  @relation(fields: [groupId], references: [id])

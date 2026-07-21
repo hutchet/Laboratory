@@ -11,7 +11,7 @@ import { Perm } from "@/shared/lib/rbac-client"
 import { saveMember, deleteMember, resetMemberPassword } from "../actions"
 import { ACCESS_ROLE_LABEL, NEW_ACCESS_ROLE_OPTIONS, type MemberRow } from "../types"
 import type { CurrentMemberInfo } from "../queries"
-import type { Option } from "@/shared/types/common"
+import type { Option } from "@/features/projects/types"
 
 function initials(name: string) {
   return name.split(/\s+/).filter(Boolean).slice(-2).map((w) => w[0]).join("").toUpperCase()
@@ -58,6 +58,7 @@ export function MembersView({
       centerId: String(formData.get("centerId") || "") || null,
       groupId: String(formData.get("groupId") || "") || null,
       isOperations: formData.get("isOperations") === "on",
+      allCenters: formData.get("allCenters") === "on",
     }
     startTransition(async () => { await saveMember(input); setShowForm(false); setEditing(null) })
   }
@@ -105,7 +106,9 @@ export function MembersView({
     { key: "team", header: "Nhóm (tằng)", render: (m) => m.team ?? "—" },
     {
       key: "center", header: "Trung tâm",
-      render: (m) => m.isOperations
+      render: (m) => m.allCenters
+        ? <StatusBadge label="Toàn bộ Trung tâm" tone="success" />
+        : m.isOperations
         ? <StatusBadge label="Nhóm vận hành (xem chéo)" tone="success" />
         : (m.centerName ?? "—"),
     },
@@ -191,6 +194,10 @@ export function MembersView({
           <label style={{ fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 8 }}>
             <input type="checkbox" name="isOperations" defaultChecked={editing?.isOperations ?? false} />
             Thuộc Nhóm vận hành (xem chéo tất cả Trung tâm ở các module dùng chung: thiết bị, khấu hao, chi phí biến đổi, chất lượng, kế hoạch kiểm toán)
+          </label>
+          <label style={{ fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 8 }}>
+            <input type="checkbox" name="allCenters" defaultChecked={editing?.allCenters ?? false} />
+            Toàn bộ Trung tâm (xem/thao tác dữ liệu ở TẤT CẢ Trung tâm, mọi module — không giới hạn theo Trung tâm/Nhóm, không đổi Phân quyền)
           </label>
           <label style={{ fontSize: 12, fontWeight: 600 }}>Giới tính
             <select name="gender" defaultValue={editing?.gender ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>

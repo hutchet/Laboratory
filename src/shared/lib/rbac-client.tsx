@@ -43,6 +43,7 @@ export type RBACContextValue = {
   centerName?: string | null
   groupId?: string | null
   isOperations?: boolean
+  allCenters?: boolean
 }
 
 const RBACContext = createContext<RBACContextValue>({
@@ -53,6 +54,7 @@ const RBACContext = createContext<RBACContextValue>({
   centerName: null,
   groupId: null,
   isOperations: false,
+  allCenters: false,
 })
 
 export function RBACProvider({
@@ -102,8 +104,8 @@ export function RoleBadge({ className }: { className?: string }) {
 // Additive — badge hiển thị Trung tâm/Nhóm vận hành hiện tại của người dùng, dùng ở
 // đầu các trang Tầng 2-3 (bên cạnh RoleBadge) để nhắc phạm vi dữ liệu đang xem.
 export function ScopeBadge({ className }: { className?: string }) {
-  const { centerName, isOperations, rank } = useRBAC()
-  if (rank === "director" || rank === "admin") return <span className={className}>Toàn bộ các Trung tâm</span>
+  const { centerName, isOperations, allCenters, rank } = useRBAC()
+  if (rank === "director" || rank === "admin" || allCenters) return <span className={className}>Toàn bộ các Trung tâm</span>
   if (isOperations) return <span className={className}>Nhóm vận hành (xem chéo Trung tâm)</span>
   return <span className={className}>{centerName || "Chưa gán Trung tâm"}</span>
 }

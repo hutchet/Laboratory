@@ -71,9 +71,9 @@ export default function LoginPage() {
               letterSpacing: 0.5,
             }}
           >
-            TF
+            VF
           </span>
-          <h1 style={{ fontSize: 20, fontWeight: 700, margin: 0, color: "#1a2035" }}>Đăng nhập TaskFlow</h1>
+          <h1 style={{ fontSize: 20, fontWeight: 700, margin: 0, color: "#1a2035" }}>Đăng nhập Trung tâm thử nghiệm VinFast</h1>
           <p style={{ fontSize: 13, color: "#6b7280", margin: 0, textAlign: "center" }}>
             Quản lý kiểm nghiệm, kiểm toán &amp; vận hành phòng thử nghiệm
           </p>
