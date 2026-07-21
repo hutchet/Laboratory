@@ -56,12 +56,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         if (token.email) session.user.email = token.email as string
         // Additive — surface rbac context on session.user for client (RBACProvider) and
         // server (getScopeFilter) without an extra DB round-trip in most cases.
-        ;(session.user as any).rank = token.rank ?? "viewer"
-        ;(session.user as any).centerId = token.centerId ?? null
-        ;(session.user as any).centerName = token.centerName ?? null
-        ;(session.user as any).groupId = token.groupId ?? null
-        ;(session.user as any).isOperations = token.isOperations ?? false
-        ;(session.user as any).modulePerms = token.modulePerms ?? []
+        ;(session.user as unknown as Record<string, unknown>).rank = token.rank ?? "viewer"
+        ;(session.user as unknown as Record<string, unknown>).centerId = token.centerId ?? null
+        ;(session.user as unknown as Record<string, unknown>).centerName = token.centerName ?? null
+        ;(session.user as unknown as Record<string, unknown>).groupId = token.groupId ?? null
+        ;(session.user as unknown as Record<string, unknown>).isOperations = token.isOperations ?? false
+        ;(session.user as unknown as Record<string, unknown>).modulePerms = token.modulePerms ?? []
       }
       return session
     },
@@ -76,7 +76,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         password: { label: "Password", type: "password" },
       },
       authorize: async (credentials) => {
-        const rawIdentifier = credentials?.identifier as string | undefined
+        const rawIdentifier = (credentials?.identifier ?? (credentials as any)?.email) as string | undefined
         if (!rawIdentifier || !credentials?.password) return null
         try {
           const identifier = rawIdentifier.trim()
