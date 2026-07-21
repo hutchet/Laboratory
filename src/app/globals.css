@@ -645,8 +645,8 @@
   @media(max-width:760px){.pl-overview-row{grid-template-columns:repeat(2,minmax(0,1fr))}}
   @media(max-width:480px){.pl-overview-row{grid-template-columns:1fr}}
   .pl-legend{display:flex;flex-direction:column;gap:8px;font-size:12.5px}
-  .pl-legend .li{display:flex;align-items:center;gap:8px;color:var(--muted)}
-  .pl-legend .dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none}
+  .pl-legend .li,.pl-legend-side .li{display:flex;align-items:center;gap:8px;color:var(--muted)}
+  .pl-legend .dot,.pl-legend-side .dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none}
   .pl-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
   .pl-zoom{display:flex;gap:4px;background:var(--bg);border-radius:10px;padding:4px}
   .pl-zoom button{border:none;background:none;padding:7px 13px;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;color:var(--muted)}
@@ -2667,7 +2667,7 @@ html[data-viewport="mobile"] .me>div{display:none!important}
 
 /* v118.11 --- Mobile search auto-shrink + expand-on-focus, donut+legend cùng 1 hàng trên mobile (system-wide) */
 
-/* (A) Search inputs trên mobile: co ngắn để nhường chỗ các nút bên cạnh, focus tự mở rộng đè các sibling */
+/* (A) Search inputs trên mobile: co ngắn để nhường chỗ các nút bên cạnh, focus tự mở rộng ��è các sibling */
 @media (max-width: 720px) {
   html[data-viewport="mobile"] .material-3 :is(
     #topsearch, #search, #psearch, #ctsearch, #cusearch, #rsearch, #sm-search,

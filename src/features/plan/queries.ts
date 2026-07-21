@@ -49,7 +49,10 @@ export async function listProjectOptions(): Promise<Option[]> {
 }
 
 export async function listSampleOptions(): Promise<Option[]> {
-  return db.sample.findMany({ select: { id: true, name: true } })
+  // Uu tien hien "code" (dung chuan Ma mau nhu trang Quan ly mau: s.code ?? s.name)
+  // lam label/value cho cac droplist chon mau o trang Ke hoach.
+  const rows = await db.sample.findMany({ select: { id: true, name: true, code: true } })
+  return rows.map((s) => ({ id: s.id, name: s.code || s.name }))
 }
 
 export async function listEquipmentOptions(): Promise<Option[]> {

@@ -9,6 +9,7 @@ import { KpiCard } from "@/shared/ui/kpi-card"
 import { DonutSvg } from "@/shared/ui/donut-svg"
 import { DateField } from "@/shared/ui/date-field"
 import { IconButton } from "@/shared/ui/icon-button"
+import { PlainSelect } from "@/shared/ui/plain-select"
 import { GanttChart } from "./GanttChart"
 import { PlanCard } from "./PlanCard"
 import { Perm } from "@/shared/lib/rbac-client"
@@ -547,48 +548,48 @@ export function PlanView({
           </label>
           {!editing && (
             <label style={{ fontSize: 12, fontWeight: 600 }}>Dự án *
-              <select name="projectId" required defaultValue={projectFilter} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
+              <PlainSelect name="projectId" required defaultValue={projectFilter}>
                 <option value="">—</option>
                 {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
+              </PlainSelect>
             </label>
           )}
           <div style={{ display: "flex", gap: 12 }}>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Mẫu
-              <select name="packId" defaultValue={editing?.packId ?? newItemPackId} onChange={(e) => setTiPackId(e.target.value)} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
+              <PlainSelect name="packId" defaultValue={editing?.packId ?? newItemPackId} onChange={(e) => setTiPackId(e.target.value)}>
                 <option value="">—</option>
                 {packs.map((p) => <option key={p.id} value={p.id}>{p.code}</option>)}
-              </select>
+              </PlainSelect>
             </label>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Mẫu thử (sample)
-              <select name="sampleId" defaultValue={editing?.sampleId ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
+              <PlainSelect name="sampleId" defaultValue={editing?.sampleId ?? ""}>
                 <option value="">—</option>
                 {samples.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
+              </PlainSelect>
             </label>
           </div>
           <div style={{ display: "flex", gap: 12 }}>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Thiết bị
-              <select name="equipmentId" defaultValue={editing?.equipmentId ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
+              <PlainSelect name="equipmentId" defaultValue={editing?.equipmentId ?? ""}>
                 <option value="">—</option>
                 {equipmentOptions.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
-              </select>
+              </PlainSelect>
             </label>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Phụ trách
-              <select name="picId" defaultValue={editing?.picId ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
+              <PlainSelect name="picId" defaultValue={editing?.picId ?? ""}>
                 <option value="">—</option>
                 {memberOptions.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
-              </select>
+              </PlainSelect>
             </label>
           </div>
           <div style={{ display: "flex", gap: 12 }}>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Mức độ ưu tiên
-              <select name="priority" defaultValue={editing?.priority ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
+              <PlainSelect name="priority" defaultValue={editing?.priority ?? ""}>
                 <option value="">—</option>
                 <option value="Cao">Cao</option>
                 <option value="Trung bình">Trung bình</option>
                 <option value="Thấp">Thấp</option>
-              </select>
+              </PlainSelect>
             </label>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Tiêu chuẩn
               <input name="standard" defaultValue={editing?.standard ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
@@ -596,25 +597,25 @@ export function PlanView({
           </div>
           <div style={{ display: "flex", gap: 12 }}>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Cấp độ mẫu
-              <select name="sampleLevel" defaultValue={editing?.sampleLevel ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
+              <PlainSelect name="sampleLevel" defaultValue={editing?.sampleLevel ?? ""}>
                 <option value="">—</option>
                 {LEVEL_OPTIONS.map((lv) => <option key={lv} value={lv}>{lv}</option>)}
-              </select>
+              </PlainSelect>
             </label>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Nhóm phụ trách
-              <select name="team" defaultValue={editing?.team ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
+              <PlainSelect name="team" defaultValue={editing?.team ?? ""}>
                 <option value="">—</option>
                 {TEAM_OPTIONS.map((tm) => <option key={tm} value={tm}>{TEAM_LABEL[tm]}</option>)}
-              </select>
+              </PlainSelect>
             </label>
           </div>
           <label style={{ fontSize: 12, fontWeight: 600 }}>Kết quả
-            <select name="result" defaultValue={editing?.result ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
+            <PlainSelect name="result" defaultValue={editing?.result ?? ""}>
               <option value="">(tự động)</option>
               <option value="pass">Đạt</option>
               <option value="fail">Không đạt</option>
               <option value="cancel">Hủy</option>
-            </select>
+            </PlainSelect>
           </label>
           {seqWarning && (
             <div style={{ background: "#fff4e5", border: "1px solid #f0c36d", color: "#8a5a00", borderRadius: 6, padding: "8px 10px", fontSize: 12 }}>
@@ -659,13 +660,16 @@ export function PlanView({
       >
         <form key={editingPack?.id ?? "new-pack"} id="tf-pack-form" onSubmit={(e) => e.preventDefault()} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <label style={{ fontSize: 12, fontWeight: 600 }}>Dự án *
-            <select name="projectId" required disabled={!!editingPack} defaultValue={projectFilter} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
+            <PlainSelect name="projectId" required disabled={!!editingPack} defaultValue={projectFilter}>
               <option value="">—</option>
               {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
+            </PlainSelect>
           </label>
           <label style={{ fontSize: 12, fontWeight: 600 }}>Mã mẫu *
-            <input name="code" required defaultValue={editingPack?.code ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+            <PlainSelect name="code" required defaultValue={editingPack?.code ?? ""}>
+              <option value="">—</option>
+              {samples.map((s) => <option key={s.id} value={s.name}>{s.name}</option>)}
+            </PlainSelect>
           </label>
           <div style={{ display: "flex", gap: 12 }}>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Số seri

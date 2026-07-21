@@ -8,8 +8,7 @@ import { FormModal } from "@/shared/ui/form-modal"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { StatusBadge } from "@/shared/ui/status-badge"
 import { KpiCard } from "@/shared/ui/kpi-card"
-import { CustomSelect } from '@/shared/ui/custom-select'
-import { ChipFilterDropdown, type ChipFilterOption } from "@/shared/ui/chip-filter"
+import { IconButton } from "@/shared/ui/icon-button"
 import { Perm } from "@/shared/lib/rbac-client"
 import { saveSample, deleteSample } from "../actions"
 import { SAMPLE_STATUS_LABEL, SAMPLE_STATUS_ORDER, groupSamplesByProject, type SampleRow, type Option } from "../types"
@@ -23,8 +22,6 @@ function statusTone(status: string): "neutral" | "info" | "success" | "warning" 
 
 export function SamplesView({ samples, customers, projects }: { samples: SampleRow[]; customers: Option[]; projects: Option[] }) {
   const [q, setQ] = useState("")
-  const [statusFilter, setStatusFilter] = useState<string>("all")
-  const [customerFilter, setCustomerFilter] = useState<string>("")
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
   const [editing, setEditing] = useState<SampleRow | null>(null)
   const [showForm, setShowForm] = useState(false)
@@ -41,15 +38,13 @@ export function SamplesView({ samples, customers, projects }: { samples: SampleR
 
   const filtered = useMemo(() => {
     return samples.filter((s) => {
-      if (statusFilter !== "all" && s.derivedStatus !== statusFilter) return false
-      if (customerFilter && s.customerId !== customerFilter) return false
       if (q) {
         const hay = `${s.code ?? s.name} ${s.serialNumber ?? ""} ${s.project?.name ?? ""}`.toLowerCase()
         if (!hay.includes(q.toLowerCase())) return false
       }
       return true
     })
-  }, [samples, q, statusFilter, customerFilter])
+  }, [samples, q])
 
   const groups = useMemo(() => groupSamplesByProject(filtered), [filtered])
 
@@ -88,8 +83,10 @@ export function SamplesView({ samples, customers, projects }: { samples: SampleR
       key: "actions", header: "", align: "right",
       render: (s) => (
         <span style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-          <Perm minPerm="technician"><button type="button" onClick={() => openEdit(s)} style={{ border: "none", background: "none", color: "#1d5fd6", cursor: "pointer" }}>Sửa</button>
-          <button type="button" onClick={() => setConfirmDeleteId(s.id)} style={{ border: "none", background: "none", color: "#c62828", cursor: "pointer" }}>Xoá</button></Perm>
+          <Perm minPerm="technician">
+            <IconButton icon="edit" variant="ghost" size={30} title="Sửa" onClick={() => openEdit(s)} />
+            <IconButton icon="delete" variant="danger" size={30} title="Xoá" onClick={() => setConfirmDeleteId(s.id)} />
+          </Perm>
         </span>
       ),
     },
@@ -101,6 +98,7 @@ export function SamplesView({ samples, customers, projects }: { samples: SampleR
   // dung chung AddButton chuan thay nut bespoke cu.
   return (
     <PageShell title="Quản lý Mẫu">
+      <div id="page-samples">
       <div className="kpis-tier" style={{ marginBottom: 20 }}>
         <KpiCard label="Tổng số mẫu" value={kpis.total} />
         <KpiCard label="Đang thử nghiệm" value={kpis.testing} tone="warning" />
@@ -110,19 +108,7 @@ export function SamplesView({ samples, customers, projects }: { samples: SampleR
       <div className="section-head">
         <h3>Tất cả mẫu</h3>
         <div className="tools">
-          <FilterBar search={{ value: q, onChange: setQ, placeholder: "Tìm mã mẫu, seri, dự án..." }}>
-            <ChipFilterDropdown
-              value={statusFilter}
-              onChange={setStatusFilter}
-              options={[{ value: "all", label: "Tất cả" } as ChipFilterOption, ...SAMPLE_STATUS_ORDER.map((s) => ({ value: s, label: SAMPLE_STATUS_LABEL[s] }))]}
-            />
-            <CustomSelect
-              value={customerFilter}
-              onChange={setCustomerFilter}
-              options={[{value:"",label:"Tất cả khách hàng"},...customers.map(c=>({value:c.id,label:c.name}))]}
-              width={180}
-            />
-          </FilterBar>
+          <FilterBar search={{ value: q, onChange: setQ, placeholder: "Tìm mã mẫu, seri, dự án..." }} />
           <Perm minPerm="technician"><AddButton label="Thêm mẫu" onClick={openNew} /></Perm>
         </div>
       </div>
@@ -146,15 +132,15 @@ export function SamplesView({ samples, customers, projects }: { samples: SampleR
                   <h3 style={{ fontSize: 15, margin: 0 }}>{g.project ? g.project.name : "Không thuộc dự án nào"}</h3>
                   <span style={{ fontSize: 12, color: "#9aa1ab" }}>{g.customer ? `Khách hàng: ${g.customer.name} · ` : ""}{g.samples.length} mẫu</span>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: 12, color: "#9aa1ab" }}>Tiến độ</div>
-                    <div style={{ fontWeight: 600, fontSize: 16 }}>{pct}%</div>
+                <div className="sm-progress-surface">
+                  <div className="sm-progress-info">
+                    <div>Tiến độ</div>
+                    <div>{pct}%</div>
                   </div>
-                  <div style={{ width: 90, height: 6, background: "#eceff2", borderRadius: 4, overflow: "hidden" }}>
+                  <div className="pbar" style={{ width: 90, height: 6, background: "#eceff2", borderRadius: 4, overflow: "hidden" }}>
                     <div style={{ width: `${pct}%`, height: "100%", background: "#1d5fd6" }} />
                   </div>
-                  <span style={{ transform: isCollapsed ? "rotate(-90deg)" : "none", transition: "transform .15s", display: "inline-block" }}>▾</span>
+                  <span className="sm-progress-chevron" style={{ transform: isCollapsed ? "rotate(-90deg)" : "none", transition: "transform .15s" }}>▾</span>
                 </div>
               </div>
               {!isCollapsed && (
@@ -222,6 +208,7 @@ export function SamplesView({ samples, customers, projects }: { samples: SampleR
       </FormModal>
 
       <ConfirmDialog open={!!confirmDeleteId} title="Xoá mẫu?" description="Hành động này không thể hoàn tác." danger onConfirm={confirmDelete} onCancel={() => setConfirmDeleteId(null)} />
+      </div>
     </PageShell>
   )
 }
