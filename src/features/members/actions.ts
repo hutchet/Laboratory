@@ -39,14 +39,9 @@ async function syncUserRoleForMember(
   if (!role) return // seed RBAC chưa chạy — không có Role tương ứng để gán, bỏ qua
   let user = await db.user.findUnique({ where: { email } })
   if (!user) {
-    if (!password) {
-      // Auto-create User record even without password so member can login after reset
-      const defaultHash = await bcrypt.hash("resetme123", 10)
-      user = await db.user.create({ data: { email, passwordHash: defaultHash, centerId, groupId, isOperations, allCenters } })
-    } else {
-      const passwordHash = await bcrypt.hash(password, 10)
-      user = await db.user.create({ data: { email, passwordHash, centerId, groupId, isOperations, allCenters } })
-    }
+    if (!password) return // chưa từng có tài khoản đăng nhập và không đặt mật khẩu mới thì không tạo được
+    const passwordHash = await bcrypt.hash(password, 10)
+    user = await db.user.create({ data: { email, passwordHash, centerId, groupId, isOperations, allCenters } })
   } else {
     const updateData: { passwordHash?: string; centerId: string | null; groupId: string | null; isOperations: boolean; allCenters: boolean } = { centerId, groupId, isOperations, allCenters }
     if (password) updateData.passwordHash = await bcrypt.hash(password, 10)
@@ -138,29 +133,9 @@ export async function resetMemberPassword(memberId: string, newPassword: string)
   const passwordHash = await bcrypt.hash(trimmed, 10)
   const user = await db.user.findUnique({ where: { email: member.email } })
   if (!user) {
-    // Auto-create User record from Member — allows login after first password set
-    const role = await db.role.findUnique({ where: { name: member.accessRole || "viewer" } })
-    const newUser = await db.user.create({
-      data: {
-        email: member.email,
-        passwordHash,
-        name: member.name,
-        centerId: member.centerId || null,
-        groupId: member.groupId || null,
-        isOperations: member.isOperations || false,
-        allCenters: false,
-      },
-    })
-    if (role) {
-      await db.userRole.upsert({
-        where: { userId_roleId: { userId: newUser.id, roleId: role.id } },
-        create: { userId: newUser.id, roleId: role.id },
-        update: {},
-      })
-    }
-  } else {
-    await db.user.update({ where: { id: user.id }, data: { passwordHash } })
+    throw new Error("Thành viên chưa có tài khoản đăng nhập — hãy tạo tài khoản (nhập mật khẩu) ở form Sửa thành viên trước")
   }
+  await db.user.update({ where: { id: user.id }, data: { passwordHash } })
   await logAudit("member", "update", member.name, `Đặt lại mật khẩu đăng nhập cho “${member.name}”`)
   revalidatePath("/members")
 }
