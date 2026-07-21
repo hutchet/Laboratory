@@ -39,7 +39,7 @@ export function FormModal({ open, title, children, onClose, onSubmit, submitLabe
           e.preventDefault()
           onSubmit?.()
         }}
-        style={{ background: "#fff", borderRadius: 12, padding: 20, width, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 12px 40px rgba(0,0,0,0.2)" }}
+        style={{ background: "#fff", borderRadius: 12, padding: 20, width, maxWidth: "95vw", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 12px 40px rgba(0,0,0,0.2)" }}
       >
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 14 }}>
           <div style={{ fontSize: 16, fontWeight: 700 }}>{title}</div>

@@ -1,5 +1,5 @@
 import { db } from "@/shared/lib/db"
-import type { TestItemRow, TestPackRow, TestPlanRow, Option } from "./types"
+import type { TestItemRow, TestPackRow, TestPlanRow, Option, EquipmentOption } from "./types"
 
 export async function listTestItems(): Promise<TestItemRow[]> {
   const rows = await db.testItem.findMany({
@@ -55,8 +55,8 @@ export async function listSampleOptions(): Promise<Option[]> {
   return rows.map((s) => ({ id: s.id, name: s.code || s.name }))
 }
 
-export async function listEquipmentOptions(): Promise<Option[]> {
-  return db.equipment.findMany({ select: { id: true, name: true } })
+export async function listEquipmentOptions(): Promise<EquipmentOption[]> {
+  return db.equipment.findMany({ select: { id: true, name: true, category: true, status: true, qty: true } })
 }
 
 export async function listMemberOptions(): Promise<Option[]> {

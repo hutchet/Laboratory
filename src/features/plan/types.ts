@@ -1,5 +1,7 @@
 export type Option = { id: string; name: string }
 
+export type EquipmentOption = { id: string; name: string; category: string | null; status: string | null; qty: number | null }
+
 export type TestPackRow = {
   id: string
   testPlanId: string

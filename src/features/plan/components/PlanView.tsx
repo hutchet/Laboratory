@@ -14,7 +14,7 @@ import { GanttChart } from "./GanttChart"
 import { PlanCard } from "./PlanCard"
 import { Perm } from "@/shared/lib/rbac-client"
 import { saveTestItem, deleteTestItem, saveTestPack, deleteTestPack, bulkDeleteTestItems } from "../actions"
-import { RESULT_LABEL, RESULT_COLOR, LEVEL_OPTIONS, TEAM_OPTIONS, TEAM_LABEL, autoStatus, isOverdue, type TestItemRow, type TestPackRow, type TestPlanRow, type Option } from "../types"
+import { RESULT_LABEL, RESULT_COLOR, LEVEL_OPTIONS, TEAM_OPTIONS, TEAM_LABEL, autoStatus, isOverdue, type TestItemRow, type TestPackRow, type TestPlanRow, type Option, type EquipmentOption } from "../types"
 
 // Port cua renderPlanOverview() ban goc (dong 7022-7043): 2 donut rieng
 // (theo trang thai tu dong: ongoing/queuing/delay/cancel, va theo ket qua
@@ -38,7 +38,7 @@ function downloadCsv(filename: string, rows: Array<Array<string | number | null>
 export function PlanView({
   items, packs, plans, projects, samples, equipmentOptions, memberOptions, initialProjectFilter,
 }: {
-  items: TestItemRow[]; packs: TestPackRow[]; plans: TestPlanRow[]; projects: Option[]; samples: Option[]; equipmentOptions: Option[]; memberOptions: Option[]; initialProjectFilter?: string
+  items: TestItemRow[]; packs: TestPackRow[]; plans: TestPlanRow[]; projects: Option[]; samples: Option[]; equipmentOptions: EquipmentOption[]; memberOptions: Option[]; initialProjectFilter?: string
 }) {
   // Port cua data-goto-plan ban goc (dong 6493-6495): cho phep nhay toi day
   // tu trang Du an da loc san theo ?project=<id>.
@@ -62,6 +62,7 @@ export function PlanView({
   // "Thoi luong thuc te" / "Ket thuc du kien" va canh bao trung lich (seqWarning)
   // ngay trong luc dien form, truoc khi bam Luu.
   const [tiPackId, setTiPackId] = useState("")
+  const [tiEquipmentId, setTiEquipmentId] = useState("")
   const [tiPlanStart, setTiPlanStart] = useState("")
   const [tiPlanEnd, setTiPlanEnd] = useState("")
   const [tiActualStart, setTiActualStart] = useState("")
@@ -69,11 +70,13 @@ export function PlanView({
   useEffect(() => {
     if (!showForm) return
     setTiPackId(editing?.packId ?? newItemPackId ?? "")
+    setTiEquipmentId(editing?.equipmentId ?? "")
     setTiPlanStart(editing?.planStart ? editing.planStart.slice(0, 10) : "")
     setTiPlanEnd(editing?.planEnd ? editing.planEnd.slice(0, 10) : "")
     setTiActualStart(editing?.actualStart ? editing.actualStart.slice(0, 10) : "")
     setTiActualEnd(editing?.actualEnd ? editing.actualEnd.slice(0, 10) : "")
   }, [showForm, editing, newItemPackId])
+  const tiEquipmentInfo = useMemo(() => equipmentOptions.find((e) => e.id === tiEquipmentId) ?? null, [equipmentOptions, tiEquipmentId])
   const tiDurationDays = useMemo(() => {
     if (!tiActualStart || !tiActualEnd) return null
     const ms = new Date(tiActualEnd).getTime() - new Date(tiActualStart).getTime()
@@ -376,9 +379,9 @@ export function PlanView({
                         const its = scopedItems.filter((it) => it.packId === p.id)
                         const done = its.filter((it) => it.result === "pass").length
                         const pct = its.length ? Math.round((done / its.length) * 100) : 0
-                        const bg = pct >= 100 ? "var(--green)" : pct > 0 ? "#4f6cf7" : "var(--muted)"
+                        const bg = pct >= 100 ? "var(--green)" : pct > 0 ? "#4f6cf7" : "var(--neutral2)"
                         return (
-                          <div key={p.id} className="pl-pack-tile" style={{ background: bg }} title={`Mẫu ${p.code}: ${done}/${its.length} đạt`}>
+                          <div key={p.id} className="pl-pack-tile" style={{ background: bg }} title={`Mẫu ${p.code}: ${done}/${its.length} đạt (${pct}%)`}>
                             <div>{p.code}</div>
                             <div className="pct">{pct}%</div>
                           </div>
@@ -418,17 +421,19 @@ export function PlanView({
             </div>
             <Perm minPerm="dept_head">
               <div className="pl-toolbar">
-                <AddButton label="Thêm mẫu" onClick={openNewPack} />
-                <button type="button" className="btn-line" onClick={openNew}>+ Bài test chưa gán mẫu</button>
-                <button
-                  type="button"
-                  className="btn-line"
-                  onClick={() => { setEditMode((v) => !v); setSelectedItems(new Set()) }}
-                >
-                  {editMode ? "Xong" : "Chỉnh sửa"}
-                </button>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                  <AddButton label="Thêm mẫu" onClick={openNewPack} />
+                  <button type="button" className="btn-line" onClick={openNew}>+ Bài test chưa gán mẫu</button>
+                  <button
+                    type="button"
+                    className="btn-line"
+                    onClick={() => { setEditMode((v) => !v); setSelectedItems(new Set()) }}
+                  >
+                    {editMode ? "Xong" : "Chỉnh sửa"}
+                  </button>
+                </div>
                 {editMode && (
-                  <>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                     <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "var(--muted)" }}>
                       <input
                         type="checkbox"
@@ -446,7 +451,7 @@ export function PlanView({
                     >
                       Xoá đã chọn ({selectedItems.size})
                     </button>
-                  </>
+                  </div>
                 )}
               </div>
             </Perm>
@@ -537,6 +542,7 @@ export function PlanView({
         onClose={() => { setShowForm(false); setEditing(null) }}
         onSubmit={() => { const f = document.getElementById("tf-plan-form") as HTMLFormElement | null; if (f) handleSubmit(new FormData(f)) }}
         submitting={pending}
+        width={1040}
       >
         {/* key={editing?.id ?? "new"} - fix loi remount giu du lieu cu tu form
             truoc (nhu da ap dung cho Projects/Customers/Centers o ban ah): moi khi
@@ -569,12 +575,19 @@ export function PlanView({
             </label>
           </div>
           <div style={{ display: "flex", gap: 12 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Thiết bị
-              <PlainSelect name="equipmentId" defaultValue={editing?.equipmentId ?? ""}>
-                <option value="">—</option>
-                {equipmentOptions.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
-              </PlainSelect>
-            </label>
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 5 }}>
+              <label style={{ fontSize: 12, fontWeight: 600 }}>Thiết bị thử nghiệm
+                <PlainSelect name="equipmentId" defaultValue={tiEquipmentId} onChange={(e) => setTiEquipmentId(e.target.value)}>
+                  <option value="">— Không chọn —</option>
+                  {equipmentOptions.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
+                </PlainSelect>
+              </label>
+              {tiEquipmentInfo && (
+                <div style={{ fontSize: 12, color: "var(--muted)", background: "var(--bg)", borderRadius: 8, padding: "8px 10px" }}>
+                  <b>{tiEquipmentInfo.name}</b>{tiEquipmentInfo.category ? " · " + tiEquipmentInfo.category : ""} · Trạng thái: {tiEquipmentInfo.status === "maintenance" ? "Đang bảo trì" : "Sẵn sàng"} · SL: {tiEquipmentInfo.qty ?? 1}
+                </div>
+              )}
+            </div>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Phụ trách
               <PlainSelect name="picId" defaultValue={editing?.picId ?? ""}>
                 <option value="">—</option>

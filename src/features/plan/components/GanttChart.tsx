@@ -3,7 +3,7 @@ import { useMemo, useRef, useState } from "react"
 import { autoStatus, RESULT_COLOR, RESULT_LABEL, type TestItemRow, type TestPackRow } from "../types"
 import { ArrowButton } from "@/shared/ui/arrow-button"
 
-type Zoom = "day" | "week" | "month"
+type Zoom = "hour" | "day" | "week" | "month"
 
 function toDay(iso: string | null): string | null {
   return iso ? iso.slice(0, 10) : null
@@ -24,9 +24,20 @@ type Col = { key: string; label: string; group: string; rangeStart: string; rang
 
 // Port cua plColumns(zoom,range) ban goc (dong ~6935): sinh cot theo 3 muc
 // zoom - ngay/tuan/thang - tren cung 1 khoang thoi gian du lieu.
-function buildColumns(zoom: Zoom, start: string, end: string): Col[] {
+function buildColumns(zoom: Zoom, start: string, end: string, focusDate: string): Col[] {
   const cols: Col[] = []
   const today = todayIso()
+  if (zoom === "hour") {
+    // Port cua nhanh zoom==='hour' trong plColumns() ban goc: 24 cot gio
+    // (00:00-23:00) cho DUNG 1 ngay dang focus, khac voi day/week/month
+    // dung toan bo khoang thoi gian cua du lieu.
+    const day = focusDate
+    const grp = day.split("-").reverse().join("/")
+    for (let h = 0; h < 24; h++) {
+      cols.push({ key: `${day}-${h}`, label: `${pad(h)}:00`, group: grp, rangeStart: day, rangeEnd: day, isToday: day === today })
+    }
+    return cols
+  }
   if (zoom === "day") {
     let d = start
     let guard = 0
@@ -76,6 +87,7 @@ function groupRuns(cols: Col[]): Array<{ group: string; span: number; startIdx: 
 }
 
 function groupLabel(zoom: Zoom, group: string): string {
+  if (zoom === "hour") return group
   if (zoom === "day" || zoom === "week") {
     const [y, m] = group.split("-")
     return `Th ${+m}/${y}`
@@ -95,6 +107,7 @@ function colSpan(cols: Col[], sIso: string, eIso: string): number {
 }
 
 const ZOOM_OPTIONS: Array<{ key: Zoom; label: string }> = [
+  { key: "hour", label: "Giờ" },
   { key: "day", label: "Ngày" },
   { key: "week", label: "Tháng" },
   { key: "month", label: "Năm" },
@@ -139,9 +152,9 @@ export function GanttChart({
     return { start: addDays(sorted[0], -2), end: addDays(sorted[sorted.length - 1], 2) }
   }, [items, today])
 
-  const cols = useMemo(() => buildColumns(zoom, start, end), [zoom, start, end])
+  const cols = useMemo(() => buildColumns(zoom, start, end, focusDate), [zoom, start, end, focusDate])
   const runs = useMemo(() => groupRuns(cols), [cols])
-  const colWidth = zoom === "day" ? 34 : zoom === "week" ? 64 : 74
+  const colWidth = zoom === "hour" ? 56 : zoom === "day" ? 34 : zoom === "week" ? 64 : 74
 
   function scrollToFocus(nextFocus: string) {
     setFocusDate(nextFocus)
@@ -150,15 +163,15 @@ export function GanttChart({
   }
   function shiftFocus(delta: number) {
     const d = new Date(focusDate + "T00:00:00")
-    if (zoom === "day") d.setDate(d.getDate() + delta)
+    if (zoom === "day" || zoom === "hour") d.setDate(d.getDate() + delta)
     else if (zoom === "week") d.setMonth(d.getMonth() + delta)
     else d.setFullYear(d.getFullYear() + delta)
     scrollToFocus(d.toISOString().slice(0, 10))
   }
 
   const focusParts = focusDate.split("-").map(Number)
-  const inputType = zoom === "day" ? "date" : zoom === "week" ? "month" : "number"
-  const inputValue = zoom === "day" ? focusDate : zoom === "week" ? `${focusParts[0]}-${pad(focusParts[1])}` : String(focusParts[0])
+  const inputType = zoom === "day" || zoom === "hour" ? "date" : zoom === "week" ? "month" : "number"
+  const inputValue = zoom === "day" || zoom === "hour" ? focusDate : zoom === "week" ? `${focusParts[0]}-${pad(focusParts[1])}` : String(focusParts[0])
 
   type Row = { type: "pack"; pack: TestPackRow } | { type: "item"; item: TestItemRow }
   const rows: Row[] = []
@@ -185,7 +198,7 @@ export function GanttChart({
             onChange={(e) => {
               const v = e.target.value
               if (!v) return
-              if (zoom === "day") scrollToFocus(v)
+              if (zoom === "day" || zoom === "hour") scrollToFocus(v)
               else if (zoom === "week") scrollToFocus(`${v}-01`)
               else scrollToFocus(`${v}-01-01`)
             }}
