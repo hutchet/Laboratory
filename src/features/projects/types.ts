@@ -24,8 +24,6 @@ export type ProjectRow = {
   planStats: { hasPlan: boolean; planId: string | null; testCount: number; staffCount: number } | null
 }
 
-export type Option = { id: string; name: string }
-
 export const PROJECT_STATUS_LABEL: Record<string, string> = {
   not_started: "Chưa bắt đầu",
   doing: "Đang thực hiện",
