@@ -6,6 +6,9 @@ export type TestPackRow = {
   code: string
   serial: string | null
   qty: number | null
+  // Khac null: goi thu nay duoc dong bo tu dong "Mau" o trang Quan ly mau -
+  // khong the sua/xoa tay o trang Ke hoach, phai sua o trang Quan ly mau.
+  sampleId: string | null
 }
 
 export type TestItemRow = {
@@ -15,6 +18,8 @@ export type TestItemRow = {
   name: string
   reportCode: string | null
   priority: string | null
+  sampleLevel: string | null
+  team: string | null
   standard: string | null
   assignee: string | null
   picId: string | null
@@ -68,6 +73,19 @@ export const RESULT_LABEL: Record<string, string> = {
   queuing: "Chờ thực hiện",
   delay: "Trễ hạn",
   cancel: "Hủy",
+}
+
+// Cap do mau va Nhom phu trach - port cua PL_LEVELS/PL_TEAMS ban goc (dropdown
+// trong form bai thu), luu vao TestItem.sampleLevel / TestItem.team.
+export const LEVEL_OPTIONS = ["Cell", "Module", "Pack"] as const
+export const TEAM_OPTIONS = ["Performance", "Safety", "Durability", "EMC", "Reliability", "DVP"] as const
+export const TEAM_LABEL: Record<string, string> = {
+  Performance: "Performance",
+  Safety: "Safety",
+  Durability: "Durability",
+  EMC: "EMC",
+  Reliability: "Reliability",
+  DVP: "DVP",
 }
 
 export const RESULT_COLOR: Record<string, string> = {

@@ -15,6 +15,29 @@ async function requirePermission(action: "create" | "edit" | "delete") {
   return userId
 }
 
+// Dong bo 1 chieu Sample -> TestPack (xem prisma/schema.prisma::TestPack.sampleId,
+// Sample.testPack). Moi mau duoc quan ly o trang "Quan ly mau" tu dong sinh/cap nhat
+// dung 1 goi thu (TestPack) tuong ung o trang "Ke hoach thu nghiem" - khong can nguoi
+// dung bam "+ Them mau" thu cong nua. Chi dong bo khi mau co gan Du an (goi thu bat
+// buoc phai thuoc 1 Ke hoach thu nghiem, ma ke hoach lai gan voi 1 du an).
+async function findOrCreateTestPlanForProject(projectId: string) {
+  const existing = await db.testPlan.findFirst({ where: { projectId } })
+  if (existing) return existing
+  return db.testPlan.create({ data: { projectId } })
+}
+
+async function syncSampleTestPack(sampleId: string, input: { code: string; serialNumber?: string | null; qty?: number | null; projectId?: string | null }) {
+  if (!input.projectId) return
+  const plan = await findOrCreateTestPlanForProject(input.projectId)
+  const packData = { testPlanId: plan.id, code: input.code, serial: input.serialNumber || null, qty: input.qty ?? 1 }
+  const existingPack = await db.testPack.findUnique({ where: { sampleId } })
+  if (existingPack) {
+    await db.testPack.update({ where: { id: existingPack.id }, data: packData })
+  } else {
+    await db.testPack.create({ data: { ...packData, sampleId } })
+  }
+}
+
 export type SaveSampleInput = {
   id?: string
   code: string
@@ -44,6 +67,7 @@ export async function saveSample(input: SaveSampleInput) {
     status: input.status || null,
     receivedAt: input.receivedAt ? new Date(input.receivedAt) : null,
   }
+  let sampleId = input.id
   if (input.id) {
     const existing = await db.sample.findUnique({ where: { id: input.id } })
     const ctx = await getUserRbacContext(userId)
@@ -56,7 +80,11 @@ export async function saveSample(input: SaveSampleInput) {
     data.centerId = ctx.centerId ?? null
     data.groupId = ctx.groupId ?? null
     const created = await db.sample.create({ data: data as Parameters<typeof db.sample.create>[0]["data"] })
+    sampleId = created.id
     await logAudit("sample", "create", created.code || "", `Thêm mẫu mới “${created.code}”`)
+  }
+  if (sampleId) {
+    await syncSampleTestPack(sampleId, { code: input.code, serialNumber: input.serialNumber, qty: input.qty, projectId: input.projectId })
   }
   revalidatePath("/samples")
   revalidatePath("/plan")
@@ -65,9 +93,15 @@ export async function saveSample(input: SaveSampleInput) {
 
 export async function deleteSample(id: string) {
   const userId = await requirePermission("delete")
-  const existing = await db.sample.findUnique({ where: { id } })
+  const existing = await db.sample.findUnique({ where: { id }, include: { testPack: { include: { items: true } } } })
   const ctx = await getUserRbacContext(userId)
   assertScopedAccess(ctx, "samples", existing)
+  // Neu goi thu dong bo chua co bai thu nao, xoa luon cho gon; neu da co bai
+  // thu, giu lai goi thu (chuyen thanh goi "thu cong", sampleId tu dong ve
+  // null nho quan he optional trong schema) de khong mat du lieu da thu.
+  if (existing?.testPack && existing.testPack.items.length === 0) {
+    await db.testPack.delete({ where: { id: existing.testPack.id } })
+  }
   await db.sample.delete({ where: { id } })
   await logAudit("sample", "delete", existing?.code || id, `Xoá mẫu “${existing?.code || id}”`)
   revalidatePath("/samples")

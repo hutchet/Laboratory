@@ -27,6 +27,8 @@ export type SaveTestItemInput = {
   name: string
   reportCode?: string | null
   priority?: string | null
+  sampleLevel?: string | null
+  team?: string | null
   standard?: string | null
   assignee?: string | null
   picId?: string | null
@@ -48,6 +50,8 @@ export async function saveTestItem(input: SaveTestItemInput) {
     name: input.name,
     reportCode: input.reportCode || null,
     priority: input.priority || null,
+    sampleLevel: input.sampleLevel || null,
+    team: input.team || null,
     standard: input.standard || null,
     assignee: input.assignee || null,
     picId: input.picId || null,

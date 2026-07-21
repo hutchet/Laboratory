@@ -13,6 +13,8 @@ export async function listTestItems(): Promise<TestItemRow[]> {
     name: t.name,
     reportCode: t.reportCode,
     priority: t.priority,
+    sampleLevel: t.sampleLevel,
+    team: t.team,
     standard: t.standard,
     assignee: t.assignee,
     picId: t.picId,
@@ -34,7 +36,7 @@ export async function listTestItems(): Promise<TestItemRow[]> {
 
 export async function listTestPacks(): Promise<TestPackRow[]> {
   const rows = await db.testPack.findMany({ orderBy: { code: "asc" } })
-  return rows.map((p) => ({ id: p.id, testPlanId: p.testPlanId, code: p.code, serial: p.serial, qty: p.qty }))
+  return rows.map((p) => ({ id: p.id, testPlanId: p.testPlanId, code: p.code, serial: p.serial, qty: p.qty, sampleId: p.sampleId }))
 }
 
 export async function listTestPlans(): Promise<TestPlanRow[]> {

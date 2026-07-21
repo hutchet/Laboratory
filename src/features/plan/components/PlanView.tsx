@@ -13,7 +13,7 @@ import { GanttChart } from "./GanttChart"
 import { PlanCard } from "./PlanCard"
 import { Perm } from "@/shared/lib/rbac-client"
 import { saveTestItem, deleteTestItem, saveTestPack, deleteTestPack, bulkDeleteTestItems } from "../actions"
-import { RESULT_LABEL, RESULT_COLOR, autoStatus, isOverdue, type TestItemRow, type TestPackRow, type TestPlanRow, type Option } from "../types"
+import { RESULT_LABEL, RESULT_COLOR, LEVEL_OPTIONS, TEAM_OPTIONS, TEAM_LABEL, autoStatus, isOverdue, type TestItemRow, type TestPackRow, type TestPlanRow, type Option } from "../types"
 
 // Port cua renderPlanOverview() ban goc (dong 7022-7043): 2 donut rieng
 // (theo trang thai tu dong: ongoing/queuing/delay/cancel, va theo ket qua
@@ -56,6 +56,47 @@ export function PlanView({
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set())
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false)
   const [pending, startTransition] = useTransition()
+
+  // Ban ao: cac state "preview" cho form bai thu - dung de tinh truc tiep
+  // "Thoi luong thuc te" / "Ket thuc du kien" va canh bao trung lich (seqWarning)
+  // ngay trong luc dien form, truoc khi bam Luu.
+  const [tiPackId, setTiPackId] = useState("")
+  const [tiPlanStart, setTiPlanStart] = useState("")
+  const [tiPlanEnd, setTiPlanEnd] = useState("")
+  const [tiActualStart, setTiActualStart] = useState("")
+  const [tiActualEnd, setTiActualEnd] = useState("")
+  useEffect(() => {
+    if (!showForm) return
+    setTiPackId(editing?.packId ?? newItemPackId ?? "")
+    setTiPlanStart(editing?.planStart ? editing.planStart.slice(0, 10) : "")
+    setTiPlanEnd(editing?.planEnd ? editing.planEnd.slice(0, 10) : "")
+    setTiActualStart(editing?.actualStart ? editing.actualStart.slice(0, 10) : "")
+    setTiActualEnd(editing?.actualEnd ? editing.actualEnd.slice(0, 10) : "")
+  }, [showForm, editing, newItemPackId])
+  const tiDurationDays = useMemo(() => {
+    if (!tiActualStart || !tiActualEnd) return null
+    const ms = new Date(tiActualEnd).getTime() - new Date(tiActualStart).getTime()
+    if (Number.isNaN(ms)) return null
+    return Math.max(0, Math.round(ms / 86400000))
+  }, [tiActualStart, tiActualEnd])
+  const tiExpectedEnd = useMemo(() => {
+    if (!tiActualStart || tiActualEnd || !tiPlanStart || !tiPlanEnd) return null
+    const planMs = new Date(tiPlanEnd).getTime() - new Date(tiPlanStart).getTime()
+    if (Number.isNaN(planMs) || planMs < 0) return null
+    return new Date(new Date(tiActualStart).getTime() + planMs).toISOString().slice(0, 10)
+  }, [tiActualStart, tiActualEnd, tiPlanStart, tiPlanEnd])
+  const seqWarning = useMemo(() => {
+    if (!tiPackId || !tiPlanStart) return null
+    const end = tiPlanEnd || tiPlanStart
+    const overlap = items.some((it) => {
+      if (it.packId !== tiPackId || it.id === editing?.id) return false
+      const sStart = it.planStart ? it.planStart.slice(0, 10) : null
+      if (!sStart) return false
+      const sEnd = it.planEnd ? it.planEnd.slice(0, 10) : sStart
+      return sStart <= end && tiPlanStart <= sEnd
+    })
+    return overlap ? "Trùng lịch với bài thử khác trong cùng mẩu — các bài thử trong 1 mẩu nên chạy tuần tự, không nên chồng lịch." : null
+  }, [items, tiPackId, tiPlanStart, tiPlanEnd, editing])
 
   const scopedItems = useMemo(
     () => items.filter((it) => !projectFilter || it.testPlan?.project?.id === projectFilter),
@@ -185,6 +226,8 @@ export function PlanView({
       name: String(formData.get("name") || ""),
       reportCode: String(formData.get("reportCode") || ""),
       priority: String(formData.get("priority") || ""),
+      sampleLevel: String(formData.get("sampleLevel") || ""),
+      team: String(formData.get("team") || ""),
       standard: String(formData.get("standard") || ""),
       picId: String(formData.get("picId") || "") || null,
       result: String(formData.get("result") || ""),
@@ -195,6 +238,7 @@ export function PlanView({
       planEnd: String(formData.get("planEnd") || "") || null,
       actualStart: String(formData.get("actualStart") || "") || null,
       actualEnd: String(formData.get("actualEnd") || "") || null,
+      note: String(formData.get("note") || ""),
     }
     startTransition(async () => { await saveTestItem(input); setShowForm(false); setEditing(null) })
   }
@@ -246,10 +290,7 @@ export function PlanView({
   const unassignedItems = useMemo(() => scopedItems.filter((it) => !it.packId), [scopedItems])
 
   return (
-    <PageShell
-      title="Kế hoạch thử nghiệm"
-      actions={projectFilter ? <AddButton label="Thêm bài thử" onClick={openNew} /> : undefined}
-    >
+    <PageShell title="Kế hoạch thử nghiệm">
       {!projectFilter ? (
         /* Port 1:1 cua #plan-card-overview ban goc (dong 3746; CSS dong 848): luoi the
            tom tat ke hoach theo tung du an - giu dung id de dung grid CSS
@@ -287,7 +328,7 @@ export function PlanView({
             {scopedItems.length === 0 ? (
               <div className="empty">Chưa có bài thử nào trong phạm vi này.</div>
             ) : (
-              <div className="pl-donut-wrap">
+              <div className="pl-donut-wrap pl-overview-row">
                 <div>
                   <div style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600, marginBottom: 8, textAlign: "center" }}>Theo trạng thái</div>
                   <div className="pl-donut-inline">
@@ -377,6 +418,7 @@ export function PlanView({
             <Perm minPerm="dept_head">
               <div className="pl-toolbar">
                 <AddButton label="Thêm mẫu" onClick={openNewPack} />
+                <button type="button" className="btn-line" onClick={openNew}>+ Bài test chưa gán mẫu</button>
                 <button
                   type="button"
                   className="btn-line"
@@ -419,15 +461,18 @@ export function PlanView({
                       <div className="ph">
                         <b>Mẫu {p.code}</b>
                         <span style={{ fontSize: 11.5, color: "var(--muted)" }}>S/N: {p.serial || "—"} · SL: {p.qty ?? 1}</span>
+                        {p.sampleId && <StatusBadge label="Đồng bộ từ Mẫu" tone="info" />}
                         <span style={{ flex: 1 }} />
                         <StatusBadge label={`${done}/${packItems.length} đạt`} tone={done >= packItems.length && packItems.length > 0 ? "success" : "neutral"} />
                         <Perm minPerm="technician">
                           <button type="button" className="btn-line" style={{ padding: "6px 10px", fontSize: 12 }} onClick={() => openNewItemForPack(p.id)}>+ Bài test</button>
                         </Perm>
-                        <Perm minPerm="dept_head">
-                          <button type="button" className="txt-act" onClick={() => openEditPack(p)}>Sửa mẫu</button>
-                          <button type="button" className="txt-act del" onClick={() => setConfirmDeletePackId(p.id)}>Xóa mẫu</button>
-                        </Perm>
+                        {!p.sampleId && (
+                          <Perm minPerm="dept_head">
+                            <button type="button" className="txt-act" onClick={() => openEditPack(p)}>Sửa mẫu</button>
+                            <button type="button" className="txt-act del" onClick={() => setConfirmDeletePackId(p.id)}>Xóa mẫu</button>
+                          </Perm>
+                        )}
                       </div>
                       {editMode && (
                         <div style={{ padding: "0 14px 14px", display: "flex", flexDirection: "column", gap: 6 }}>
@@ -510,7 +555,7 @@ export function PlanView({
           )}
           <div style={{ display: "flex", gap: 12 }}>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Mẫu
-              <select name="packId" defaultValue={editing?.packId ?? newItemPackId} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
+              <select name="packId" defaultValue={editing?.packId ?? newItemPackId} onChange={(e) => setTiPackId(e.target.value)} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
                 <option value="">—</option>
                 {packs.map((p) => <option key={p.id} value={p.id}>{p.code}</option>)}
               </select>
@@ -549,6 +594,20 @@ export function PlanView({
               <input name="standard" defaultValue={editing?.standard ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
             </label>
           </div>
+          <div style={{ display: "flex", gap: 12 }}>
+            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Cấp độ mẫu
+              <select name="sampleLevel" defaultValue={editing?.sampleLevel ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
+                <option value="">—</option>
+                {LEVEL_OPTIONS.map((lv) => <option key={lv} value={lv}>{lv}</option>)}
+              </select>
+            </label>
+            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Nhóm phụ trách
+              <select name="team" defaultValue={editing?.team ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
+                <option value="">—</option>
+                {TEAM_OPTIONS.map((tm) => <option key={tm} value={tm}>{TEAM_LABEL[tm]}</option>)}
+              </select>
+            </label>
+          </div>
           <label style={{ fontSize: 12, fontWeight: 600 }}>Kết quả
             <select name="result" defaultValue={editing?.result ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
               <option value="">(tự động)</option>
@@ -557,24 +616,36 @@ export function PlanView({
               <option value="cancel">Hủy</option>
             </select>
           </label>
+          {seqWarning && (
+            <div style={{ background: "#fff4e5", border: "1px solid #f0c36d", color: "#8a5a00", borderRadius: 6, padding: "8px 10px", fontSize: 12 }}>
+              ⚠ {seqWarning}
+            </div>
+          )}
           <div style={{ display: "flex", gap: 12 }}>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Kế hoạch bắt đầu
-              <DateField name="planStart" defaultValue={editing?.planStart ? editing.planStart.slice(0, 10) : ""} style={{ width: "100%", marginTop: 4 }} />
+              <DateField name="planStart" value={tiPlanStart} onChange={setTiPlanStart} style={{ width: "100%", marginTop: 4 }} />
             </label>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Kế hoạch kết thúc
-              <DateField name="planEnd" defaultValue={editing?.planEnd ? editing.planEnd.slice(0, 10) : ""} style={{ width: "100%", marginTop: 4 }} />
+              <DateField name="planEnd" value={tiPlanEnd} onChange={setTiPlanEnd} style={{ width: "100%", marginTop: 4 }} />
             </label>
           </div>
           <div style={{ display: "flex", gap: 12 }}>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Thực tế bắt đầu
-              <DateField name="actualStart" defaultValue={editing?.actualStart ? editing.actualStart.slice(0, 10) : ""} style={{ width: "100%", marginTop: 4 }} />
+              <DateField name="actualStart" value={tiActualStart} onChange={setTiActualStart} style={{ width: "100%", marginTop: 4 }} />
             </label>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Thực tế kết thúc
-              <DateField name="actualEnd" defaultValue={editing?.actualEnd ? editing.actualEnd.slice(0, 10) : ""} style={{ width: "100%", marginTop: 4 }} />
+              <DateField name="actualEnd" value={tiActualEnd} onChange={setTiActualEnd} style={{ width: "100%", marginTop: 4 }} />
             </label>
+          </div>
+          <div style={{ display: "flex", gap: 12, fontSize: 12, color: "var(--muted)" }}>
+            <div style={{ flex: 1 }}>Thời lượng thực tế: <b>{tiDurationDays != null ? (tiDurationDays + " ngày") : "—"}</b></div>
+            <div style={{ flex: 1 }}>Kết thúc dự kiến: <b>{tiExpectedEnd ?? "—"}</b></div>
           </div>
           <label style={{ fontSize: 12, fontWeight: 600 }}>Tiến độ (%)
             <input type="number" min={0} max={100} name="progress" defaultValue={editing?.progress ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+          </label>
+          <label style={{ fontSize: 12, fontWeight: 600 }}>Ghi chú
+            <textarea name="note" defaultValue={editing?.note ?? ""} rows={3} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4, resize: "vertical" }} />
           </label>
         </form>
       </FormModal>

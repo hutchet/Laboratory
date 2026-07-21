@@ -637,6 +637,13 @@
   .qs-box{overflow:auto;position:relative;max-height:640px}
   .pl-donut-wrap{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:24px;align-items:start}
   .pl-donut-wrap>div{min-width:0;overflow:hidden}
+  /* Ban ao: bat "Tong quan tien do & ket qua" hien 1 dong duy nhat tren man
+     hinh lon (6 cot) thay vi tu wrap nhieu dong nhu auto-fit mac dinh - giam
+     dan xuong 3/2/1 cot theo breakpoint giong .kpis-tier. */
+  .pl-overview-row{grid-template-columns:repeat(6,minmax(0,1fr))}
+  @media(max-width:1400px){.pl-overview-row{grid-template-columns:repeat(3,minmax(0,1fr))}}
+  @media(max-width:760px){.pl-overview-row{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media(max-width:480px){.pl-overview-row{grid-template-columns:1fr}}
   .pl-legend{display:flex;flex-direction:column;gap:8px;font-size:12.5px}
   .pl-legend .li{display:flex;align-items:center;gap:8px;color:var(--muted)}
   .pl-legend .dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none}
