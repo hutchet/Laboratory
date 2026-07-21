@@ -10,6 +10,7 @@ import { DonutSvg } from "@/shared/ui/donut-svg"
 import { DateField } from "@/shared/ui/date-field"
 import { IconButton } from "@/shared/ui/icon-button"
 import { PlainSelect } from "@/shared/ui/plain-select"
+import { CustomSelect } from "@/shared/ui/custom-select"
 import { GanttChart } from "./GanttChart"
 import { PlanCard } from "./PlanCard"
 import { Perm } from "@/shared/lib/rbac-client"
@@ -61,34 +62,57 @@ export function PlanView({
   // Ban ao: cac state "preview" cho form bai thu - dung de tinh truc tiep
   // "Thoi luong thuc te" / "Ket thuc du kien" va canh bao trung lich (seqWarning)
   // ngay trong luc dien form, truoc khi bam Luu.
+  const [tiProjectId, setTiProjectId] = useState("")
   const [tiPackId, setTiPackId] = useState("")
+  const [tiSampleId, setTiSampleId] = useState("")
+  const [tiPriority, setTiPriority] = useState("")
+  const [tiSampleLevel, setTiSampleLevel] = useState("")
+  const [tiTeam, setTiTeam] = useState("")
+  const [tiPicId, setTiPicId] = useState("")
+  const [tiResult, setTiResult] = useState("")
   const [tiEquipmentId, setTiEquipmentId] = useState("")
   const [tiPlanStart, setTiPlanStart] = useState("")
-  const [tiPlanEnd, setTiPlanEnd] = useState("")
+  const [tiDuration, setTiDuration] = useState(1)
   const [tiActualStart, setTiActualStart] = useState("")
   const [tiActualEnd, setTiActualEnd] = useState("")
   useEffect(() => {
     if (!showForm) return
+    setTiProjectId(editing?.testPlan?.project?.id ?? projectFilter ?? "")
     setTiPackId(editing?.packId ?? newItemPackId ?? "")
+    setTiSampleId(editing?.sampleId ?? "")
+    setTiPriority(editing?.priority ?? "")
+    setTiSampleLevel(editing?.sampleLevel ?? "")
+    setTiTeam(editing?.team ?? "")
+    setTiPicId(editing?.picId ?? "")
+    setTiResult(editing?.result ?? "")
     setTiEquipmentId(editing?.equipmentId ?? "")
     setTiPlanStart(editing?.planStart ? editing.planStart.slice(0, 10) : "")
-    setTiPlanEnd(editing?.planEnd ? editing.planEnd.slice(0, 10) : "")
+    if (editing?.planStart && editing?.planEnd) {
+      const ms = new Date(editing.planEnd).getTime() - new Date(editing.planStart).getTime()
+      setTiDuration(Number.isNaN(ms) ? 1 : Math.max(1, Math.round(ms / 86400000) + 1))
+    } else {
+      setTiDuration(1)
+    }
     setTiActualStart(editing?.actualStart ? editing.actualStart.slice(0, 10) : "")
     setTiActualEnd(editing?.actualEnd ? editing.actualEnd.slice(0, 10) : "")
-  }, [showForm, editing, newItemPackId])
+  }, [showForm, editing, newItemPackId, projectFilter])
   const tiEquipmentInfo = useMemo(() => equipmentOptions.find((e) => e.id === tiEquipmentId) ?? null, [equipmentOptions, tiEquipmentId])
+  // Ban ao: "Ket thuc du kien" gio tinh truc tiep tu Ngay bat dau (ke hoach) +
+  // Thoi luong (ngay) - dung cong thuc cua ban goc (openTestItemForm), thay
+  // cho DateField "Ke hoach ket thuc" rieng truoc day (sai layout so voi ban
+  // goc - xem plan_functions.txt, khu ti-end-display).
+  const tiPlanEnd = useMemo(() => {
+    if (!tiPlanStart) return ""
+    const d = new Date(tiPlanStart)
+    d.setDate(d.getDate() + Math.max(1, tiDuration || 1) - 1)
+    return d.toISOString().slice(0, 10)
+  }, [tiPlanStart, tiDuration])
   const tiDurationDays = useMemo(() => {
     if (!tiActualStart || !tiActualEnd) return null
     const ms = new Date(tiActualEnd).getTime() - new Date(tiActualStart).getTime()
     if (Number.isNaN(ms)) return null
     return Math.max(0, Math.round(ms / 86400000))
   }, [tiActualStart, tiActualEnd])
-  const tiExpectedEnd = useMemo(() => {
-    if (!tiActualStart || tiActualEnd || !tiPlanStart || !tiPlanEnd) return null
-    const planMs = new Date(tiPlanEnd).getTime() - new Date(tiPlanStart).getTime()
-    if (Number.isNaN(planMs) || planMs < 0) return null
-    return new Date(new Date(tiActualStart).getTime() + planMs).toISOString().slice(0, 10)
-  }, [tiActualStart, tiActualEnd, tiPlanStart, tiPlanEnd])
   const seqWarning = useMemo(() => {
     if (!tiPackId || !tiPlanStart) return null
     const end = tiPlanEnd || tiPlanStart
@@ -549,121 +573,127 @@ export function PlanView({
             doi doi tuong dang sua (hoac chuyen sang tao moi), React se huy va tao
             lai toan bo form nay tu dau thay vi tai su dung DOM node cu. */}
         <form key={editing?.id ?? "new"} id="tf-plan-form" onSubmit={(e) => e.preventDefault()} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <div style={{ display: "flex", gap: 12 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 2 }}>Tên bài thử *
-              <input name="name" required defaultValue={editing?.name ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
-            </label>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Mã báo cáo
-              <input name="reportCode" defaultValue={editing?.reportCode ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
-            </label>
+          {/* CustomSelect (module dung o trang Du an) khong tu sinh input co "name"
+              trong DOM nhu <select> goc - phai giu them hidden input dong bo tu
+              state de handleSubmit(new FormData(...)) doc dung gia tri, tranh
+              mat du lieu khi luu. */}
+          <input type="hidden" name="projectId" value={tiProjectId} />
+          <input type="hidden" name="packId" value={tiPackId} />
+          <input type="hidden" name="sampleId" value={tiSampleId} />
+          <input type="hidden" name="priority" value={tiPriority} />
+          <input type="hidden" name="sampleLevel" value={tiSampleLevel} />
+          <input type="hidden" name="team" value={tiTeam} />
+          <input type="hidden" name="picId" value={tiPicId} />
+          <input type="hidden" name="equipmentId" value={tiEquipmentId} />
+          <input type="hidden" name="result" value={tiResult} />
+          <input type="hidden" name="planEnd" value={tiPlanEnd} />
+          <div className="row">
+            <div className="field" style={{ flex: 2 }}>
+              <label>Tên bài thử *</label>
+              <input name="name" required defaultValue={editing?.name ?? ""} />
+            </div>
+            <div className="field" style={{ flex: 1 }}>
+              <label>Mã báo cáo</label>
+              <input name="reportCode" defaultValue={editing?.reportCode ?? ""} />
+            </div>
           </div>
           {!editing && (
-            <label style={{ fontSize: 12, fontWeight: 600 }}>Dự án *
-              <PlainSelect name="projectId" required defaultValue={projectFilter}>
-                <option value="">—</option>
-                {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </PlainSelect>
-            </label>
+            <div className="field">
+              <label>Dự án *</label>
+              <CustomSelect value={tiProjectId} onChange={setTiProjectId} width="100%" options={[{ value: "", label: "—" }, ...projects.map((p) => ({ value: p.id, label: p.name }))]} />
+            </div>
           )}
-          <div style={{ display: "flex", gap: 12 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Mẫu
-              <PlainSelect name="packId" defaultValue={editing?.packId ?? newItemPackId} onChange={(e) => setTiPackId(e.target.value)}>
-                <option value="">—</option>
-                {packs.map((p) => <option key={p.id} value={p.id}>{p.code}</option>)}
-              </PlainSelect>
-            </label>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Mẫu thử (sample)
-              <PlainSelect name="sampleId" defaultValue={editing?.sampleId ?? ""}>
-                <option value="">—</option>
-                {samples.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </PlainSelect>
-            </label>
+          <div className="row">
+            <div className="field" style={{ flex: 1 }}>
+              <label>Mẫu</label>
+              <CustomSelect value={tiPackId} onChange={setTiPackId} width="100%" options={[{ value: "", label: "—" }, ...packs.map((p) => ({ value: p.id, label: p.code }))]} />
+            </div>
+            <div className="field" style={{ flex: 1 }}>
+              <label>Mẫu thử (sample)</label>
+              <CustomSelect value={tiSampleId} onChange={setTiSampleId} width="100%" options={[{ value: "", label: "—" }, ...samples.map((s) => ({ value: s.id, label: s.name }))]} />
+            </div>
           </div>
-          <div style={{ display: "flex", gap: 12 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Mức độ ưu tiên
-              <PlainSelect name="priority" defaultValue={editing?.priority ?? ""}>
-                <option value="">—</option>
-                {PRIORITY_OPTIONS.map((pr) => <option key={pr} value={pr}>{PRIORITY_LABEL[pr]}</option>)}
-              </PlainSelect>
-            </label>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Cấp độ mẫu
-              <PlainSelect name="sampleLevel" defaultValue={editing?.sampleLevel ?? ""}>
-                <option value="">—</option>
-                {LEVEL_OPTIONS.map((lv) => <option key={lv} value={lv}>{lv}</option>)}
-              </PlainSelect>
-            </label>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Nhóm phụ trách
-              <PlainSelect name="team" defaultValue={editing?.team ?? ""}>
-                <option value="">—</option>
-                {TEAM_OPTIONS.map((tm) => <option key={tm} value={tm}>{TEAM_LABEL[tm]}</option>)}
-              </PlainSelect>
-            </label>
+          <div className="row">
+            <div className="field" style={{ flex: 1 }}>
+              <label>Mức độ ưu tiên</label>
+              <CustomSelect value={tiPriority} onChange={setTiPriority} width="100%" options={[{ value: "", label: "—" }, ...PRIORITY_OPTIONS.map((pr) => ({ value: pr, label: PRIORITY_LABEL[pr] }))]} />
+            </div>
+            <div className="field" style={{ flex: 1 }}>
+              <label>Cấp độ mẫu</label>
+              <CustomSelect value={tiSampleLevel} onChange={setTiSampleLevel} width="100%" options={[{ value: "", label: "—" }, ...LEVEL_OPTIONS.map((lv) => ({ value: lv, label: lv }))]} />
+            </div>
+            <div className="field" style={{ flex: 1 }}>
+              <label>Nhóm phụ trách</label>
+              <CustomSelect value={tiTeam} onChange={setTiTeam} width="100%" options={[{ value: "", label: "—" }, ...TEAM_OPTIONS.map((tm) => ({ value: tm, label: TEAM_LABEL[tm] }))]} />
+            </div>
           </div>
-          <div style={{ display: "flex", gap: 12 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 2 }}>Tiêu chuẩn
-              <input name="standard" defaultValue={editing?.standard ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
-            </label>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Phụ trách
-              <PlainSelect name="picId" defaultValue={editing?.picId ?? ""}>
-                <option value="">—</option>
-                {memberOptions.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
-              </PlainSelect>
-            </label>
+          <div className="row">
+            <div className="field" style={{ flex: 2 }}>
+              <label>Tiêu chuẩn áp dụng</label>
+              <input name="standard" defaultValue={editing?.standard ?? ""} />
+            </div>
+            <div className="field" style={{ flex: 1 }}>
+              <label>Người phụ trách</label>
+              <CustomSelect value={tiPicId} onChange={setTiPicId} width="100%" options={[{ value: "", label: "— Chưa gán —" }, ...memberOptions.map((m) => ({ value: m.id, label: m.name }))]} />
+            </div>
           </div>
-          <div style={{ display: "flex", gap: 12 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Kế hoạch bắt đầu
-              <DateField name="planStart" value={tiPlanStart} onChange={setTiPlanStart} style={{ width: "100%", marginTop: 4 }} />
-            </label>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Kế hoạch kết thúc
-              <DateField name="planEnd" value={tiPlanEnd} onChange={setTiPlanEnd} style={{ width: "100%", marginTop: 4 }} />
-            </label>
+          <div className="row">
+            <div className="field" style={{ flex: 1 }}>
+              <label>Ngày bắt đầu (kế hoạch)</label>
+              <DateField name="planStart" value={tiPlanStart} onChange={setTiPlanStart} style={{ width: "100%" }} />
+            </div>
+            <div className="field" style={{ flex: 1 }}>
+              <label>Thời lượng (ngày)</label>
+              <input type="number" min={1} value={tiDuration} onChange={(e) => setTiDuration(Math.max(1, Number(e.target.value) || 1))} />
+            </div>
+            <div className="field" style={{ flex: 1 }}>
+              <label>Kết thúc dự kiến</label>
+              <div style={{ padding: "9px 0", fontSize: 13, fontWeight: 600 }}>{tiPlanEnd || "—"}</div>
+            </div>
           </div>
-          <div style={{ display: "flex", gap: 12 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Thực tế bắt đầu
-              <DateField name="actualStart" value={tiActualStart} onChange={setTiActualStart} style={{ width: "100%", marginTop: 4 }} />
-            </label>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Thực tế kết thúc
-              <DateField name="actualEnd" value={tiActualEnd} onChange={setTiActualEnd} style={{ width: "100%", marginTop: 4 }} />
-            </label>
-          </div>
-          <div style={{ display: "flex", gap: 12, fontSize: 12, color: "var(--muted)" }}>
-            <div style={{ flex: 1 }}>Thời lượng thực tế: <b>{tiDurationDays != null ? (tiDurationDays + " ngày") : "—"}</b></div>
-            <div style={{ flex: 1 }}>Kết thúc dự kiến: <b>{tiExpectedEnd ?? "—"}</b></div>
+          <div className="row">
+            <div className="field" style={{ flex: 1 }}>
+              <label>Ngày bắt đầu thực tế</label>
+              <DateField name="actualStart" value={tiActualStart} onChange={setTiActualStart} style={{ width: "100%" }} />
+            </div>
+            <div className="field" style={{ flex: 1 }}>
+              <label>Ngày kết thúc thực tế</label>
+              <DateField name="actualEnd" value={tiActualEnd} onChange={setTiActualEnd} style={{ width: "100%" }} />
+            </div>
+            <div className="field" style={{ flex: 1 }}>
+              <label>Thời lượng thực tế</label>
+              <div style={{ padding: "9px 0", fontSize: 13, fontWeight: 600 }}>{tiDurationDays != null ? (tiDurationDays + " ngày") : "—"}</div>
+            </div>
           </div>
           {seqWarning && (
             <div style={{ background: "#fff4e5", border: "1px solid #f0c36d", color: "#8a5a00", borderRadius: 6, padding: "8px 10px", fontSize: 12 }}>
               ⚠ {seqWarning}
             </div>
           )}
-          <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-            <label style={{ fontSize: 12, fontWeight: 600 }}>Thiết bị thử nghiệm
-              <PlainSelect name="equipmentId" value={tiEquipmentId} onChange={(e) => setTiEquipmentId(e.target.value)}>
-                <option value="">— Không chọn —</option>
-                {equipmentOptions.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
-              </PlainSelect>
-            </label>
-            {tiEquipmentInfo && (
-              <div style={{ fontSize: 12, color: "var(--muted)", background: "var(--bg)", borderRadius: 8, padding: "8px 10px" }}>
-                <b>{tiEquipmentInfo.name}</b>{tiEquipmentInfo.category ? " · " + tiEquipmentInfo.category : ""} · Trạng thái: {tiEquipmentInfo.status === "maintenance" ? "Đang bảo trì" : "Sẵn sàng"} · SL: {tiEquipmentInfo.qty ?? 1}
-              </div>
-            )}
+          <div className="field">
+            <label>Thiết bị thử nghiệm</label>
+            <CustomSelect value={tiEquipmentId} onChange={setTiEquipmentId} width="100%" options={[{ value: "", label: "— Không chọn —" }, ...equipmentOptions.map((e) => ({ value: e.id, label: e.name }))]} />
           </div>
-          <div style={{ display: "flex", gap: 12 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Tiến độ (%)
-              <input type="number" min={0} max={100} name="progress" defaultValue={editing?.progress ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
-            </label>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Kết quả
-              <PlainSelect name="result" defaultValue={editing?.result ?? ""}>
-                <option value="">(tự động)</option>
-                <option value="pass">Đạt</option>
-                <option value="fail">Không đạt</option>
-                <option value="cancel">Hủy</option>
-              </PlainSelect>
-            </label>
+          {tiEquipmentInfo && (
+            <div style={{ fontSize: 12, color: "var(--muted)", background: "var(--bg)", borderRadius: 8, padding: "8px 10px" }}>
+              <b>{tiEquipmentInfo.name}</b>{tiEquipmentInfo.category ? " · " + tiEquipmentInfo.category : ""} · Trạng thái: {tiEquipmentInfo.status === "maintenance" ? "Đang bảo trì" : "Sẵn sàng"} · SL: {tiEquipmentInfo.qty ?? 1}
+            </div>
+          )}
+          <div className="row">
+            <div className="field" style={{ flex: 1 }}>
+              <label>Tiến độ (%)</label>
+              <input type="number" min={0} max={100} name="progress" defaultValue={editing?.progress ?? ""} />
+            </div>
+            <div className="field" style={{ flex: 1 }}>
+              <label>Kết quả</label>
+              <CustomSelect value={tiResult} onChange={setTiResult} width="100%" options={[{ value: "", label: "(tự động)" }, { value: "pass", label: "Đạt" }, { value: "fail", label: "Không đạt" }, { value: "cancel", label: "Hủy" }]} />
+              <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 4 }}>Chỉ chọn Đạt/Không đạt/Hủy khi có kết quả cuối cùng. Nếu để (tự động), trạng thái sẽ tự tính theo ngày kế hoạch và ngày thực tế.</div>
+            </div>
           </div>
-          <label style={{ fontSize: 12, fontWeight: 600 }}>Ghi chú
-            <textarea name="note" defaultValue={editing?.note ?? ""} rows={3} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4, resize: "vertical" }} />
-          </label>
+          <div className="field">
+            <label>Ghi chú / vấn đề mở</label>
+            <textarea name="note" defaultValue={editing?.note ?? ""} rows={3} style={{ resize: "vertical" }} />
+          </div>
         </form>
       </FormModal>
 

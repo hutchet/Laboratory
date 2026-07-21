@@ -76,7 +76,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         password: { label: "Password", type: "password" },
       },
       authorize: async (credentials) => {
-        const rawIdentifier = (credentials?.identifier ?? (credentials as any)?.email) as string | undefined
+        const rawIdentifier = (credentials?.identifier ?? (credentials as Record<string, unknown>).email) as string | undefined
         if (!rawIdentifier || !credentials?.password) return null
         try {
           const identifier = rawIdentifier.trim()

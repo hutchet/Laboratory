@@ -108,8 +108,11 @@ export function ProjectsView({ projects, customers, centers }:{ projects:Project
         <form id="tf-project-form" onSubmit={e=>{e.preventDefault();handleSubmit(new FormData(e.currentTarget))}}>
           <div className="row">
             <div className="field" style={{flex:2,minWidth:240}}><label>Tên dự án *</label><input name="name" required defaultValue={editing?.name??""} placeholder="VD: VinFast" /></div>
-            <div className="field" style={{flex:1,minWidth:200}}><label>Khách hàng</label><CustomSelect value={formCustomerId} onChange={setFormCustomerId} options={[{value:"",label:"—"},...customers.map(c=>({value:c.id,label:c.name}))]} width="100%" /><input type="hidden" name="customerId" value={formCustomerId} /></div>
-            <div className="field" style={{flex:1,minWidth:200}}><label>Trung tâm thử nghiệm</label><CustomSelect value={formCenterId} onChange={setFormCenterId} options={[{value:"",label:"—"},...centers.map(c=>({value:c.id,label:c.name}))]} width="100%" /><input type="hidden" name="centerId" value={formCenterId} /></div>
+            {/* hidden input to carry value for form */}
+            <input type="hidden" name="customerId" value={formCustomerId} />
+            <div className="field" style={{flex:1,minWidth:200}}><label>Khách hàng</label><CustomSelect value={formCustomerId} onChange={setFormCustomerId} options={[{value:"",label:"—"},...customers.map(c=>({value:c.id,label:c.name}))]} width="100%" /></div>
+            <input type="hidden" name="centerId" value={formCenterId} />
+            <div className="field" style={{flex:1,minWidth:200}}><label>Trung tâm thử nghiệm</label><CustomSelect value={formCenterId} onChange={setFormCenterId} options={[{value:"",label:"—"},...centers.map(c=>({value:c.id,label:c.name}))]} width="100%" /></div>
           </div>
           <div className="row" style={{marginTop:12}}>
             <div className="field" style={{flex:1,minWidth:180}}><label>Ngày bắt đầu</label><DateField name="startDate" defaultValue={editing?.startDate?editing.startDate.slice(0,10):""} /></div>

@@ -81,7 +81,7 @@ export async function saveSample(input: SaveSampleInput) {
     data.groupId = ctx.groupId ?? null
     const created = await db.sample.create({ data: data as Parameters<typeof db.sample.create>[0]["data"] })
     sampleId = created.id
-    await logAudit("sample", "create", created.code || "", `Thêm mẫu mới “${created.code}”`)
+    await logAudit("sample", "create", created.code ?? "", `Thêm mẫu mới “${created.code ?? ""}”`)
   }
   if (sampleId) {
     await syncSampleTestPack(sampleId, { code: input.code, serialNumber: input.serialNumber, qty: input.qty, projectId: input.projectId })

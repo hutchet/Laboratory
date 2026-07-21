@@ -6,9 +6,9 @@ import { DataTable, type DataTableColumn } from "@/shared/ui/data-table"
 import { FormModal } from "@/shared/ui/form-modal"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { AvatarInitials } from "@/shared/ui/avatar-initials"
-import { PlainSelect } from "@/shared/ui/plain-select"
 import { StatusBadge } from "@/shared/ui/status-badge"
 import { Perm } from "@/shared/lib/rbac-client"
+import { PlainSelect } from "@/shared/ui/plain-select"
 import { saveMember, deleteMember, resetMemberPassword } from "../actions"
 import { ACCESS_ROLE_LABEL, NEW_ACCESS_ROLE_OPTIONS, type MemberRow } from "../types"
 import type { CurrentMemberInfo } from "../queries"
@@ -180,7 +180,7 @@ export function MembersView({
           </label>
           <div style={{ display: "flex", gap: 12 }}>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Trung tâm
-              <PlainSelect name="centerId" value={formCenterId} onChange={(e) => setFormCenterId(e.target.value)}>
+              <PlainSelect name="centerId" defaultValue={formCenterId} onChange={(e) => setFormCenterId(e.target.value)}>
                 <option value="">— Chưa gán —</option>
                 {centerOptions.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </PlainSelect>
