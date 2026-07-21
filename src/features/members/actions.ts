@@ -39,9 +39,14 @@ async function syncUserRoleForMember(
   if (!role) return // seed RBAC chưa chạy — không có Role tương ứng để gán, bỏ qua
   let user = await db.user.findUnique({ where: { email } })
   if (!user) {
-    if (!password) return // chưa từng có tài khoản đăng nhập và không đặt mật khẩu mới thì không tạo được
-    const passwordHash = await bcrypt.hash(password, 10)
-    user = await db.user.create({ data: { email, passwordHash, centerId, groupId, isOperations, allCenters } })
+    if (!password) {
+      // Auto-create User record even without password so member can login after reset
+      const defaultHash = await bcrypt.hash("resetme123", 10)
+      user = await db.user.create({ data: { email, passwordHash: defaultHash, centerId, groupId, isOperations, allCenters } })
+    } else {
+      const passwordHash = await bcrypt.hash(password, 10)
+      user = await db.user.create({ data: { email, passwordHash, centerId, groupId, isOperations, allCenters } })
+    }
   } else {
     const updateData: { passwordHash?: string; centerId: string | null; groupId: string | null; isOperations: boolean; allCenters: boolean } = { centerId, groupId, isOperations, allCenters }
     if (password) updateData.passwordHash = await bcrypt.hash(password, 10)
