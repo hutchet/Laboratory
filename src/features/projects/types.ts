@@ -37,3 +37,5 @@ export const PROJECT_PRIORITY_LABEL: Record<string, string> = {
   med: "Trung bình",
   low: "Thấp",
 }
+// Re-export for backward compatibility
+export type { Option } from "@/shared/types/common"

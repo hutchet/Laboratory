@@ -11,7 +11,7 @@ import { Perm } from "@/shared/lib/rbac-client"
 import { saveMember, deleteMember, resetMemberPassword } from "../actions"
 import { ACCESS_ROLE_LABEL, NEW_ACCESS_ROLE_OPTIONS, type MemberRow } from "../types"
 import type { CurrentMemberInfo } from "../queries"
-import type { Option } from "@/features/projects/types"
+import type { Option } from "@/shared/types/common"
 
 function initials(name: string) {
   return name.split(/\s+/).filter(Boolean).slice(-2).map((w) => w[0]).join("").toUpperCase()

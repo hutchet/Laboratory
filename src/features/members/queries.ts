@@ -1,7 +1,7 @@
 import { auth } from "@/shared/lib/auth"
 import { db } from "@/shared/lib/db"
 import type { MemberRow } from "./types"
-import type { Option } from "@/features/projects/types"
+import type { Option } from "@/shared/types/common"
 
 export async function listMembers(): Promise<MemberRow[]> {
   const rows = await db.member.findMany({ orderBy: { name: "asc" }, include: { center: true, group: true } })
