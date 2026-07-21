@@ -1,8 +1,6 @@
 "use client"
-import { useMemo, useState, useTransition } from "react"
+import { useEffect, useMemo, useState, useTransition } from "react"
 import { PageShell } from "@/shared/ui/page-shell"
-import { CustomSelect } from "@/shared/ui/custom-select"
-import { FilterBar } from "@/shared/ui/filter-bar"
 import { AddButton } from "@/shared/ui/add-button"
 import { FormModal } from "@/shared/ui/form-modal"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
@@ -78,10 +76,37 @@ export function PlanView({
       const projItems = items.filter((it) => it.testPlan?.project?.id === p.id)
       const projPacks = plan ? packs.filter((pk) => pk.testPlanId === plan.id) : []
       const passCount = projItems.filter((it) => it.result === "pass").length
+      const doneCount = projItems.filter((it) => it.result === "pass" || it.result === "fail" || it.result === "cancel").length
       const avgProgress = projItems.length ? Math.round(projItems.reduce((s, it) => s + (it.progress || 0), 0) / projItems.length) : 0
-      return { project: p, planTitle: plan?.title ?? null, packCount: projPacks.length, itemCount: projItems.length, passCount, avgProgress }
+      // Port 1:1 cua bien `status` trong renderPlanCardOverview() ban goc (dong 7218).
+      const status = plan ? (doneCount === projItems.length && projItems.length ? "Hoàn thành" : "Đang triển khai") : "Chưa có kế hoạch"
+      return { project: p, status, packCount: projPacks.length, itemCount: projItems.length, passCount, doneCount, avgProgress }
     })
   }, [projects, plans, packs, items])
+
+  // Port cua #page-title.title-back ban goc (dong 6458, 7228-7230; CSS globals.css
+  // ~dong 840): khi da chon 1 du an cu the, tieu de trang tren topbar (id="page-title",
+  // xem app/(app)/layout.tsx) tro thanh nut "back" - bam vao tieu de la ve lai danh
+  // sach the ke hoach theo du an. KHONG dung nut "Danh sach ke hoach" rieng va KHONG
+  // dung droplist chon du an (ban goc cung khong co - #plan-project-select la select
+  // an, chi dung noi bo).
+  useEffect(() => {
+    const el = document.getElementById("page-title")
+    if (!el) return
+    if (projectFilter) {
+      el.classList.add("title-back")
+      el.title = "Quay lại danh sách dự án"
+      const handler = () => setProjectFilter("")
+      el.addEventListener("click", handler)
+      return () => {
+        el.classList.remove("title-back")
+        el.removeAttribute("title")
+        el.removeEventListener("click", handler)
+      }
+    }
+    el.classList.remove("title-back")
+    el.removeAttribute("title")
+  }, [projectFilter])
 
   // Overview KPIs (mirrors renderPlanOverview: totals, avg progress, status breakdown, overdue count).
   const kpi = useMemo(() => {
@@ -224,32 +249,22 @@ export function PlanView({
     <PageShell
       title="Kế hoạch thử nghiệm"
       actions={projectFilter ? <AddButton label="Thêm bài thử" onClick={openNew} /> : undefined}
-      filters={(
-        <FilterBar
-          filterSlot={(
-            <CustomSelect
-              value={projectFilter}
-              onChange={setProjectFilter}
-              options={[{ value: "", label: "Tất cả dự án" }, ...projects.map((p) => ({ value: p.id, label: p.name }))]}
-              width={200}
-            />
-          )}
-        />
-      )}
     >
       {!projectFilter ? (
-        /* Ban ao: khi chua chon du an cu the, hien luoi the tom tat ke hoach
-           theo tung du an thay vi dashboard tong hop - bam vao 1 the de vao
+        /* Port 1:1 cua #plan-card-overview ban goc (dong 3746; CSS dong 848): luoi the
+           tom tat ke hoach theo tung du an - giu dung id de dung grid CSS
+           "repeat(auto-fit,minmax(300px,1fr))" (KHAC .proj-grid) - bam vao 1 the de vao
            dung ke hoach cua du an do. */
-        <div className="proj-grid">
-          {projectCards.map(({ project, planTitle, packCount, itemCount, passCount, avgProgress }) => (
+        <div id="plan-card-overview">
+          {projectCards.map(({ project, status, packCount, itemCount, passCount, doneCount, avgProgress }) => (
             <PlanCard
               key={project.id}
               projectName={project.name}
-              planTitle={planTitle}
+              status={status}
               packCount={packCount}
               itemCount={itemCount}
               passCount={passCount}
+              doneCount={doneCount}
               avgProgress={avgProgress}
               onClick={() => setProjectFilter(project.id)}
             />
@@ -257,10 +272,6 @@ export function PlanView({
         </div>
       ) : (
         <>
-          <button type="button" className="btn-line" style={{ marginBottom: 18 }} onClick={() => setProjectFilter("")}>
-            ← Danh sách kế hoạch
-          </button>
-
           <div className="kpis-tier" style={{ marginBottom: 18 }}>
             <KpiCard label="Tổng bài thử" value={kpi.total} hint="Trong kế hoạch" tone="neutral" />
             <KpiCard label="Đạt" value={kpi.pass} hint="Số bài đạt" tone="success" />
@@ -289,7 +300,7 @@ export function PlanView({
                   </div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600, marginBottom: 8, textAlign: "center" }}>Tỷ lệ đạt / không đạt</div>
+                  <div style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600, marginBottom: 8, textAlign: "center" }}>Tỷ lệ đạt / kh��ng đạt</div>
                   <div className="pl-donut-inline">
                     <DonutSvg size={110} segments={resultDonutSegments} />
                     <div className="pl-legend-side">

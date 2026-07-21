@@ -86,7 +86,10 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         <main className="main">
           <div className="top" style={{ padding: "0 20px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
             <div className="hello">
-              <h2><TopbarPageTitle /></h2>
+              {/* id="page-title" giu nguyen tu ban goc (dong 3129 vung/#page-title) - features
+                  nhu Plan (PlanView.tsx) gan them class "title-back" + onclick vao chinh phan
+                  tu nay khi can bien tieu de trang thanh nut quay lai (xem globals.css dong 840). */}
+              <h2 id="page-title"><TopbarPageTitle /></h2>
             </div>
             <div className="top-r" style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <TopSearch />

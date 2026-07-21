@@ -2,48 +2,57 @@ import type { MouseEventHandler } from "react"
 
 export type PlanCardProps = {
   projectName: string
-  planTitle?: string | null
+  status: string
   packCount: number
   itemCount: number
   passCount: number
+  doneCount: number
   avgProgress: number
   onClick?: MouseEventHandler<HTMLDivElement>
 }
 
 /**
- * The bao ke hoach thu nghiem theo du an - dung o trang danh sach ke hoach
- * (PlanView) khi chua chon 1 du an cu the. Dung lai class ".pcard" (giong
- * ProjectCard) de dong bo khung/nen/hover voi the du an; bam vao the de vao
- * dung ke hoach cua du an do.
+ * The tong quan ke hoach thu nghiem theo du an - trang danh sach ke hoach (PlanView)
+ * khi chua chon 1 du an cu the. Port 1:1 cua renderPlanCardOverview() ban goc
+ * (taskflow_original.html dong 7216-7219): dung class ".hub-card" (GIONG AuditPlan/
+ * Equipment/QuoteMatrix hub-card - KHONG dung ".pcard" nhu the du an o trang Du an).
+ * Cau truc dung 1:1 theo HTML goc:
+ *  - hub-top: icon 2 chu dau ten du an + ten + trang thai ke hoach + mui ten
+ *  - hub-tags: 3 tag rieng "N mau" / "N bai thu" / "N dat"
+ *  - plan-card-progress: dong "Tien do ke hoach" + % + thanh bar
+ *  - hub-stats: 3 o so lieu lon o duoi "Bai thu" / "Dat" / "Hoan tat" (x/y)
  */
-export function PlanCard({ projectName, planTitle, packCount, itemCount, passCount, avgProgress, onClick }: PlanCardProps) {
+export function PlanCard({ projectName, status, packCount, itemCount, passCount, doneCount, avgProgress, onClick }: PlanCardProps) {
+  const initial = (projectName || "DA").trim().slice(0, 2).toUpperCase()
   return (
     <div
-      className="pcard"
-      style={{ cursor: "pointer" }}
+      className="hub-card"
       onClick={onClick}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onClick?.(e as unknown as React.MouseEvent<HTMLDivElement>) }}
     >
-      <div className="pt">
-        <h4>{projectName}</h4>
-      </div>
-      <div className="tags">
-        <span className="tag2" style={{ background: "var(--neutral-soft)", color: "var(--muted)" }}>
-          {planTitle || "Chưa có kế hoạch"}
-        </span>
-      </div>
-      <div className="pbox">
-        <div className="prow">
-          <span>Tiến độ trung bình</span>
-          <b>{avgProgress}%</b>
+      <div className="hub-top">
+        <div className="hub-icon">{initial}</div>
+        <div className="hub-title">
+          <h4>{projectName}</h4>
+          <p>{status}</p>
         </div>
-        <div className="pbar"><i style={{ width: `${avgProgress}%` }} /></div>
-        <div className="pbox-sub">{packCount} mẫu · {itemCount} bài thử · {passCount} đạt</div>
+        <span className="hub-arrow sys-arrow-glyph">›</span>
       </div>
-      <div className="pfoot" style={{ justifyContent: "flex-end" }}>
-        <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--pri)" }}>Xem kế hoạch ›</span>
+      <div className="hub-tags">
+        <span className="hub-tag">{packCount} mẫu</span>
+        <span className="hub-tag">{itemCount} bài thử</span>
+        <span className="hub-tag">{passCount} đạt</span>
+      </div>
+      <div className="plan-card-progress">
+        <div className="line"><span>Tiến độ kế hoạch</span><b>{avgProgress}%</b></div>
+        <div className="bar"><i style={{ width: `${avgProgress}%` }} /></div>
+      </div>
+      <div className="hub-stats">
+        <div className="hub-stat"><b>{itemCount}</b><span>Bài thử</span></div>
+        <div className="hub-stat"><b style={{ color: "var(--green)" }}>{passCount}</b><span>Đạt</span></div>
+        <div className="hub-stat"><b>{doneCount}/{itemCount}</b><span>Hoàn tất</span></div>
       </div>
     </div>
   )
