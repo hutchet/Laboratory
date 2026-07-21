@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation"
 import { PageShell } from "@/shared/ui/page-shell"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { ActionIcon } from "@/shared/ui/icons"
+import { PlainSelect } from "@/shared/ui/plain-select"
 import { saveTheme, resetTheme, setSimRole, saveLanguage, requestFullBackup, restoreFullBackup, clearAllData } from "../actions"
 import { FONT_OPTIONS, SIM_ROLE_OPTIONS, LANGUAGE_OPTIONS } from "../types"
 import type { AppSettings, FontKey, Language, SimRole, ThemeMode } from "../types"
@@ -169,11 +170,11 @@ export function SettingsView({ settings }: { settings: AppSettings }) {
         <div className="ch"><h3>Vai trò &amp; phân quyền</h3><span>Chọn vai trò bạn muốn xem thử giao diện trong phiên này</span></div>
         <div className="th-row">
           <label>Vai trò hiện tại của bạn</label>
-          <select value={simRole} disabled={pending} onChange={(e) => handleSimRoleChange(e.target.value as SimRole)}>
+          <PlainSelect value={simRole} disabled={pending} onChange={(e) => handleSimRoleChange(e.target.value as SimRole)} wrapStyle={{ marginTop: 0 }}>
             {SIM_ROLE_OPTIONS.map((opt) => (
               <option key={opt.value || "default"} value={opt.value}>{opt.label}</option>
             ))}
-          </select>
+          </PlainSelect>
         </div>
         <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 6, lineHeight: 1.6 }}>
           Vai trò hiện tại: <b style={{ color: "var(--ink)" }}>{settings.activeRoleLabel}</b><br />
@@ -204,19 +205,19 @@ export function SettingsView({ settings }: { settings: AppSettings }) {
         </div>
         <div className="th-row">
           <label>Phông chữ</label>
-          <select value={font} disabled={pending} onChange={(e) => applyTheme(mode, e.target.value as FontKey)}>
+          <PlainSelect value={font} disabled={pending} onChange={(e) => applyTheme(mode, e.target.value as FontKey)} wrapStyle={{ marginTop: 0 }}>
             {FONT_OPTIONS.map((f) => (
               <option key={f.key} value={f.key}>{f.label}</option>
             ))}
-          </select>
+          </PlainSelect>
         </div>
         <div className="th-row">
           <label>Ngôn ngữ</label>
-          <select value={lang} disabled={pending} onChange={(e) => handleLanguageChange(e.target.value as Language)}>
+          <PlainSelect value={lang} disabled={pending} onChange={(e) => handleLanguageChange(e.target.value as Language)} wrapStyle={{ marginTop: 0 }}>
             {LANGUAGE_OPTIONS.map((l) => (
               <option key={l.value} value={l.value}>{l.label}</option>
             ))}
-          </select>
+          </PlainSelect>
         </div>
         <div className="note" style={{ marginTop: 12 }}>
           Bảng màu Material được khóa theo chế độ Sáng/Tối để bảo đảm độ tương phản. Nền thẻ luôn đặc

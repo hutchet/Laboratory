@@ -4,6 +4,7 @@ import { PageShell } from "@/shared/ui/page-shell"
 import { KpiCard } from "@/shared/ui/kpi-card"
 import { FormModal } from "@/shared/ui/form-modal"
 import { ArrowButton } from "@/shared/ui/arrow-button"
+import { PlainSelect } from "@/shared/ui/plain-select"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { saveBooking, deleteBooking } from "../actions"
 import type { BookingRow, EquipmentRow, Option } from "../types"
@@ -261,10 +262,10 @@ export function BookingsView({
             </div>
           )}
           <label style={{ fontSize: 12, fontWeight: 600 }}>Thiết bị *
-            <select name="equipmentId" required defaultValue={editing?.equipmentId ?? slotPrefill?.equipmentId ?? ""} style={fieldStyle}>
+            <PlainSelect name="equipmentId" required defaultValue={editing?.equipmentId ?? slotPrefill?.equipmentId ?? ""} style={fieldStyle}>
               <option value="">—</option>
               {readyEquipment.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
-            </select>
+            </PlainSelect>
           </label>
           <div style={{ display: "flex", gap: 12 }}>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Bắt đầu *
@@ -275,10 +276,10 @@ export function BookingsView({
             </label>
           </div>
           <label style={{ fontSize: 12, fontWeight: 600 }}>Trung tâm
-            <select name="centerId" defaultValue={editing?.centerId ?? ""} style={fieldStyle}>
+            <PlainSelect name="centerId" defaultValue={editing?.centerId ?? ""} style={fieldStyle}>
               <option value="">—</option>
               {centers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
+            </PlainSelect>
           </label>
           <div style={{ display: "flex", gap: 12 }}>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Người đặt *

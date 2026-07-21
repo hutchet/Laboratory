@@ -7,6 +7,7 @@ import { IconButton } from "@/shared/ui/icon-button"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { KpiCard } from "@/shared/ui/kpi-card"
 import { SearchInput } from "@/shared/ui/search-input"
+import { PlainSelect } from "@/shared/ui/plain-select"
 import { Perm } from "@/shared/lib/rbac-client"
 import { saveCenter, deleteCenter, saveGroup, deleteGroup, grantViewerAccess, revokeViewerAccess } from "../actions"
 import type { CenterRow, GroupRow, ViewerAccessGrant, ViewerCandidate } from "../types"
@@ -159,10 +160,10 @@ export function CentersView({ centers, groups = [], memberOptions = [], viewerCa
                         </div>
                         <div className="field" style={{flex:1,minWidth:140}}>
                           <label style={{fontSize:11}}>Trưởng nhóm</label>
-                          <select name="teamLeadId" defaultValue={editingGroup&&editingGroup.centerId===c.id?editingGroup.teamLeadId??"":""}>
+                          <PlainSelect name="teamLeadId" defaultValue={editingGroup&&editingGroup.centerId===c.id?editingGroup.teamLeadId??"":""} wrapStyle={{marginTop:0}}>
                             <option value="">— Chưa có —</option>
                             {memberOptions.map(m=><option key={m.id} value={m.id}>{m.name}</option>)}
-                          </select>
+                          </PlainSelect>
                         </div>
                         <button type="submit" className="btn-pri" style={{padding:"7px 12px",fontSize:12}} disabled={pending}>{editingGroup&&editingGroup.centerId===c.id?"Lưu":"Thêm"}</button>
                         {editingGroup&&editingGroup.centerId===c.id&&<button type="button" className="btn-line" style={{padding:"7px 12px",fontSize:12}} onClick={()=>setEditingGroup(null)}>Huỷ</button>}
@@ -194,10 +195,10 @@ export function CentersView({ centers, groups = [], memberOptions = [], viewerCa
                         <form onSubmit={e=>{e.preventDefault();handleGrantSubmit(c.id,new FormData(e.currentTarget));e.currentTarget.reset()}} style={{display:"flex",gap:8,marginTop:10,flexWrap:"wrap",alignItems:"flex-end"}}>
                           <div className="field" style={{flex:1,minWidth:180}}>
                             <label style={{fontSize:11}}>Cấp quyền xem cho</label>
-                            <select name="viewerUserId" required defaultValue="">
+                            <PlainSelect name="viewerUserId" required defaultValue="" wrapStyle={{marginTop:0}}>
                               <option value="" disabled>— Chọn tài khoản Chỉ xem —</option>
                               {viewerCandidates.map(v=><option key={v.userId} value={v.userId}>{v.name}{v.email?` (${v.email})`:""}</option>)}
-                            </select>
+                            </PlainSelect>
                           </div>
                           <button type="submit" className="btn-pri" style={{padding:"7px 12px",fontSize:12}} disabled={pending}>Cấp quyền</button>
                         </form>

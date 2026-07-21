@@ -4,6 +4,7 @@ import { PageShell } from "@/shared/ui/page-shell"
 import { FilterBar } from "@/shared/ui/filter-bar"
 import { DataTable, type DataTableColumn } from "@/shared/ui/data-table"
 import { FormModal } from "@/shared/ui/form-modal"
+import { PlainSelect } from "@/shared/ui/plain-select"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { StatusBadge } from "@/shared/ui/status-badge"
 import { Perm } from "@/shared/lib/rbac-client"
@@ -119,16 +120,16 @@ export function OverviewView({ quotes, customers, projects }: { quotes: QuoteRow
           </label>
           <div style={{ display: "flex", gap: 12 }}>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Khách hàng
-              <select name="customerId" defaultValue={editing?.customerId ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
+              <PlainSelect name="customerId" defaultValue={editing?.customerId ?? ""}>
                 <option value="">—</option>
                 {customers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
+              </PlainSelect>
             </label>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Dự án
-              <select name="projectId" defaultValue={editing?.projectId ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
+              <PlainSelect name="projectId" defaultValue={editing?.projectId ?? ""}>
                 <option value="">—</option>
                 {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
+              </PlainSelect>
             </label>
           </div>
           <div style={{ display: "flex", gap: 12 }}>
@@ -144,12 +145,12 @@ export function OverviewView({ quotes, customers, projects }: { quotes: QuoteRow
               <input type="number" name="totalAmount" defaultValue={editing?.totalAmount ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
             </label>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Trạng thái
-              <select name="status" defaultValue={editing?.status ?? "draft"} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
+              <PlainSelect name="status" defaultValue={editing?.status ?? "draft"}>
                 <option value="draft">Bản nháp</option>
                 <option value="sent">Đã gửi</option>
                 <option value="approved">Đã duyệt</option>
                 <option value="rejected">Bị từ chối</option>
-              </select>
+              </PlainSelect>
             </label>
           </div>
         </form>

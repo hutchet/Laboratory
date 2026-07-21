@@ -637,7 +637,7 @@ export function PlanView({
           )}
           <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
             <label style={{ fontSize: 12, fontWeight: 600 }}>Thiết bị thử nghiệm
-              <PlainSelect name="equipmentId" defaultValue={tiEquipmentId} onChange={(e) => setTiEquipmentId(e.target.value)}>
+              <PlainSelect name="equipmentId" value={tiEquipmentId} onChange={(e) => setTiEquipmentId(e.target.value)}>
                 <option value="">— Không chọn —</option>
                 {equipmentOptions.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
               </PlainSelect>

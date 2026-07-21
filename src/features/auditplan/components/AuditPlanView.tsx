@@ -5,6 +5,7 @@ import { FilterBar } from "@/shared/ui/filter-bar"
 import { KpiCard } from "@/shared/ui/kpi-card"
 import { DataTable, type DataTableColumn } from "@/shared/ui/data-table"
 import { FormModal } from "@/shared/ui/form-modal"
+import { PlainSelect } from "@/shared/ui/plain-select"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { StatusBadge } from "@/shared/ui/status-badge"
 import { Perm } from "@/shared/lib/rbac-client"
@@ -285,9 +286,9 @@ export function AuditPlanView({
         </div>
       </div>
       <FilterBar search={{ value: search, onChange: setSearch, placeholder: "Tìm theo tên hạng mục hoặc phụ trách…" }}>
-        <select value={visiblePlanId} onChange={(e) => setActivePlanId(e.target.value)} style={{ padding: 8, borderRadius: 6, border: "1px solid #dfe3e8" }}>
+        <PlainSelect value={visiblePlanId} onChange={(e) => setActivePlanId(e.target.value)} wrapStyle={{ marginTop: 0 }}>
           {plans.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
-        </select>
+        </PlainSelect>
       </FilterBar>
       <DataTable columns={itemColumns} rows={scopedItems} rowKey={(it) => it.id} loading={pending} emptyTitle="Chưa có hạng mục nào" />
 
@@ -300,11 +301,11 @@ export function AuditPlanView({
             <input type="date" name="scheduledAt" style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
           </label>
           <label style={{ fontSize: 12, fontWeight: 600 }}>Trạng thái
-            <select name="status" defaultValue="planned" style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
+            <PlainSelect name="status" defaultValue="planned">
               <option value="planned">Đã lập kế hoạch</option>
               <option value="in_progress">Đang thực hiện</option>
               <option value="done">Hoàn thành</option>
-            </select>
+            </PlainSelect>
           </label>
         </form>
       </FormModal>
@@ -312,10 +313,10 @@ export function AuditPlanView({
       <FormModal open={showPhaseForm} title="Thêm giai đoạn" onClose={() => setShowPhaseForm(false)} onSubmit={() => { const f = document.getElementById("tf-auditphase-form") as HTMLFormElement | null; if (f) submitPhase(new FormData(f)) }} submitting={pending}>
         <form id="tf-auditphase-form" onSubmit={(e) => e.preventDefault()} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <label style={{ fontSize: 12, fontWeight: 600 }}>Kế hoạch *
-            <select name="auditPlanId" required defaultValue={visiblePlanId} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
+            <PlainSelect name="auditPlanId" required defaultValue={visiblePlanId}>
               <option value="">—</option>
               {plans.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
-            </select>
+            </PlainSelect>
           </label>
           <label style={{ fontSize: 12, fontWeight: 600 }}>Tên giai đoạn *
             <input name="name" required style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
@@ -329,16 +330,16 @@ export function AuditPlanView({
       <FormModal open={showItemForm} title={editingItem ? "Sửa hạng mục" : "Thêm hạng mục"} onClose={() => { setShowItemForm(false); setEditingItem(null) }} onSubmit={() => { const f = document.getElementById("tf-audititem-form") as HTMLFormElement | null; if (f) submitItem(new FormData(f)) }} submitting={pending}>
         <form key={editingItem?.id ?? "new"} id="tf-audititem-form" onSubmit={(e) => e.preventDefault()} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <label style={{ fontSize: 12, fontWeight: 600 }}>Kế hoạch *
-            <select name="auditPlanId" required defaultValue={editingItem?.auditPlanId ?? visiblePlanId} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
+            <PlainSelect name="auditPlanId" required defaultValue={editingItem?.auditPlanId ?? visiblePlanId}>
               <option value="">—</option>
               {plans.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
-            </select>
+            </PlainSelect>
           </label>
           <label style={{ fontSize: 12, fontWeight: 600 }}>Giai đoạn
-            <select name="phaseId" defaultValue={editingItem?.phaseId ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
+            <PlainSelect name="phaseId" defaultValue={editingItem?.phaseId ?? ""}>
               <option value="">—</option>
               {phases.map((ph) => <option key={ph.id} value={ph.id}>{ph.name}</option>)}
-            </select>
+            </PlainSelect>
           </label>
           <label style={{ fontSize: 12, fontWeight: 600 }}>Tên hạng mục *
             <input name="name" required defaultValue={editingItem?.name ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
@@ -348,11 +349,11 @@ export function AuditPlanView({
               <input name="assignee" defaultValue={editingItem?.assignee ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
             </label>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Trạng thái
-              <select name="status" defaultValue={editingItem?.status ?? "planned"} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
+              <PlainSelect name="status" defaultValue={editingItem?.status ?? "planned"}>
                 <option value="planned">Đã lập kế hoạch</option>
                 <option value="in_progress">Đang thực hiện</option>
                 <option value="done">Hoàn thành</option>
-              </select>
+              </PlainSelect>
             </label>
           </div>
           <div style={{ display: "flex", gap: 12 }}>

@@ -11,27 +11,31 @@ export function PlainSelect({
   required,
   disabled,
   defaultValue,
+  value,
   onChange,
   children,
   style,
   flex,
+  wrapStyle,
 }: {
   name?: string
   required?: boolean
   disabled?: boolean
   defaultValue?: string
+  value?: string
   onChange?: ChangeEventHandler<HTMLSelectElement>
   children: ReactNode
   style?: CSSProperties
   flex?: number
+  wrapStyle?: CSSProperties
 }) {
   return (
-    <div className="sys-select-wrap" style={{ marginTop: 4, flex }}>
+    <div className="sys-select-wrap" style={{ marginTop: 4, flex, ...wrapStyle }}>
       <select
         name={name}
         required={required}
         disabled={disabled}
-        defaultValue={defaultValue}
+        {...(value !== undefined ? { value } : { defaultValue })}
         onChange={onChange}
         style={{
           padding: "8px 40px 8px 8px",

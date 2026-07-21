@@ -7,6 +7,7 @@ import { FormModal } from "@/shared/ui/form-modal"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { StatusBadge } from "@/shared/ui/status-badge"
 import { ChipFilterDropdown, type ChipFilterOption } from "@/shared/ui/chip-filter"
+import { PlainSelect } from "@/shared/ui/plain-select"
 import { Perm } from "@/shared/lib/rbac-client"
 import { saveEquipment, deleteEquipment, bulkDeleteEquipment } from "../actions"
 import { EQUIPMENT_STATUS_LABEL, CAL_STATUS_LABEL, equipmentCalStatus, type EquipmentRow, type Option } from "../types"
@@ -197,10 +198,10 @@ export function EquipmentView({ equipment, centers }: { equipment: EquipmentRow[
           </div>
           <div style={{ display: "flex", gap: 12 }}>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Trung tâm
-              <select name="centerId" defaultValue={editing?.centerId ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
+              <PlainSelect name="centerId" defaultValue={editing?.centerId ?? ""}>
                 <option value="">—</option>
                 {centers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
+              </PlainSelect>
             </label>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Phòng
               <input name="room" defaultValue={editing?.room ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
@@ -211,12 +212,12 @@ export function EquipmentView({ equipment, centers }: { equipment: EquipmentRow[
               <input name="hourlyRate" type="number" defaultValue={editing?.hourlyRate ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
             </label>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Trạng thái
-              <select name="status" defaultValue={editing?.status ?? "active"} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
+              <PlainSelect name="status" defaultValue={editing?.status ?? "active"}>
                 <option value="active">Hoạt động</option>
                 <option value="maintenance">Bảo trì</option>
                 <option value="broken">Hỏng</option>
                 <option value="idle">Ngừng dùng</option>
-              </select>
+              </PlainSelect>
             </label>
           </div>
           <div style={{ display: "flex", gap: 12, borderTop: "1px solid #dfe3e8", paddingTop: 12 }}>

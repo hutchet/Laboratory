@@ -9,6 +9,7 @@ import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { StatusBadge } from "@/shared/ui/status-badge"
 import { KpiCard } from "@/shared/ui/kpi-card"
 import { IconButton } from "@/shared/ui/icon-button"
+import { PlainSelect } from "@/shared/ui/plain-select"
 import { Perm } from "@/shared/lib/rbac-client"
 import { saveSample, deleteSample } from "../actions"
 import { SAMPLE_STATUS_LABEL, SAMPLE_STATUS_ORDER, groupSamplesByProject, type SampleRow, type Option } from "../types"
@@ -177,16 +178,16 @@ export function SamplesView({ samples, customers, projects }: { samples: SampleR
           </div>
           <div style={{ display: "flex", gap: 12 }}>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Dự án
-              <select name="projectId" defaultValue={editing?.projectId ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
+              <PlainSelect name="projectId" defaultValue={editing?.projectId ?? ""}>
                 <option value="">—</option>
                 {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
+              </PlainSelect>
             </label>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Khách hàng
-              <select name="customerId" defaultValue={editing?.customerId ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
+              <PlainSelect name="customerId" defaultValue={editing?.customerId ?? ""}>
                 <option value="">—</option>
                 {customers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
+              </PlainSelect>
             </label>
           </div>
           <div style={{ display: "flex", gap: 12 }}>
@@ -198,10 +199,10 @@ export function SamplesView({ samples, customers, projects }: { samples: SampleR
             </label>
           </div>
           <label style={{ fontSize: 12, fontWeight: 600 }}>Trạng thái mẫu
-            <select name="status" defaultValue={editing?.status ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
+            <PlainSelect name="status" defaultValue={editing?.status ?? ""}>
               <option value="">— Tự động —</option>
               {SAMPLE_STATUS_ORDER.map((s) => <option key={s} value={s}>{SAMPLE_STATUS_LABEL[s]}</option>)}
-            </select>
+            </PlainSelect>
           </label>
           <div style={{ fontSize: 12, color: "#9aa1ab" }}>Để trống để trạng thái tự suy ra từ tiến độ bài thử liên kết (giống hành vi bản gốc); chỉ chọn thủ công khi cần ghi đè.</div>
         </form>

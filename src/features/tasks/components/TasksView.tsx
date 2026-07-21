@@ -8,6 +8,7 @@ import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { StatusBadge } from "@/shared/ui/status-badge"
 import { AvatarInitials } from "@/shared/ui/avatar-initials"
 import { ChipFilterDropdown, type ChipFilterOption } from "@/shared/ui/chip-filter"
+import { PlainSelect } from "@/shared/ui/plain-select"
 import { saveTask, deleteTask } from "../actions"
 import { STATUS_LABEL, PRIORITY_LABEL, type TaskRow, type Option } from "../types"
 
@@ -247,39 +248,39 @@ export function TasksView({ tasks, projects, members, initialQuery }: TasksViewP
           <div style={{ display: "flex", gap: 12 }}>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>
               Dự án
-              <select name="projectId" defaultValue={editing?.projectId ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
+              <PlainSelect name="projectId" defaultValue={editing?.projectId ?? ""}>
                 <option value="">—</option>
                 {projects.map((p) => (
                   <option key={p.id} value={p.id}>{p.name}</option>
                 ))}
-              </select>
+              </PlainSelect>
             </label>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>
               Phụ trách
-              <select name="assigneeId" defaultValue={editing?.assigneeId ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
+              <PlainSelect name="assigneeId" defaultValue={editing?.assigneeId ?? ""}>
                 <option value="">—</option>
                 {members.map((m) => (
                   <option key={m.id} value={m.id}>{m.name}</option>
                 ))}
-              </select>
+              </PlainSelect>
             </label>
           </div>
           <div style={{ display: "flex", gap: 12 }}>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>
               Ưu tiên
-              <select name="priority" defaultValue={editing?.priority ?? "med"} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
+              <PlainSelect name="priority" defaultValue={editing?.priority ?? "med"}>
                 <option value="high">Cao</option>
                 <option value="med">Trung bình</option>
                 <option value="low">Thấp</option>
-              </select>
+              </PlainSelect>
             </label>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>
               Trạng thái
-              <select name="status" defaultValue={editing?.status ?? "todo"} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
+              <PlainSelect name="status" defaultValue={editing?.status ?? "todo"}>
                 <option value="todo">Chưa làm</option>
                 <option value="doing">Đang làm</option>
                 <option value="done">Hoàn thành</option>
-              </select>
+              </PlainSelect>
             </label>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>
               Hạn chốt

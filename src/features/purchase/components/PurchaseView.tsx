@@ -5,6 +5,7 @@ import { FilterBar } from "@/shared/ui/filter-bar"
 import { DataTable, type DataTableColumn } from "@/shared/ui/data-table"
 import { KpiCard } from "@/shared/ui/kpi-card"
 import { FormModal } from "@/shared/ui/form-modal"
+import { PlainSelect } from "@/shared/ui/plain-select"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { StatusBadge } from "@/shared/ui/status-badge"
 import { savePurchaseItem, deletePurchaseItem, bulkDeletePurchaseItems } from "../actions"
@@ -325,21 +326,21 @@ function PurchaseFormModal({
           <input name="pic" defaultValue={editing?.pic ?? ""} placeholder="PIC ngoài lab" style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
         </label>
         <label style={{ fontSize: 12, fontWeight: 600 }}>Người phụ trách
-          <select name="owner" defaultValue={editing?.owner ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
+          <PlainSelect name="owner" defaultValue={editing?.owner ?? ""}>
             <option value="">— Chọn người phụ trách —</option>
             {members.map((m) => <option key={m.id} value={m.name}>{m.name}</option>)}
-          </select>
+          </PlainSelect>
         </label>
         <label style={{ fontSize: 12, fontWeight: 600 }}>Trung tâm
-          <select name="lab" defaultValue={editing?.lab ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
+          <PlainSelect name="lab" defaultValue={editing?.lab ?? ""}>
             <option value="">— Chọn trung tâm —</option>
             {centers.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
-          </select>
+          </PlainSelect>
         </label>
         <label style={{ fontSize: 12, fontWeight: 600 }}>Trạng thái
-          <select name="status" defaultValue={editing?.status ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
+          <PlainSelect name="status" defaultValue={editing?.status ?? ""}>
             {["", "On-going", "Done", "Chậm", "Hủy"].map((s) => <option key={s} value={s}>{s || "—"}</option>)}
-          </select>
+          </PlainSelect>
         </label>
         <label style={{ fontSize: 12, fontWeight: 600, gridColumn: "1 / -1" }}>Tên hạng mục *
           <input name="name" required defaultValue={editing?.name ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
