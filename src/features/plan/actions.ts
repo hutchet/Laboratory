@@ -108,3 +108,12 @@ export async function deleteTestPack(id: string) {
   await db.testPack.delete({ where: { id } })
   revalidatePath("/plan")
 }
+
+// Xoa hang loat bai thu (ban ao) - dung cho cong cu chinh sua hang loat o
+// khu "Mau thu nghiem va bai thu" (chon nhieu checkbox -> 1 nut xoa).
+export async function bulkDeleteTestItems(ids: string[]) {
+  await requirePermission("delete")
+  if (!ids.length) return
+  await db.testItem.deleteMany({ where: { id: { in: ids } } })
+  revalidatePath("/plan")
+}

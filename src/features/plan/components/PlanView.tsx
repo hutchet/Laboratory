@@ -10,9 +10,11 @@ import { StatusBadge } from "@/shared/ui/status-badge"
 import { KpiCard } from "@/shared/ui/kpi-card"
 import { DonutSvg } from "@/shared/ui/donut-svg"
 import { DateField } from "@/shared/ui/date-field"
+import { IconButton } from "@/shared/ui/icon-button"
 import { GanttChart } from "./GanttChart"
+import { PlanCard } from "./PlanCard"
 import { Perm } from "@/shared/lib/rbac-client"
-import { saveTestItem, deleteTestItem, saveTestPack, deleteTestPack } from "../actions"
+import { saveTestItem, deleteTestItem, saveTestPack, deleteTestPack, bulkDeleteTestItems } from "../actions"
 import { RESULT_LABEL, RESULT_COLOR, autoStatus, isOverdue, type TestItemRow, type TestPackRow, type TestPlanRow, type Option } from "../types"
 
 // Port cua renderPlanOverview() ban goc (dong 7022-7043): 2 donut rieng
@@ -46,8 +48,15 @@ export function PlanView({
   const [showForm, setShowForm] = useState(false)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [showPackForm, setShowPackForm] = useState(false)
+  const [editingPack, setEditingPack] = useState<TestPackRow | null>(null)
   const [newItemPackId, setNewItemPackId] = useState<string>("")
   const [confirmDeletePackId, setConfirmDeletePackId] = useState<string | null>(null)
+  // Ban ao: bo cong cu chinh sua hang loat bai thu trong khu "Mau thu nghiem
+  // va bai thu" - bat/tat bang nut "Chinh sua"/"Xong", chon nhieu qua
+  // checkbox roi xoa 1 lan qua bulkDeleteTestItems.
+  const [editMode, setEditMode] = useState(false)
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set())
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false)
   const [pending, startTransition] = useTransition()
 
   const scopedItems = useMemo(
@@ -58,6 +67,21 @@ export function PlanView({
     const planIds = new Set(plans.filter((p) => !projectFilter || p.projectId === projectFilter).map((p) => p.id))
     return packs.filter((p) => planIds.has(p.testPlanId))
   }, [packs, plans, projectFilter])
+
+  // Ban ao: trang danh sach dang the (card) theo du an - hien khi CHUA chon
+  // 1 du an cu the (projectFilter rong). Moi the: ten du an, tieu de ke
+  // hoach (neu co), so mau/bai thu/dat, tien do trung binh; bam vao the de
+  // vao dung Ke hoach thu nghiem cua du an do (projectFilter = project.id).
+  const projectCards = useMemo(() => {
+    return projects.map((p) => {
+      const plan = plans.find((pl) => pl.projectId === p.id)
+      const projItems = items.filter((it) => it.testPlan?.project?.id === p.id)
+      const projPacks = plan ? packs.filter((pk) => pk.testPlanId === plan.id) : []
+      const passCount = projItems.filter((it) => it.result === "pass").length
+      const avgProgress = projItems.length ? Math.round(projItems.reduce((s, it) => s + (it.progress || 0), 0) / projItems.length) : 0
+      return { project: p, planTitle: plan?.title ?? null, packCount: projPacks.length, itemCount: projItems.length, passCount, avgProgress }
+    })
+  }, [projects, plans, packs, items])
 
   // Overview KPIs (mirrors renderPlanOverview: totals, avg progress, status breakdown, overdue count).
   const kpi = useMemo(() => {
@@ -154,14 +178,17 @@ export function PlanView({
     const id = confirmDeleteId
     startTransition(async () => { await deleteTestItem(id); setConfirmDeleteId(null) })
   }
+  function openNewPack() { setEditingPack(null); setShowPackForm(true) }
+  function openEditPack(p: TestPackRow) { setEditingPack(p); setShowPackForm(true) }
   function handlePackSubmit(formData: FormData) {
     const input = {
+      id: editingPack?.id,
       projectId: String(formData.get("projectId") || "") || undefined,
       code: String(formData.get("code") || ""),
       serial: String(formData.get("serial") || "") || null,
       qty: formData.get("qty") ? Number(formData.get("qty")) : 1,
     }
-    startTransition(async () => { await saveTestPack(input); setShowPackForm(false) })
+    startTransition(async () => { await saveTestPack(input); setShowPackForm(false); setEditingPack(null) })
   }
   function confirmDeletePack() {
     if (!confirmDeletePackId) return
@@ -169,10 +196,34 @@ export function PlanView({
     startTransition(async () => { await deleteTestPack(id); setConfirmDeletePackId(null) })
   }
 
+  // Ban ao: chon/bo chon 1 bai thu, chon tat ca, va xoa hang loat cac bai da
+  // chon (dung chung 1 confirm dialog cho toan bo khu vuc dang loc).
+  function toggleSelectItem(id: string) {
+    setSelectedItems((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+  function toggleSelectAll() {
+    setSelectedItems((prev) => (prev.size === scopedItems.length ? new Set() : new Set(scopedItems.map((it) => it.id))))
+  }
+  function confirmBulkDeleteItems() {
+    const ids = Array.from(selectedItems)
+    startTransition(async () => {
+      await bulkDeleteTestItems(ids)
+      setSelectedItems(new Set())
+      setConfirmBulkDelete(false)
+    })
+  }
+
+  const unassignedItems = useMemo(() => scopedItems.filter((it) => !it.packId), [scopedItems])
+
   return (
     <PageShell
       title="Kế hoạch thử nghiệm"
-      actions={<AddButton label="Thêm bài thử" onClick={openNew} />}
+      actions={projectFilter ? <AddButton label="Thêm bài thử" onClick={openNew} /> : undefined}
       filters={(
         <FilterBar
           filterSlot={(
@@ -186,147 +237,242 @@ export function PlanView({
         />
       )}
     >
-      <div className="kpis-tier" style={{ marginBottom: 18 }}>
-        <KpiCard label="Tổng bài thử" value={kpi.total} hint="Trong kế hoạch" tone="neutral" />
-        <KpiCard label="Đạt" value={kpi.pass} hint="Số bài đạt" tone="success" />
-        <KpiCard label="Không đạt" value={kpi.fail} hint="Số bài không đạt" tone="danger" />
-        <KpiCard label="Đang thực hiện" value={kpi.ongoing} hint="Đang triển khai" tone="warning" />
-      </div>
-
-      <div className="card" style={{ marginBottom: 18 }}>
-        <div className="ch">
-          <h3>Tổng quan tiến độ &amp; kết quả</h3>
-          <span>Toàn bộ kế hoạch trong phạm vi đang lọc</span>
+      {!projectFilter ? (
+        /* Ban ao: khi chua chon du an cu the, hien luoi the tom tat ke hoach
+           theo tung du an thay vi dashboard tong hop - bam vao 1 the de vao
+           dung ke hoach cua du an do. */
+        <div className="proj-grid">
+          {projectCards.map(({ project, planTitle, packCount, itemCount, passCount, avgProgress }) => (
+            <PlanCard
+              key={project.id}
+              projectName={project.name}
+              planTitle={planTitle}
+              packCount={packCount}
+              itemCount={itemCount}
+              passCount={passCount}
+              avgProgress={avgProgress}
+              onClick={() => setProjectFilter(project.id)}
+            />
+          ))}
         </div>
-        {scopedItems.length === 0 ? (
-          <div className="empty">Chưa có bài thử nào trong phạm vi này.</div>
-        ) : (
-          <div className="pl-donut-wrap">
-            <div>
-              <div style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600, marginBottom: 8, textAlign: "center" }}>Theo trạng thái</div>
-              <div className="pl-donut-inline">
-                <DonutSvg size={110} segments={statusDonutSegments} />
-                <div className="pl-legend-side">
-                  {PLAN_STATUS_DONUT_KEYS.map((k) => (
-                    <div key={k} className="li"><span className="dot" style={{ background: RESULT_COLOR[k] }} />{RESULT_LABEL[k]}: <b>{kpi.byStatus[k] || 0}</b></div>
+      ) : (
+        <>
+          <button type="button" className="btn-line" style={{ marginBottom: 18 }} onClick={() => setProjectFilter("")}>
+            ← Danh sách kế hoạch
+          </button>
+
+          <div className="kpis-tier" style={{ marginBottom: 18 }}>
+            <KpiCard label="Tổng bài thử" value={kpi.total} hint="Trong kế hoạch" tone="neutral" />
+            <KpiCard label="Đạt" value={kpi.pass} hint="Số bài đạt" tone="success" />
+            <KpiCard label="Không đạt" value={kpi.fail} hint="Số bài không đạt" tone="danger" />
+            <KpiCard label="Đang thực hiện" value={kpi.ongoing} hint="Đang triển khai" tone="warning" />
+          </div>
+
+          <div className="card" style={{ marginBottom: 18 }}>
+            <div className="ch">
+              <h3>Tổng quan tiến độ &amp; kết quả</h3>
+              <span>Toàn bộ kế hoạch trong phạm vi đang lọc</span>
+            </div>
+            {scopedItems.length === 0 ? (
+              <div className="empty">Chưa có bài thử nào trong phạm vi này.</div>
+            ) : (
+              <div className="pl-donut-wrap">
+                <div>
+                  <div style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600, marginBottom: 8, textAlign: "center" }}>Theo trạng thái</div>
+                  <div className="pl-donut-inline">
+                    <DonutSvg size={110} segments={statusDonutSegments} />
+                    <div className="pl-legend-side">
+                      {PLAN_STATUS_DONUT_KEYS.map((k) => (
+                        <div key={k} className="li"><span className="dot" style={{ background: RESULT_COLOR[k] }} />{RESULT_LABEL[k]}: <b>{kpi.byStatus[k] || 0}</b></div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600, marginBottom: 8, textAlign: "center" }}>Tỷ lệ đạt / không đạt</div>
+                  <div className="pl-donut-inline">
+                    <DonutSvg size={110} segments={resultDonutSegments} />
+                    <div className="pl-legend-side">
+                      {PLAN_RESULT_DONUT_KEYS.map((k) => (
+                        <div key={k} className="li"><span className="dot" style={{ background: RESULT_COLOR[k] }} />{RESULT_LABEL[k]}: <b>{kpi.byStatus[k] || 0}</b></div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600, marginBottom: 6 }}>Tiến độ trung bình</div>
+                  <div className="pctbig">{kpi.avgProgress}%</div>
+                  <div style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600, marginTop: 14, marginBottom: 6 }}>Quá hạn kế hoạch</div>
+                  <div className="pctbig" style={{ fontSize: 22, color: "var(--red)" }}>{kpi.overdue} bài</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600, marginBottom: 8 }}>Khối lượng theo người phụ trách</div>
+                  {workload.length === 0 ? <div className="pl-mini-row">Chưa gán người phụ trách.</div> : workload.map(([name, count]) => (
+                    <div key={name} className="pl-hbar-row">
+                      <span className="pl-hbar-label" title={name}>{name}</span>
+                      <div className="pl-hbar-track"><div className="pl-hbar-fill" style={{ width: `${Math.round((count / maxWorkload) * 100)}%`, background: "var(--pri)" }} /></div>
+                      <span className="pl-hbar-val">{count}</span>
+                    </div>
+                  ))}
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600, marginBottom: 8 }}>Tiến độ theo mẫu</div>
+                  {scopedPacks.length === 0 ? <div className="pl-mini-row">Chưa có mẫu.</div> : (
+                    <div className="pl-pack-tiles">
+                      {scopedPacks.map((p) => {
+                        const its = scopedItems.filter((it) => it.packId === p.id)
+                        const done = its.filter((it) => it.result === "pass").length
+                        const pct = its.length ? Math.round((done / its.length) * 100) : 0
+                        const bg = pct >= 100 ? "var(--green)" : pct > 0 ? "#4f6cf7" : "var(--muted)"
+                        return (
+                          <div key={p.id} className="pl-pack-tile" style={{ background: bg }} title={`Mẫu ${p.code}: ${done}/${its.length} đạt`}>
+                            <div>{p.code}</div>
+                            <div className="pct">{pct}%</div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600, marginBottom: 8 }}>Tỷ lệ hoàn thành theo mức độ ưu tiên</div>
+                  {priorityStats.length === 0 ? <div className="pl-mini-row">Chưa có dữ liệu.</div> : priorityStats.map(([label, s]) => (
+                    <div key={label} className="pl-hbar-row">
+                      <span className="pl-hbar-label" title={label}>{label}</span>
+                      <div className="pl-hbar-track"><div className="pl-hbar-fill" style={{ width: `${s.total ? Math.round((s.done / s.total) * 100) : 0}%`, background: "var(--pri)" }} /></div>
+                      <span className="pl-hbar-val">{s.done}/{s.total}</span>
+                    </div>
                   ))}
                 </div>
               </div>
+            )}
+          </div>
+
+          <div className="card" style={{ marginBottom: 18 }}>
+            <GanttChart
+              items={scopedItems}
+              packs={scopedPacks}
+              onEditItem={openEdit}
+              title="Sơ đồ Gantt kế hoạch thử nghiệm"
+              subtitle="Mỗi mẫu chạy một chuỗi bài thử tuần tự riêng"
+            />
+          </div>
+
+          <div className="card" style={{ marginBottom: 18 }}>
+            <div className="ch">
+              <h3>Mẫu thử nghiệm và bài thử</h3>
+              <span>{scopedPacks.length} mẫu</span>
             </div>
-            <div>
-              <div style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600, marginBottom: 8, textAlign: "center" }}>Tỷ lệ đạt / không đạt</div>
-              <div className="pl-donut-inline">
-                <DonutSvg size={110} segments={resultDonutSegments} />
-                <div className="pl-legend-side">
-                  {PLAN_RESULT_DONUT_KEYS.map((k) => (
-                    <div key={k} className="li"><span className="dot" style={{ background: RESULT_COLOR[k] }} />{RESULT_LABEL[k]}: <b>{kpi.byStatus[k] || 0}</b></div>
-                  ))}
-                </div>
+            <Perm minPerm="dept_head">
+              <div className="pl-toolbar">
+                <AddButton label="Thêm mẫu" onClick={openNewPack} />
+                <button
+                  type="button"
+                  className="btn-line"
+                  onClick={() => { setEditMode((v) => !v); setSelectedItems(new Set()) }}
+                >
+                  {editMode ? "Xong" : "Chỉnh sửa"}
+                </button>
+                {editMode && (
+                  <>
+                    <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "var(--muted)" }}>
+                      <input
+                        type="checkbox"
+                        checked={scopedItems.length > 0 && selectedItems.size === scopedItems.length}
+                        onChange={toggleSelectAll}
+                      />
+                      Chọn tất cả ({scopedItems.length})
+                    </label>
+                    <button
+                      type="button"
+                      className="btn-line"
+                      style={{ color: "var(--red)", borderColor: "var(--red)" }}
+                      disabled={selectedItems.size === 0}
+                      onClick={() => setConfirmBulkDelete(true)}
+                    >
+                      Xoá đã chọn ({selectedItems.size})
+                    </button>
+                  </>
+                )}
               </div>
-            </div>
-            <div>
-              <div style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600, marginBottom: 6 }}>Tiến độ trung bình</div>
-              <div className="pctbig">{kpi.avgProgress}%</div>
-              <div style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600, marginTop: 14, marginBottom: 6 }}>Quá hạn kế hoạch</div>
-              <div className="pctbig" style={{ fontSize: 22, color: "var(--red)" }}>{kpi.overdue} bài</div>
-            </div>
-            <div>
-              <div style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600, marginBottom: 8 }}>Khối lượng theo người phụ trách</div>
-              {workload.length === 0 ? <div className="pl-mini-row">Chưa gán người phụ trách.</div> : workload.map(([name, count]) => (
-                <div key={name} className="pl-hbar-row">
-                  <span className="pl-hbar-label" title={name}>{name}</span>
-                  <div className="pl-hbar-track"><div className="pl-hbar-fill" style={{ width: `${Math.round((count / maxWorkload) * 100)}%`, background: "var(--pri)" }} /></div>
-                  <span className="pl-hbar-val">{count}</span>
-                </div>
-              ))}
-            </div>
-            <div>
-              <div style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600, marginBottom: 8 }}>Tiến độ theo mẫu</div>
-              {scopedPacks.length === 0 ? <div className="pl-mini-row">Chưa có mẫu.</div> : (
-                <div className="pl-pack-tiles">
-                  {scopedPacks.map((p) => {
-                    const its = scopedItems.filter((it) => it.packId === p.id)
-                    const done = its.filter((it) => it.result === "pass").length
-                    const pct = its.length ? Math.round((done / its.length) * 100) : 0
-                    const bg = pct >= 100 ? "var(--green)" : pct > 0 ? "#4f6cf7" : "var(--muted)"
-                    return (
-                      <div key={p.id} className="pl-pack-tile" style={{ background: bg }} title={`Mẫu ${p.code}: ${done}/${its.length} đạt`}>
-                        <div>{p.code}</div>
-                        <div className="pct">{pct}%</div>
+            </Perm>
+            {scopedPacks.length === 0 && unassignedItems.length === 0 ? (
+              <div className="empty">Chưa có mẫu nào. Bấm &quot;+ Thêm mẫu&quot; để tạo mẫu đầu tiên.</div>
+            ) : (
+              <>
+                {scopedPacks.map((p) => {
+                  const packItems = scopedItems.filter((it) => it.packId === p.id)
+                  const done = packItems.filter((it) => it.result === "pass").length
+                  return (
+                    <div key={p.id} className="pl-pack-card">
+                      <div className="ph">
+                        <b>Mẫu {p.code}</b>
+                        <span style={{ fontSize: 11.5, color: "var(--muted)" }}>S/N: {p.serial || "—"} · SL: {p.qty ?? 1}</span>
+                        <span style={{ flex: 1 }} />
+                        <StatusBadge label={`${done}/${packItems.length} đạt`} tone={done >= packItems.length && packItems.length > 0 ? "success" : "neutral"} />
+                        <Perm minPerm="technician">
+                          <button type="button" className="btn-line" style={{ padding: "6px 10px", fontSize: 12 }} onClick={() => openNewItemForPack(p.id)}>+ Bài test</button>
+                        </Perm>
+                        <Perm minPerm="dept_head">
+                          <button type="button" className="txt-act" onClick={() => openEditPack(p)}>Sửa mẫu</button>
+                          <button type="button" className="txt-act del" onClick={() => setConfirmDeletePackId(p.id)}>Xóa mẫu</button>
+                        </Perm>
                       </div>
-                    )
-                  })}
-                </div>
-              )}
+                      {editMode && (
+                        <div style={{ padding: "0 14px 14px", display: "flex", flexDirection: "column", gap: 6 }}>
+                          {packItems.length === 0 ? (
+                            <div className="pl-mini-row">Chưa có bài thử trong mẫu này.</div>
+                          ) : packItems.map((it) => (
+                            <div key={it.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 8px", borderRadius: 8, background: "var(--surface-control)" }}>
+                              <input type="checkbox" checked={selectedItems.has(it.id)} onChange={() => toggleSelectItem(it.id)} />
+                              <span style={{ flex: 1, fontSize: 12.5 }}>{it.name}</span>
+                              <StatusBadge label={RESULT_LABEL[autoStatus(it)] ?? ""} tone={it.result === "pass" ? "success" : it.result === "fail" ? "danger" : "neutral"} />
+                              <IconButton icon="edit" title="Sửa" onClick={() => openEdit(it)} size={28} />
+                              <IconButton icon="delete" title="Xoá" variant="danger" onClick={() => setConfirmDeleteId(it.id)} size={28} />
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+                {unassignedItems.length > 0 && (
+                  <div className="pl-pack-card">
+                    <div className="ph">
+                      <b>Bài thử chưa gán mẫu</b>
+                      <span style={{ fontSize: 11.5, color: "var(--muted)" }}>{unassignedItems.length} bài</span>
+                    </div>
+                    {editMode && (
+                      <div style={{ padding: "0 14px 14px", display: "flex", flexDirection: "column", gap: 6 }}>
+                        {unassignedItems.map((it) => (
+                          <div key={it.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 8px", borderRadius: 8, background: "var(--surface-control)" }}>
+                            <input type="checkbox" checked={selectedItems.has(it.id)} onChange={() => toggleSelectItem(it.id)} />
+                            <span style={{ flex: 1, fontSize: 12.5 }}>{it.name}</span>
+                            <StatusBadge label={RESULT_LABEL[autoStatus(it)] ?? ""} tone={it.result === "pass" ? "success" : it.result === "fail" ? "danger" : "neutral"} />
+                            <IconButton icon="edit" title="Sửa" onClick={() => openEdit(it)} size={28} />
+                            <IconButton icon="delete" title="Xoá" variant="danger" onClick={() => setConfirmDeleteId(it.id)} size={28} />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          <div className="card">
+            <div className="ch">
+              <h3>Xuất báo cáo kế hoạch</h3>
+              <span>Tải danh sách bài thử chi tiết trong phạm vi đang lọc</span>
             </div>
-            <div>
-              <div style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600, marginBottom: 8 }}>Tỷ lệ hoàn thành theo mức độ ưu tiên</div>
-              {priorityStats.length === 0 ? <div className="pl-mini-row">Chưa có dữ liệu.</div> : priorityStats.map(([label, s]) => (
-                <div key={label} className="pl-hbar-row">
-                  <span className="pl-hbar-label" title={label}>{label}</span>
-                  <div className="pl-hbar-track"><div className="pl-hbar-fill" style={{ width: `${s.total ? Math.round((s.done / s.total) * 100) : 0}%`, background: "var(--pri)" }} /></div>
-                  <span className="pl-hbar-val">{s.done}/{s.total}</span>
-                </div>
-              ))}
+            <div style={{ display: "flex", gap: 8 }}>
+              <button type="button" className="btn-line" onClick={exportCsv}>⤓ Xuất Excel</button>
+              <button type="button" className="btn-line" onClick={() => window.print()}>⤓ Xuất PDF</button>
             </div>
           </div>
-        )}
-      </div>
-
-      <div className="card" style={{ marginBottom: 18 }}>
-        <GanttChart
-          items={scopedItems}
-          packs={scopedPacks}
-          onEditItem={openEdit}
-          title="Sơ đồ Gantt kế hoạch thử nghiệm"
-          subtitle="Mỗi mẫu chạy một chuỗi bài thử tuần tự riêng"
-        />
-      </div>
-
-      <div className="card" style={{ marginBottom: 18 }}>
-        <div className="ch">
-          <h3>Mẫu thử nghiệm và bài thử</h3>
-          <span>{scopedPacks.length} mẫu</span>
-        </div>
-        <Perm minPerm="dept_head">
-          <div style={{ marginBottom: 14 }}><AddButton label="Thêm mẫu" onClick={() => setShowPackForm(true)} /></div>
-        </Perm>
-        {scopedPacks.length === 0 ? (
-          <div className="empty">Chưa có mẫu nào. Bấm &quot;+ Thêm mẫu&quot; để tạo mẫu đầu tiên.</div>
-        ) : (
-          scopedPacks.map((p) => {
-            const packItems = scopedItems.filter((it) => it.packId === p.id)
-            const done = packItems.filter((it) => it.result === "pass").length
-            return (
-              <div key={p.id} className="pl-pack-card">
-                <div className="ph">
-                  <b>Mẫu {p.code}</b>
-                  <span style={{ fontSize: 11.5, color: "var(--muted)" }}>S/N: {p.serial || "—"} · SL: {p.qty ?? 1}</span>
-                  <span style={{ flex: 1 }} />
-                  <StatusBadge label={`${done}/${packItems.length} đạt`} tone={done >= packItems.length && packItems.length > 0 ? "success" : "neutral"} />
-                  <Perm minPerm="technician">
-                    <button type="button" className="btn-line" style={{ padding: "6px 10px", fontSize: 12 }} onClick={() => openNewItemForPack(p.id)}>+ Bài test</button>
-                  </Perm>
-                  <Perm minPerm="dept_head">
-                    <button type="button" className="txt-act del" onClick={() => setConfirmDeletePackId(p.id)}>Xóa mẫu</button>
-                  </Perm>
-                </div>
-              </div>
-            )
-          })
-        )}
-      </div>
-
-      <div className="card">
-        <div className="ch">
-          <h3>Xuất báo cáo kế hoạch</h3>
-          <span>Tải danh sách bài thử chi tiết trong phạm vi đang lọc</span>
-        </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button type="button" className="btn-line" onClick={exportCsv}>⤓ Xuất Excel</button>
-          <button type="button" className="btn-line" onClick={() => window.print()}>⤓ Xuất PDF</button>
-        </div>
-      </div>
+        </>
+      )}
 
       <FormModal
         open={showForm}
@@ -424,27 +570,27 @@ export function PlanView({
 
       <FormModal
         open={showPackForm}
-        title="Thêm mẫu"
-        onClose={() => setShowPackForm(false)}
+        title={editingPack ? "Sửa mẫu" : "Thêm mẫu"}
+        onClose={() => { setShowPackForm(false); setEditingPack(null) }}
         onSubmit={() => { const f = document.getElementById("tf-pack-form") as HTMLFormElement | null; if (f) handlePackSubmit(new FormData(f)) }}
         submitting={pending}
       >
-        <form id="tf-pack-form" onSubmit={(e) => e.preventDefault()} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <form key={editingPack?.id ?? "new-pack"} id="tf-pack-form" onSubmit={(e) => e.preventDefault()} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <label style={{ fontSize: 12, fontWeight: 600 }}>Dự án *
-            <select name="projectId" required defaultValue={projectFilter} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
+            <select name="projectId" required disabled={!!editingPack} defaultValue={projectFilter} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}>
               <option value="">—</option>
               {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
           </label>
           <label style={{ fontSize: 12, fontWeight: 600 }}>Mã mẫu *
-            <input name="code" required style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+            <input name="code" required defaultValue={editingPack?.code ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
           </label>
           <div style={{ display: "flex", gap: 12 }}>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Số seri
-              <input name="serial" style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+              <input name="serial" defaultValue={editingPack?.serial ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
             </label>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Số lượng
-              <input type="number" min={1} name="qty" defaultValue={1} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+              <input type="number" min={1} name="qty" defaultValue={editingPack?.qty ?? 1} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
             </label>
           </div>
         </form>
@@ -464,6 +610,14 @@ export function PlanView({
         description="Xoá mẫu này sẽ xoá tất cả bài thử liên quan. Tiếp tục?"
         onCancel={() => setConfirmDeletePackId(null)}
         onConfirm={confirmDeletePack}
+        danger
+      />
+      <ConfirmDialog
+        open={confirmBulkDelete}
+        title="Xoá bài thử đã chọn"
+        description={`Bạn có chắc muốn xoá ${selectedItems.size} bài thử đã chọn? Hành động này không thể hoàn tác.`}
+        onCancel={() => setConfirmBulkDelete(false)}
+        onConfirm={confirmBulkDeleteItems}
         danger
       />
     </PageShell>
