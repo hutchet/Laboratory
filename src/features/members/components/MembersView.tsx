@@ -8,7 +8,7 @@ import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { AvatarInitials } from "@/shared/ui/avatar-initials"
 import { StatusBadge } from "@/shared/ui/status-badge"
 import { Perm } from "@/shared/lib/rbac-client"
-import { saveMember, deleteMember } from "../actions"
+import { saveMember, deleteMember, resetMemberPassword } from "../actions"
 import { ACCESS_ROLE_LABEL, NEW_ACCESS_ROLE_OPTIONS, type MemberRow } from "../types"
 import type { CurrentMemberInfo } from "../queries"
 import type { Option } from "@/features/projects/types"
@@ -34,6 +34,11 @@ export function MembersView({
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [formCenterId, setFormCenterId] = useState<string>("")
   const [pending, startTransition] = useTransition()
+  // Additive — đặt lại mật khẩu đăng nhập cho thành viên (yêu cầu: admin có quyền
+  // reset mật khẩu của user). Chỉ hiện với Perm minPerm="dept_head" ở cột hành động.
+  const [resetPasswordFor, setResetPasswordFor] = useState<MemberRow | null>(null)
+  const [resetPasswordValue, setResetPasswordValue] = useState("")
+  const [resetPasswordError, setResetPasswordError] = useState<string | null>(null)
 
   const filtered = useMemo(() => members.filter((m) => !q || m.name.toLowerCase().includes(q.toLowerCase())), [members, q])
   const groupOptionsForForm = useMemo(() => groupOptions.filter((g) => !formCenterId || g.centerId === formCenterId), [groupOptions, formCenterId])
@@ -60,6 +65,21 @@ export function MembersView({
     if (!confirmDeleteId) return
     const id = confirmDeleteId
     startTransition(async () => { await deleteMember(id); setConfirmDeleteId(null) })
+  }
+  function closeResetPassword() { setResetPasswordFor(null); setResetPasswordValue(""); setResetPasswordError(null) }
+  function submitResetPassword() {
+    if (!resetPasswordFor) return
+    if (resetPasswordValue.trim().length < 6) { setResetPasswordError("Mật khẩu mới phải có ít nhất 6 ký tự"); return }
+    const id = resetPasswordFor.id
+    const newPassword = resetPasswordValue.trim()
+    startTransition(async () => {
+      try {
+        await resetMemberPassword(id, newPassword)
+        closeResetPassword()
+      } catch (e) {
+        setResetPasswordError(e instanceof Error ? e.message : "Có lỗi xảy ra")
+      }
+    })
   }
 
   const columns: Array<DataTableColumn<MemberRow>> = [
@@ -95,6 +115,9 @@ export function MembersView({
       key: "actions", header: "", align: "right",
       render: (m) => (
         <span style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+          <Perm minPerm="dept_head">
+            <button type="button" onClick={() => { setResetPasswordFor(m); setResetPasswordValue(""); setResetPasswordError(null) }} style={{ border: "none", background: "none", color: "#8a5cf6", cursor: "pointer" }}>Đặt lại MK</button>
+          </Perm>
           <Perm minPerm="director"><button type="button" onClick={() => openEdit(m)} style={{ border: "none", background: "none", color: "#1d5fd6", cursor: "pointer" }}>Sửa</button>
           <button type="button" onClick={() => setConfirmDeleteId(m.id)} style={{ border: "none", background: "none", color: "#c62828", cursor: "pointer" }}>Xoá</button></Perm>
         </span>
@@ -191,6 +214,38 @@ export function MembersView({
             <span style={{ display: "block", fontSize: 11, color: "#6b7280", marginTop: 2 }}>Nhập để tạo tài khoản đăng nhập ứng với email trên, hoặc đổi mật khẩu tài khoản đã có.</span>
           </label>
         </form>
+      </FormModal>
+
+      <FormModal
+        open={!!resetPasswordFor}
+        title={`Đặt lại mật khẩu — ${resetPasswordFor?.name ?? ""}`}
+        onClose={closeResetPassword}
+        onSubmit={submitResetPassword}
+        submitLabel="Đặt lại mật khẩu"
+        submitting={pending}
+      >
+        {resetPasswordFor && !resetPasswordFor.email ? (
+          <p style={{ fontSize: 12.5, color: "#c62828", background: "#fdecec", borderRadius: 8, padding: "8px 10px", margin: 0 }}>
+            Thành viên này chưa có email nên chưa thể có tài khoản đăng nhập — hãy thêm email ở form Sửa thành viên trước.
+          </p>
+        ) : (
+          <>
+            <label style={{ fontSize: 12, fontWeight: 600 }}>Mật khẩu mới
+              <input
+                type="password"
+                value={resetPasswordValue}
+                onChange={(e) => setResetPasswordValue(e.target.value)}
+                placeholder="Ít nhất 6 ký tự"
+                autoFocus
+                style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }}
+              />
+            </label>
+            <span style={{ display: "block", fontSize: 11, color: "#6b7280" }}>
+              Thành viên sẽ đăng nhập bằng email hoặc mã nhân viên hiện có kèm mật khẩu mới này.
+            </span>
+          </>
+        )}
+        {resetPasswordError && <p style={{ fontSize: 12, color: "#c62828", margin: 0 }}>{resetPasswordError}</p>}
       </FormModal>
 
       <ConfirmDialog open={!!confirmDeleteId} title="Xoá thành viên?" description="Hành động này không thể hoàn tác." danger onConfirm={confirmDelete} onCancel={() => setConfirmDeleteId(null)} />

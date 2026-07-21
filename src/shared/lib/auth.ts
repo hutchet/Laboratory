@@ -68,19 +68,35 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   },
   providers: [
     Credentials({
+      // Additive — cho phep dang nhap bang Email HOAC Ma nhan vien (Member.code), theo
+      // yeu cau thiet ke lai trang login. Truong "identifier" thay cho "email" cu; giu
+      // logic backward-compatible (neu ai truyen "email" thang vao thi van nhan duoc).
       credentials: {
-        email: { label: "Email", type: "email" },
+        identifier: { label: "Email hoặc Mã nhân viên", type: "text" },
         password: { label: "Password", type: "password" },
       },
       authorize: async (credentials) => {
-        if (!credentials?.email || !credentials?.password) return null
+        const rawIdentifier = credentials?.identifier as string | undefined
+        if (!rawIdentifier || !credentials?.password) return null
         try {
-          const user = await db.user.findUnique({ where: { email: credentials.email as string } })
+          const identifier = rawIdentifier.trim()
+          let email: string | null = null
+          if (identifier.includes("@")) {
+            email = identifier
+          } else {
+            // Dang nhap bang Ma nhan vien: tim Member theo code -> lay email tuong ung. Ma
+            // nhan vien khong bat buoc duy nhat trong schema — lay ban ghi co email dau
+            // tien tim thay (thuc te moi ma nen ung voi dung 1 thanh vien).
+            const member = await db.member.findFirst({ where: { code: identifier, email: { not: null } } })
+            email = member?.email ?? null
+          }
+          if (!email) return null
+          const user = await db.user.findUnique({ where: { email } })
           if (!user?.passwordHash) return null
           const valid = await bcrypt.compare(credentials.password as string, user.passwordHash)
           if (!valid) return null
           // Try to get display name from Member record
-          const member = await db.member.findFirst({ where: { email: credentials.email as string } })
+          const member = await db.member.findFirst({ where: { email } })
           return { id: user.id, email: user.email, name: member?.name ?? user.name ?? undefined }
         } catch (e) {
           console.error("authorize error:", e)

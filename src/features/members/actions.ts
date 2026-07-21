@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache"
 import bcrypt from "bcryptjs"
 import { auth } from "@/shared/lib/auth"
 import { db } from "@/shared/lib/db"
-import { can } from "@/shared/lib/rbac"
+import { can, getUserRbacContext, rankAtLeast, assertScopedAccess } from "@/shared/lib/rbac"
 import { logAudit } from "@/shared/lib/audit"
 
 async function requirePermission(action: "create" | "edit" | "delete") {
@@ -101,5 +101,38 @@ export async function deleteMember(id: string) {
   const existing = await db.member.findUnique({ where: { id } })
   await db.member.delete({ where: { id } })
   await logAudit("member", "delete", existing?.name || id, `Xoá thành viên “${existing?.name || id}”`)
+  revalidatePath("/members")
+}
+
+// Additive — cho phép Trưởng phòng trở lên (kể cả Giám đốc) đặt lại mật khẩu đăng
+// nhập của một thành viên khác mà không cần biết mật khẩu cũ, theo yêu cầu thiết kế
+// lại trang login (đăng nhập bằng mã nhân viên + admin có quyền reset mật khẩu user).
+// Đây là hành động nhạy cảm hơn "Sửa thành viên" thông thường nên kiểm tra rank trực
+// tiếp (rankAtLeast "dept_head") thay vì chỉ dựa vào quyền module members:edit, và vẫn
+// áp dụng assertScopedAccess để Trưởng phòng chỉ reset được cho thành viên trong đúng
+// Trung tâm của mình (Giám đốc/Nhóm vận hành thì không bị chặn theo Trung tâm).
+export async function resetMemberPassword(memberId: string, newPassword: string) {
+  const session = await auth()
+  const userId = session?.user?.id
+  if (!userId) throw new Error("Không có quyền: chưa đăng nhập")
+  const ctx = await getUserRbacContext(userId)
+  if (!rankAtLeast(ctx.rank, "dept_head")) {
+    throw new Error("Không có quyền: chỉ Trưởng phòng trở lên mới được đặt lại mật khẩu")
+  }
+  const trimmed = (newPassword || "").trim()
+  if (trimmed.length < 6) throw new Error("Mật khẩu mới phải có ít nhất 6 ký tự")
+
+  const member = await db.member.findUnique({ where: { id: memberId } })
+  if (!member) throw new Error("Không tìm thấy thành viên")
+  assertScopedAccess(ctx, "members", member)
+  if (!member.email) throw new Error("Thành viên chưa có email — cần thêm email trước khi đặt lại mật khẩu")
+
+  const passwordHash = await bcrypt.hash(trimmed, 10)
+  const user = await db.user.findUnique({ where: { email: member.email } })
+  if (!user) {
+    throw new Error("Thành viên chưa có tài khoản đăng nhập — hãy tạo tài khoản (nhập mật khẩu) ở form Sửa thành viên trước")
+  }
+  await db.user.update({ where: { id: user.id }, data: { passwordHash } })
+  await logAudit("member", "update", member.name, `Đặt lại mật khẩu đăng nhập cho “${member.name}”`)
   revalidatePath("/members")
 }
