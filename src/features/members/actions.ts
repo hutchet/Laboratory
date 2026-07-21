@@ -133,9 +133,29 @@ export async function resetMemberPassword(memberId: string, newPassword: string)
   const passwordHash = await bcrypt.hash(trimmed, 10)
   const user = await db.user.findUnique({ where: { email: member.email } })
   if (!user) {
-    throw new Error("Thành viên chưa có tài khoản đăng nhập — hãy tạo tài khoản (nhập mật khẩu) ở form Sửa thành viên trước")
+    // Auto-create User record from Member — allows login after first password set
+    const role = await db.role.findUnique({ where: { name: member.accessRole || "viewer" } })
+    const newUser = await db.user.create({
+      data: {
+        email: member.email,
+        passwordHash,
+        name: member.name,
+        centerId: member.centerId || null,
+        groupId: member.groupId || null,
+        isOperations: member.isOperations || false,
+        allCenters: false,
+      },
+    })
+    if (role) {
+      await db.userRole.upsert({
+        where: { userId_roleId: { userId: newUser.id, roleId: role.id } },
+        create: { userId: newUser.id, roleId: role.id },
+        update: {},
+      })
+    }
+  } else {
+    await db.user.update({ where: { id: user.id }, data: { passwordHash } })
   }
-  await db.user.update({ where: { id: user.id }, data: { passwordHash } })
   await logAudit("member", "update", member.name, `Đặt lại mật khẩu đăng nhập cho “${member.name}”`)
   revalidatePath("/members")
 }
