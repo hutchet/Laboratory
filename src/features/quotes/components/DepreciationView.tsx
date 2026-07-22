@@ -5,6 +5,8 @@ import { FilterBar } from "@/shared/ui/filter-bar"
 import { DataTable, type DataTableColumn } from "@/shared/ui/data-table"
 import { FormModal } from "@/shared/ui/form-modal"
 import { Perm } from "@/shared/lib/rbac-client"
+import { KpiCard } from "@/shared/ui/kpi-card"
+import { computeSimpleTrend } from "@/shared/lib/trend"
 import { saveDepreciationAsset } from "../actions"
 import type { DepreciationAssetRow } from "../types"
 import type { Option } from "@/features/projects/types"
@@ -102,6 +104,43 @@ export function DepreciationView({ items, centers = [] }: { items: DepreciationA
   const centerMissing = openGroup ? openGroup.items.filter((it) => !it.totalValue || !it.years).length : 0
   const centerPerHour = openGroup ? openGroup.items.reduce((a, it) => a + khPerHour(it.totalValue, it.years), 0) : 0
 
+  const dvTrendTotal = useMemo(() => computeSimpleTrend(items, () => true, (it) => (it as any).createdAt ?? it.id), [items])
+  const dvTrendValue = useMemo(() => {
+    const now = Date.now()
+    const day = 86400000
+    function valSnapshot(asOfMs: number) {
+      return items.filter((it) => new Date((it as any).createdAt ?? it.id).getTime() <= asOfMs)
+        .reduce((a, it) => a + (it.totalValue || 0), 0)
+    }
+    function pctChg(curr: number, prev: number) {
+      if (prev === 0) return curr === 0 ? { pct: 0, up: null as boolean | null } : { pct: 100, up: true }
+      const pct = Math.round(((curr - prev) / prev) * 100)
+      if (pct === 0) return { pct: 0, up: true }
+      return { pct: Math.abs(pct), up: pct >= 0 }
+    }
+    function sparklineFor() { const pts: number[] = []; for (let i = 6; i >= 0; i--) pts.push(valSnapshot(now - i * day)); return pts }
+    const curr = valSnapshot(now); const prev = valSnapshot(now - 7 * day)
+    const base = pctChg(curr, prev)
+    return { pct: base.pct, up: base.up, sparkline: sparklineFor() }
+  }, [items])
+  const dvTrendPerHour = useMemo(() => {
+    const now = Date.now(); const day = 86400000
+    function snap(asOfMs: number) {
+      return items.filter((it) => new Date((it as any).createdAt ?? it.id).getTime() <= asOfMs)
+        .reduce((a, it) => a + khPerHour(it.totalValue, it.years), 0)
+    }
+    function pctChg(c: number, p: number) {
+      if (p === 0) return c === 0 ? { pct: 0, up: null as boolean | null } : { pct: 100, up: true }
+      const pct = Math.round(((c - p) / p) * 100)
+      if (pct === 0) return { pct: 0, up: true }
+      return { pct: Math.abs(pct), up: pct >= 0 }
+    }
+    function sp() { const pts: number[] = []; for (let i = 6; i >= 0; i--) pts.push(snap(now - i * day)); return pts }
+    const c = snap(now); const p = snap(now - 7 * day); const b = pctChg(c, p)
+    return { pct: b.pct, up: b.up, sparkline: sp() }
+  }, [items])
+  const dvTrendMissing = useMemo(() => computeSimpleTrend(items, (it) => !it.totalValue || !it.years, (it) => (it as any).createdAt ?? it.id), [items])
+
   function openEdit(it: DepreciationAssetRow) { setEditing(it); setShowForm(true) }
   function handleSubmit(formData: FormData) {
     if (!editing) return
@@ -141,10 +180,10 @@ export function DepreciationView({ items, centers = [] }: { items: DepreciationA
       {!openGroup && (
         <>
           <div className="grid kpis" style={{ marginBottom: 16 }}>
-            <div className="kcard kb"><div className="v">{overview.total}</div><div className="l">Tổng tài sản</div><div className="s">Theo danh sách thiết bị</div></div>
-            <div className="kcard kg"><div className="v">{overview.totalValue.toLocaleString("vi-VN")}</div><div className="l">Tổng giá trị (VNĐ)</div><div className="s">Toàn bộ tài sản</div></div>
-            <div className="kcard kp"><div className="v">{overview.totalPerHour.toLocaleString("vi-VN")}</div><div className="l">Tổng khấu hao/giờ</div><div className="s">VNĐ/giờ</div></div>
-            <div className="kcard kr"><div className="v">{overview.missing}</div><div className="l">Thiếu dữ liệu</div><div className="s">Chưa nhập giá trị/số năm</div></div>
+            <KpiCard label="Tổng tài sản" value={overview.total} hint="Theo danh sách thiết bị" trend={dvTrendTotal} />
+            <KpiCard label="Tổng giá trị (VNĐ)" value={overview.totalValue.toLocaleString("vi-VN")} hint="Toàn bộ tài sản" tone="success" trend={dvTrendValue} />
+            <KpiCard label="Tổng khấu hao/giờ" value={overview.totalPerHour.toLocaleString("vi-VN")} hint="VNĐ/giờ" tone="warning" trend={dvTrendPerHour} />
+            <KpiCard label="Thiếu dữ liệu" value={overview.missing} hint="Chưa nhập giá trị/số năm" tone="danger" trend={dvTrendMissing} />
           </div>
 
           {groups.length === 0 ? (

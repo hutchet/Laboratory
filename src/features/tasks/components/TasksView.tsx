@@ -175,6 +175,7 @@ export function TasksView({ tasks, projects, members, centers, initialQuery }: T
       totalTasks: { ...pctChg(curr.total, prev.total), sparkline: sparklineFor("total") },
       overdue: { ...pctChg(curr.overdue, prev.overdue), sparkline: sparklineFor("overdue") },
       done: { ...pctChg(curr.done, prev.done), sparkline: sparklineFor("done") },
+      totalCenters: { pct: 0, up: null, sparkline: [] },
     }
   }, [tasks])
 
@@ -366,7 +367,7 @@ export function TasksView({ tasks, projects, members, centers, initialQuery }: T
       {!openCenterId && (
         <>
           <div className="kpis-tier" style={{ marginBottom: 20 }}>
-            <KpiCard label="Tổng trung tâm" value={hubKpis.totalCenters} />
+            <KpiCard label="Tổng trung tâm" value={hubKpis.totalCenters} trend={hubTrends.totalCenters} />
             <KpiCard label="Tổng công việc" value={hubKpis.totalTasks} tone="warning" trend={hubTrends.totalTasks} />
             <KpiCard label="Quá hạn" value={hubKpis.overdue} tone="danger" trend={hubTrends.overdue} />
             <KpiCard label="Hoàn thành" value={hubKpis.done} tone="success" trend={hubTrends.done} />

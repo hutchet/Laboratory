@@ -112,6 +112,30 @@ export function PurchaseView({
   const trendTotal = useMemo(() => computeSimpleTrend(items, () => true, (it) => it.createdAt), [items])
   const trendOngoing = useMemo(() => computeSimpleTrend(items, (it) => it.status === "On-going", (it) => it.createdAt), [items])
   const trendDone = useMemo(() => computeSimpleTrend(items, (it) => it.status === "Done", (it) => it.createdAt), [items])
+  // Trend for total value: sum amount per week instead of count
+  const trendValue = useMemo(() => {
+    const now = Date.now()
+    const day = 86400000
+    function valSnapshot(asOfMs: number) {
+      return items.filter((it) => new Date(it.createdAt).getTime() <= asOfMs)
+        .reduce((a, it) => a + purchaseParseAmount(it.amount), 0)
+    }
+    function pctChg(curr: number, prev: number): { pct: number; up: boolean | null } {
+      if (prev === 0) return curr === 0 ? { pct: 0, up: null } : { pct: 100, up: true }
+      const pct = Math.round(((curr - prev) / prev) * 100)
+      if (pct === 0) return { pct: 0, up: true }
+      return { pct: Math.abs(pct), up: pct >= 0 }
+    }
+    function sparklineFor() {
+      const pts: number[] = []
+      for (let i = 6; i >= 0; i--) pts.push(valSnapshot(now - i * day))
+      return pts
+    }
+    const curr = valSnapshot(now)
+    const prev = valSnapshot(now - 7 * day)
+    const base = pctChg(curr, prev)
+    return { pct: base.pct, up: base.up, sparkline: sparklineFor() }
+  }, [items])
 
   // ---- group map (ported from renderPurchase's map/keys build) ----
   const groups = useMemo(() => {
@@ -250,7 +274,7 @@ export function PurchaseView({
       >
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 16 }}>
           <KpiCard label="Tổng hạng mục" value={items.length} tone="neutral" trend={trendTotal} />
-          <KpiCard label="Tổng giá trị" value={`${purchaseFormatAmount(totalValue)} đ`} tone="neutral" />
+          <KpiCard label="Tổng giá trị" value={`${purchaseFormatAmount(totalValue)} đ`} tone="neutral" trend={trendValue} />
           <KpiCard label="Đang triển khai" value={ongoingCount} tone="warning" trend={trendOngoing} />
           <KpiCard label="Hoàn thành" value={doneCount} tone="success" trend={trendDone} />
         </div>
