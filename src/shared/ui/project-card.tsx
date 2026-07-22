@@ -6,6 +6,7 @@ import { DirectionIcon } from "./icons"
 export type ProjectCardProps = {
   id: string
   name: string
+  value: string | null        // formatted value e.g. "150.000.000đ"
   statusLabel: string
   statusBg: string
   statusColor: string
@@ -29,7 +30,7 @@ export type ProjectCardProps = {
  * Toàn hệ thống chỉ thay đổi file này để cập nhật giao diện thẻ dự án.
  */
 export function ProjectCard({
-  name, statusLabel, statusBg, statusColor,
+  name, value, statusLabel, statusBg, statusColor,
   priorityLabel, priorityColor, priorityBg,
   progress, taskDone, taskTotal, taskOverdue,
   planInfo, onPlanClick,
@@ -56,6 +57,14 @@ export function ProjectCard({
           {priorityLabel}
         </span>
       </div>
+
+      {/* Giá trị dự án */}
+      {value && (
+        <div className="prow" style={{ margin: "8px 0 0" }}>
+          <span>Giá trị</span>
+          <b>{value}</b>
+        </div>
+      )}
 
       {/* Tiến độ */}
       <div className="pbox">

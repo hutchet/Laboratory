@@ -134,6 +134,7 @@ export function ProjectsView({ projects, customers, centers }:{ projects:Project
               <div key={p.id}><ProjectCard
                 id={p.id}
                 name={p.name}
+                value={p.value!=null?p.value.toLocaleString("vi-VN")+"đ":null}
                 statusLabel={PROJECT_STATUS_LABEL[p.derivedStatus]??p.derivedStatus}
                 statusBg={STATUS_BG[p.derivedStatus]??"var(--neutral-soft)"}
                 statusColor={STATUS_COLOR[p.derivedStatus]??"var(--neutral)"}

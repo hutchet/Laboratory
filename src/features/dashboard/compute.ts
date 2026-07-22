@@ -352,13 +352,17 @@ export type PvdSegment = { name: string; value: number; pct: number; color: stri
 // deadline, va deadline roi vao dung thang selectedMonth; sau do loc Project theo
 // ten nam trong tap active do (khong con phu thuoc Project.endDate/derivedDone).
 export function computePvd(projects: DashProjectRaw[], tasks: DashTaskRaw[], selectedMonth: string): { segments: PvdSegment[]; total: number; topPct: number } {
-  const activeNames = new Set(
-    tasks
-      .filter((t) => t.status !== "done" && t.dueDate && t.projectName && t.dueDate.slice(0, 7) === selectedMonth)
-      .map((t) => t.projectName as string),
-  )
+  // Nếu chọn tháng hiện tại: hiện tất cả project có value > 0
+  // Nếu chọn tháng khác: chỉ lấy project kết thúc trong tháng đó
+  const now = new Date()
+  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`
+  const isCurrentMonth = selectedMonth === currentMonth
   const rows = projects
-    .filter((p) => (p.value || 0) > 0 && activeNames.has(p.name))
+    .filter((p) => {
+      if ((p.value || 0) <= 0) return false
+      if (isCurrentMonth) return true
+      return p.endDate && p.endDate.slice(0, 7) === selectedMonth
+    })
     .map((p) => ({ name: p.name, value: p.value || 0 }))
     .sort((a, b) => b.value - a.value)
     .slice(0, 6)
