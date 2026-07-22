@@ -258,6 +258,12 @@ export function BookingsView({
   const overviewReady = equipment.filter((e) => e.status === "active").length
   const overviewMaint = equipment.filter((e) => e.status === "maintenance").length
   const overviewBookingsToday = bookings.filter((b) => dateStr(b.startTime) === selectedDate).length
+  const overviewTrends = useMemo(() => ({
+    total: computeSimpleTrend(equipment, () => true, (e) => e.createdAt),
+    ready: computeSimpleTrend(equipment, (e) => e.status === "active", (e) => e.createdAt),
+    maint: computeSimpleTrend(equipment, (e) => e.status === "maintenance", (e) => e.createdAt),
+    bookings: computeSimpleTrend(bookings, () => true, (b) => b.createdAt),
+  }), [equipment, bookings])
 
   return (
     <PageShell
@@ -266,10 +272,10 @@ export function BookingsView({
       {!openGroup && (
         <>
           <div className="grid kpis" style={{ marginBottom: 16 }}>
-            <div className="kcard kb"><div className="v">{overviewTotal}</div><div className="l">Tổng thiết bị</div><div className="s">Toàn hệ thống</div></div>
-            <div className="kcard kg"><div className="v">{overviewReady}</div><div className="l">Sẵn sàng</div><div className="s">Có thể đặt lịch</div></div>
-            <div className="kcard kr"><div className="v">{overviewMaint}</div><div className="l">Đang bảo trì</div><div className="s">Tạm ngưng đặt lịch</div></div>
-            <div className="kcard kp"><div className="v">{overviewBookingsToday}</div><div className="l">Lượt đặt hôm nay</div><div className="s">{fmtVN(todayIso())}</div></div>
+            <KpiCard label="Tổng thiết bị" value={overviewTotal} hint="Toàn hệ thống" trend={overviewTrends.total} />
+            <KpiCard label="Sẵn sàng" value={overviewReady} hint="Có thể đặt lịch" tone="success" trend={overviewTrends.ready} />
+            <KpiCard label="Đang bảo trì" value={overviewMaint} hint="Tạm ngưng đặt lịch" tone="danger" trend={overviewTrends.maint} />
+            <KpiCard label="Lượt đặt hôm nay" value={overviewBookingsToday} hint={fmtVN(todayIso())} tone="warning" trend={overviewTrends.bookings} />
           </div>
 
           {groups.length === 0 ? (

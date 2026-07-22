@@ -179,6 +179,44 @@ export function TasksView({ tasks, projects, members, centers, initialQuery }: T
     }
   }, [tasks])
 
+  // Tasks + trends for currently open center (detail view)
+  const centerTasks = useMemo(() => {
+    if (!openCenterId) return []
+    return tasks.filter((t) => (t.centerId || NO_CENTER) === openCenterId)
+  }, [tasks, openCenterId])
+  const centerTrends = useMemo(() => {
+    if (!openCenterId) return { total: { pct: 0, up: null, sparkline: [] }, doing: { pct: 0, up: null, sparkline: [] }, overdue: { pct: 0, up: null, sparkline: [] }, done: { pct: 0, up: null, sparkline: [] } }
+    const now = Date.now()
+    const day = 86400000
+    const centerId = openCenterId
+    function snapshot(asOfMs: number) {
+      const list = tasks.filter((t) => new Date(t.createdAt).getTime() <= asOfMs && (t.centerId || NO_CENTER) === centerId)
+      return {
+        total: list.length,
+        doing: list.filter((t) => t.status !== "done").length,
+        overdue: list.filter((t) => taskState(t) === "over").length,
+        done: list.filter((t) => t.status === "done").length,
+      }
+    }
+    function pctChg(c: number, p: number) {
+      if (p === 0) return c === 0 ? { pct: 0, up: null as boolean | null } : { pct: 100, up: true }
+      const pct = Math.round(((c - p) / p) * 100)
+      if (pct === 0) return { pct: 0, up: true }
+      return { pct: Math.abs(pct), up: pct >= 0 }
+    }
+    function sp(key: keyof ReturnType<typeof snapshot>) {
+      const pts: number[] = []; for (let i = 6; i >= 0; i--) pts.push(snapshot(now - i * day)[key]); return pts
+    }
+    const c = snapshot(now)
+    const p = snapshot(now - 7 * day)
+    return {
+      total: { ...pctChg(c.total, p.total), sparkline: sp("total") },
+      doing: { ...pctChg(c.doing, p.doing), sparkline: sp("doing") },
+      overdue: { ...pctChg(c.overdue, p.overdue), sparkline: sp("overdue") },
+      done: { ...pctChg(c.done, p.done), sparkline: sp("done") },
+    }
+  }, [tasks, openCenterId])
+
   function toggleSort(key: SortKey) {
     if (sortKey === key) setSortDir((d) => (d === 1 ? -1 : 1))
     else { setSortKey(key); setSortDir(1) }
@@ -397,6 +435,12 @@ export function TasksView({ tasks, projects, members, centers, initialQuery }: T
           <button type="button" className="btn-line" style={{ marginBottom: 12 }} onClick={() => setOpenCenterId(null)}>
             ‹ Danh sách trung tâm
           </button>
+          <div className="kpis-tier" style={{ marginBottom: 16 }}>
+            <KpiCard label="Tổng công việc" value={centerTasks.length} trend={centerTrends.total} />
+            <KpiCard label="Đang thực hiện" value={centerTasks.filter(t => t.status !== "done").length} tone="warning" trend={centerTrends.doing} />
+            <KpiCard label="Quá hạn" value={centerTasks.filter(t => taskState(t) === "over").length} tone="danger" trend={centerTrends.overdue} />
+            <KpiCard label="Hoàn thành" value={centerTasks.filter(t => t.status === "done").length} tone="success" trend={centerTrends.done} />
+          </div>
           <DataTable
             columns={columns}
             rows={filtered}
