@@ -61,6 +61,7 @@ export type DepreciationAssetRow = {
   years: number | null
   centerId: string | null
   center: { id: string; name: string } | null
+  equipmentId: string
 }
 
 export type VariableCostRow = {

@@ -1,6 +1,7 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
+import crypto from "crypto"
 import type { Prisma } from "@prisma/client"
 import { auth } from "@/shared/lib/auth"
 import { db } from "@/shared/lib/db"
@@ -82,11 +83,24 @@ export async function saveEquipment(input: SaveEquipmentInput) {
     assertScopedAccess(ctx, "equipment", existing)
     saved = await db.$transaction(async (tx: Prisma.TransactionClient) => {
       const updated = await tx.equipment.update({ where: { id: input.id }, data })
+      // Dong bo DepreciationAsset lien ket (raw SQL — Prisma type chua co equipmentId)
+      const eid = input.id as string
+      await tx.$executeRawUnsafe(
+        `INSERT INTO "DepreciationAsset" ("id","assetName","centerId","equipmentId","createdAt")
+         VALUES ($1,$2,$3,$4,now())
+         ON CONFLICT ("equipmentId") DO UPDATE SET "assetName"=$2,"centerId"=$3`,
+        crypto.randomUUID(), data.name, data.centerId, eid,
+      )
       return updated
     })
   } else {
     saved = await db.$transaction(async (tx: Prisma.TransactionClient) => {
       const created = await tx.equipment.create({ data })
+      // Tao DepreciationAsset moi (raw SQL — Prisma type chua co equipmentId)
+      await tx.$executeRawUnsafe(
+        `INSERT INTO "DepreciationAsset" ("id","assetName","centerId","equipmentId","createdAt") VALUES ($1,$2,$3,$4,now())`,
+        crypto.randomUUID(), data.name, data.centerId, created.id,
+      )
       return created
     })
     await logAudit("equipment", "create", data.name, `Thêm thiết bị mới “${data.name}”`)

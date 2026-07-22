@@ -211,6 +211,7 @@ model Center {
 
   equipment         Equipment[]
   equipmentBookings EquipmentBooking[]
+  depreciationAssets DepreciationAsset[]
   projects          Project[]
   // Additive (thiết kế 6 cấp bậc + phân vùng Trung tâm/Nhóm):
   groups             Group[]
@@ -273,6 +274,7 @@ model Equipment {
   center    Center?            @relation(fields: [centerId], references: [id])
   testItems TestItem[]
   bookings EquipmentBooking[]
+  depreciationAsset DepreciationAsset?
 }
 
 model EquipmentBooking {
@@ -433,6 +435,10 @@ model DepreciationAsset {
   years       Float?
   // Additive — gắn thẻ hiển thị theo Trung tâm (display-only, xem thiết kế mục 12).
   centerId    String?
+  // y/c 116.1: lien ket 1:1 voi Equipment — moi Equipment co dung 1 DepreciationAsset.
+  equipmentId String @unique
+  equipment   Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  center      Center? @relation(fields: [centerId], references: [id])
 
   createdAt DateTime @default(now())
 }

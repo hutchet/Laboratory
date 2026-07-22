@@ -1,4 +1,5 @@
 import { db } from "@/shared/lib/db"
+import crypto from "crypto"
 import type {
   QuoteRow, TestCatalogRow, PersonnelRateConfigRow, PersonnelRoutingRow,
   DepreciationAssetRow, VariableCostRow, Option,
@@ -49,17 +50,35 @@ export async function listPersonnelRouting(): Promise<PersonnelRoutingRow[]> {
 // dam bao danh sach khau hao luon day du theo danh sach thiet bi, khong can nguoi
 // dung tu tao tay. Sau do map kem thong tin center de nhom hub-card theo Trung tam.
 export async function listDepreciationAssets(): Promise<DepreciationAssetRow[]> {
-  const rows = await db.depreciationAsset.findMany({
-    orderBy: { createdAt: "desc" },
-  })
+  // Backfill: tao DepreciationAsset cho Equipment nao chua co (raw SQL)
+  const existingIds = (await db.$queryRawUnsafe<[{equipmentId: string}]>(
+    `SELECT "equipmentId" FROM "DepreciationAsset"`,
+  )).map((r: any) => r.equipmentId)
+  const allEquipments = await db.equipment.findMany({ select: { id: true, name: true, centerId: true } })
+  const missing = allEquipments.filter((e) => !existingIds.includes(e.id))
+  for (const eq of missing) {
+    await db.$executeRawUnsafe(
+      `INSERT INTO "DepreciationAsset" ("id","assetName","centerId","equipmentId","createdAt") VALUES ($1,$2,$3,$4,now())`,
+      crypto.randomUUID(), eq.name, eq.centerId, eq.id,
+    )
+  }
+
+  const rows = await db.$queryRawUnsafe<any[]>(
+    `SELECT d.id, d."assetName", d."assetGroup", d."totalValue", d."years", d."centerId", d."equipmentId",
+            c.id as "c_id", c.name as "c_name"
+     FROM "DepreciationAsset" d
+     LEFT JOIN "Center" c ON c.id = d."centerId"
+     ORDER BY d."createdAt" DESC`,
+  )
   return rows.map((r) => ({
     id: r.id,
     assetName: r.assetName,
-    assetGroup: r.assetGroup,
-    totalValue: r.totalValue,
-    years: r.years,
-    centerId: r.centerId,
-    center: null,
+    assetGroup: r.assetGroup ?? null,
+    totalValue: r.totalValue ?? null,
+    years: r.years ?? null,
+    centerId: r.centerId ?? null,
+    equipmentId: r.equipmentId,
+    center: r.c_id ? { id: r.c_id, name: r.c_name } : null,
   }))
 }
 
