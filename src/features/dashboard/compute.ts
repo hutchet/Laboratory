@@ -346,9 +346,19 @@ const PVD_PALETTE = ["#2c3652", "#9aa4b2", "#e8932a", "#27ae84", "#bf8eda", "#df
 
 export type PvdSegment = { name: string; value: number; pct: number; color: string }
 
-export function computePvd(projects: DashProjectRaw[], selectedMonth: string): { segments: PvdSegment[]; total: number; topPct: number } {
+// Sua loi khong co data (b/c cu p.endDate cua Project thuong trong/khong khop thang
+// duoc chon): doi lai dung logic ban goc renderProjValueDist() (dong ~5028-5050) -
+// mot du an duoc tinh la "active" trong thang khi co it nhat 1 Task chua done, co
+// deadline, va deadline roi vao dung thang selectedMonth; sau do loc Project theo
+// ten nam trong tap active do (khong con phu thuoc Project.endDate/derivedDone).
+export function computePvd(projects: DashProjectRaw[], tasks: DashTaskRaw[], selectedMonth: string): { segments: PvdSegment[]; total: number; topPct: number } {
+  const activeNames = new Set(
+    tasks
+      .filter((t) => t.status !== "done" && t.dueDate && t.projectName && t.dueDate.slice(0, 7) === selectedMonth)
+      .map((t) => t.projectName as string),
+  )
   const rows = projects
-    .filter((p) => !p.derivedDone && (p.value || 0) > 0 && p.endDate && p.endDate.slice(0, 7) === selectedMonth)
+    .filter((p) => (p.value || 0) > 0 && activeNames.has(p.name))
     .map((p) => ({ name: p.name, value: p.value || 0 }))
     .sort((a, b) => b.value - a.value)
     .slice(0, 6)

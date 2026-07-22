@@ -1,9 +1,32 @@
 import { initials, avatarColor } from "@/shared/lib/initials"
 
-export type AvatarInitialsProps = { name: string; size?: number; title?: string }
+// Additive — yeu cau "them che do gan anh avatar vao tai khoan": khi Member co
+// avatar (anh do nguoi dung tu upload, luu dang data URI trong Member.avatar),
+// hien thi anh do thay cho initials tron mau. Khong co avatar thi giu nguyen
+// hanh vi cu (initials + mau nen theo ten) o moi noi dang dung component nay.
+export type AvatarInitialsProps = { name: string; size?: number; title?: string; src?: string | null }
 
-export function AvatarInitials({ name, size = 28, title }: AvatarInitialsProps) {
+export function AvatarInitials({ name, size = 28, title, src }: AvatarInitialsProps) {
   const bg = avatarColor(name || "?")
+  if (src) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        data-tf-kit="avatar-initials"
+        src={src}
+        alt={title || name}
+        title={title || name}
+        style={{
+          display: "inline-flex",
+          width: size,
+          height: size,
+          borderRadius: "50%",
+          objectFit: "cover",
+          flexShrink: 0,
+        }}
+      />
+    )
+  }
   return (
     <span
       data-tf-kit="avatar-initials"

@@ -6,8 +6,8 @@ import { DataTable, type DataTableColumn } from "@/shared/ui/data-table"
 import { FormModal } from "@/shared/ui/form-modal"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { AvatarInitials } from "@/shared/ui/avatar-initials"
-import { StatusBadge } from "@/shared/ui/status-badge"
 import { CustomSelect } from "@/shared/ui/custom-select"
+import { StatusBadge } from "@/shared/ui/status-badge"
 import { Perm } from "@/shared/lib/rbac-client"
 import { saveMember, deleteMember, resetMemberPassword, bulkDeleteMembers } from "../actions"
 import { ACCESS_ROLE_LABEL, NEW_ACCESS_ROLE_OPTIONS, type MemberRow } from "../types"
@@ -46,12 +46,45 @@ export function MembersView({
   const [resetPasswordFor, setResetPasswordFor] = useState<MemberRow | null>(null)
   const [resetPasswordValue, setResetPasswordValue] = useState("")
   const [resetPasswordError, setResetPasswordError] = useState<string | null>(null)
+  // Additive — yeu cau "them che do gan anh avatar vao tai khoan": preview + gia tri anh
+  // (data URI base64) dang chinh trong form Them/Sua thanh vien. null = xoa anh hien co.
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
+  const [avatarError, setAvatarError] = useState<string | null>(null)
 
   const filtered = useMemo(() => members.filter((m) => !q || m.name.toLowerCase().includes(q.toLowerCase())), [members, q])
   const groupOptionsForForm = useMemo(() => groupOptions.filter((g) => !formCenterId || g.centerId === formCenterId), [groupOptions, formCenterId])
 
-  function openNew() { setEditing(null); setFormCenterId(""); setShowForm(true) }
+  function openNew() { setEditing(null); setFormCenterId(""); setAvatarPreview(null); setAvatarError(null); setShowForm(true) }
   function openEdit(m: MemberRow) { setEditing(m); setFormCenterId(m.centerId ?? ""); setShowForm(true) }
+  // Additive — doc file anh nguoi dung chon, nen kich thuoc xuong toi da 240x240 (giu ty le,
+  // qua canvas) roi xuat ra JPEG chat luong 0.85 truoc khi luu data URI vao avatarPreview, de
+  // tranh luu anh goc qua nang (co the vai MB) vao DB dang text.
+  function handleAvatarFile(file: File | null) {
+    setAvatarError(null)
+    if (!file) return
+    if (!file.type.startsWith("image/")) { setAvatarError("Vui lòng chọn một tệp hình ảnh"); return }
+    const reader = new FileReader()
+    reader.onload = () => {
+      const img = new Image()
+      img.onload = () => {
+        const maxSize = 240
+        const scale = Math.min(1, maxSize / Math.max(img.width, img.height))
+        const w = Math.max(1, Math.round(img.width * scale))
+        const h = Math.max(1, Math.round(img.height * scale))
+        const canvas = document.createElement("canvas")
+        canvas.width = w
+        canvas.height = h
+        const ctx = canvas.getContext("2d")
+        if (!ctx) { setAvatarError("Không thể xử lý ảnh này"); return }
+        ctx.drawImage(img, 0, 0, w, h)
+        setAvatarPreview(canvas.toDataURL("image/jpeg", 0.85))
+      }
+      img.onerror = () => setAvatarError("Không thể đọc ảnh này")
+      img.src = String(reader.result)
+    }
+    reader.onerror = () => setAvatarError("Không thể đọc tệp này")
+    reader.readAsDataURL(file)
+  }
   function handleSubmit(formData: FormData) {
     const input = {
       id: editing?.id,
@@ -175,10 +208,11 @@ export function MembersView({
       {currentMember && (
         // Ported from the original's .adminbar block (#page-members): shows the
         // currently logged-in account with avatar initials, name, email, and role badge.
+        // Additive: khi thành viên đã gắn ảnh avatar thì hiện ảnh đó thay cho initials.
         <div style={{ display: "flex", alignItems: "center", gap: 13, background: "linear-gradient(135deg,#eef2ff,#e7ecff)", border: "1px solid #e0e7ff", borderRadius: 14, padding: "14px 16px", marginBottom: 18 }}>
           <span style={{ width: 44, height: 44, borderRadius: 11, background: "linear-gradient(135deg,#5b7bff,#3a55d9)", color: "#fff", display: "grid", placeItems: "center", fontWeight: 600, fontSize: 15 }}>
-            {initials(currentMember.name)}
-          </span>
+              {initials(currentMember.name)}
+            </span>
           <div>
             <div style={{ fontWeight: 600, fontSize: 14 }}>{currentMember.name}</div>
             <div style={{ fontSize: 12, color: "#6b7280" }}>{currentMember.email ?? "—"}</div>

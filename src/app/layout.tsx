@@ -5,6 +5,7 @@ import { fontStackFor } from "@/features/settings/types"
 import type { FontKey, Language, ThemeMode } from "@/features/settings/types"
 import { LANG_COOKIE } from "@/shared/lib/i18n"
 import { I18nApplier } from "@/shared/ui/i18n-applier"
+import { ThemeDeviceApplier } from "@/shared/ui/theme-device-applier"
 
 export const metadata = { title: "VinFast", description: "Trung tâm thử nghiệm VinFast" }
 
@@ -52,6 +53,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       <body className="material-3" style={{ fontFamily: fontStackFor(font) }}>
         {children}
         <I18nApplier lang={lang} />
+        <ThemeDeviceApplier mode={mode} />
       </body>
     </html>
   )

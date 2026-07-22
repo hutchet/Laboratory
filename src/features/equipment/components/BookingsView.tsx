@@ -306,18 +306,9 @@ export function BookingsView({
       </div>
 
       <div style={{ border: "1px solid #e2e5e9", borderRadius: 12, background: "#fff", padding: 16, marginBottom: 18 }}>
-        <div className="ch" style={{ marginBottom: 12 }}>
-          <div className="ch-l">
-            <h3 style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>Lịch đặt thiết bị theo khung giờ</h3>
-            <span style={{ fontSize: 12, color: "#6b7280" }}>Bấm khung giờ còn trống để đặt. Khung giờ đã có người đặt sẽ không thể chọn lại — hãy chọn giờ khác hoặc ngày khác.</span>
-          </div>
-          <div className="center-detail-tools">
-            {editMode && (
-              <button type="button" className="btn-danger" disabled={!selected.size} onClick={() => setBulkConfirm(true)} style={{ opacity: selected.size ? 1 : 0.5 }}>Xoá mục đã chọn</button>
-            )}
-            <button type="button" className={editMode ? "btn-success" : "btn-line"} onClick={toggleEditMode}>{editMode ? "Xong" : "Chỉnh sửa"}</button>
-            <button type="button" className="btn-pri" onClick={openNew}>+ Đặt lịch</button>
-          </div>
+        <div style={{ marginBottom: 12 }}>
+          <h3 style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>Lịch đặt thiết bị theo khung giờ</h3>
+          <span style={{ fontSize: 12, color: "#6b7280" }}>Bấm khung giờ còn trống để đặt. Khung giờ đã có người đặt sẽ không thể chọn lại — hãy chọn giờ khác hoặc ngày khác.</span>
         </div>
 
         <div className="eqdatenav">
@@ -386,9 +377,15 @@ export function BookingsView({
       </div>
 
       <div style={{ border: "1px solid #e2e5e9", borderRadius: 12, background: "#fff", overflowX: "auto" }}>
-        <div style={{ padding: "20px 20px 0" }}>
-          <h3 style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>Danh sách lượt đặt trong ngày</h3>
-          <span style={{ fontSize: 12, color: "#6b7280" }}>{fmtVN(selectedDate)}</span>
+        <div className="ch" style={{ padding: "20px 20px 0" }}>
+          <div><h3 style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>Danh sách lượt đặt trong ngày</h3><span style={{ fontSize: 12, color: "#6b7280" }}>{fmtVN(selectedDate)}</span></div>
+          <div className="center-detail-tools">
+            <button type="button" className="btn-pri" onClick={openNew}>+ Đặt lịch</button>
+            <button type="button" className={editMode ? "btn-success" : "btn-line"} onClick={toggleEditMode}>{editMode ? "Xong" : "Chỉnh sửa"}</button>
+            {editMode && (
+              <button type="button" className="btn-danger" disabled={!selected.size} onClick={() => setBulkConfirm(true)} style={{ opacity: selected.size ? 1 : 0.5 }}>Xoá mục đã chọn</button>
+            )}
+          </div>
         </div>
         {todaysBookings.length === 0 ? (
           <div style={{ padding: 20, color: "#6b7280", fontSize: 13 }}>Chưa có lượt đặt nào trong ngày này.</div>

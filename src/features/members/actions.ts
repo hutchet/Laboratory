@@ -70,7 +70,18 @@ export type SaveMemberInput = {
 
 export async function saveMember(input: SaveMemberInput) {
   await requirePermission(input.id ? "edit" : "create")
-  const data = {
+  const data: {
+    name: string
+    code: string | null
+    email: string | null
+    gender: string | null
+    team: string | null
+    accessRole: string
+    centerId: string | null
+    groupId: string | null
+    isOperations: boolean
+    allCenters: boolean
+  } = {
     name: input.name,
     code: input.code || null,
     email: input.email || null,

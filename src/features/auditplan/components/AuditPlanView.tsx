@@ -227,13 +227,13 @@ export function AuditPlanView({
   return (
     <PageShell
       title="Kế hoạch kiểm toán nội bộ"
-      actions={openPlanId ? (
-        <button type="button" className="btn-line" onClick={() => setOpenPlanId("")}>← Danh sách kế hoạch</button>
-      ) : (
+      actions={!openPlanId ? (
         <div style={{ display: "flex", gap: 8 }}>
           <button type="button" className="btn-line" onClick={handleSeed}>+ Tạo từ mẫu ISO 17025</button>
           <button type="button" className="btn-pri" onClick={() => setShowPlanForm(true)}>+ Kế hoạch</button>
         </div>
+      ) : (
+        <button type="button" className="btn-line" onClick={() => setOpenPlanId("")}>‹ Danh sách kế hoạch</button>
       )}
     >
       {!openPlanId && (
@@ -242,10 +242,10 @@ export function AuditPlanView({
       {plans.length === 0 ? (
         <div className="empty">Chưa có kế hoạch nào.</div>
       ) : (
-        // y/c: trang danh sach the (card list) cho Ke hoach kiem dinh o lop ngoai
-        // (dung khuon mau hub-card cua the Trung tam - EquipmentView.tsx
-        // #eq-center-cards); bam vao 1 the se MO trang ke hoach chi tiet rieng
-        // (2 tang: danh sach the ngoai -> trang chi tiet, khong long chung 1 trang).
+        // y/c: trang danh sach the (card list) cho Ke hoach kiem dinh, dung dung
+        // khuon mau hub-card cua the Trung tam (EquipmentView.tsx #eq-center-cards)
+        // thay cho bang DataTable cu - bam vao 1 the de chon lam ke hoach dang xem
+        // (giu nguyen logic setActivePlanId/visiblePlanId hien co).
         <div id="ap-plan-cards" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 18, marginBottom: 20 }}>
           {plans.map((p) => {
             const initial = p.title.trim().slice(0, 2).toUpperCase() || "KH"
@@ -279,14 +279,10 @@ export function AuditPlanView({
 
       {openPlanId && currentPlan && (
         <>
-          <div className="ch" style={{ marginBottom: 4 }}>
-            <div className="ch-l">
-              <h3 style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>{currentPlan.title}</h3>
-              <span style={{ fontSize: 12, color: "#6b7280" }}>{currentPlan.scheduledAt ? new Date(currentPlan.scheduledAt).toLocaleDateString("vi-VN") : "Chưa có ngày dự kiến"}</span>
-            </div>
-            <StatusBadge label={AUDIT_STATUS_LABEL[currentPlan.status ?? ""] ?? currentPlan.status ?? "—"} tone={planStatusTone(currentPlan.status)} />
+          <div className="ch" style={{ margin: "0 0 16px" }}>
+            <div><h3 style={{ margin: 0 }}>{currentPlan.title}</h3><span>{currentPlan.scheduledAt ? new Date(currentPlan.scheduledAt).toLocaleDateString("vi-VN") : "Chưa có ngày dự kiến"}</span></div>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(5, minmax(0,1fr))", gap: 12, margin: "20px 0" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(5, minmax(0,1fr))", gap: 12, margin: "0 0 20px" }}>
             <KpiCard label="Tổng hạng mục" value={kpi.total} tone="neutral" />
             <KpiCard label="Hoàn thành" value={kpi.done} tone="success" />
             <KpiCard label="Đang triển khai" value={kpi.doing} tone="warning" />
@@ -296,7 +292,7 @@ export function AuditPlanView({
 
           {overviewHidden ? (
             <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 20 }}>
-              <button type="button" onClick={() => setOverviewHidden(false)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px dashed #dfe3e8", background: "#fff", color: "#1d5fd6", fontSize: 12.5 }}>+ Hiện lại phần tổng quan</button>
+              <button type="button" className="btn-line" onClick={() => setOverviewHidden(false)}>+ Hiện lại phần tổng quan</button>
             </div>
           ) : (
           <div style={{ border: "1px solid #e6e9ee", borderRadius: 10, padding: 16, marginBottom: 20 }}>
@@ -312,8 +308,8 @@ export function AuditPlanView({
               )}
               {!editingOverviewTitle && (
                 <span style={{ display: "flex", gap: 10 }}>
-                  <button type="button" onClick={() => { setOverviewTitleDraft(overviewTitle); setEditingOverviewTitle(true) }} style={{ border: "none", background: "none", color: "#1d5fd6", cursor: "pointer", fontSize: 12.5 }}>Sửa</button>
-                  <button type="button" onClick={() => { if (window.confirm("Ẩn phần tổng quan này?")) setOverviewHidden(true) }} style={{ border: "none", background: "none", color: "#c62828", cursor: "pointer", fontSize: 12.5 }}>Xóa</button>
+                  <button type="button" className="txt-act" onClick={() => { setOverviewTitleDraft(overviewTitle); setEditingOverviewTitle(true) }}>Sửa</button>
+                  <button type="button" className="txt-act del" onClick={() => { if (window.confirm("Ẩn phần tổng quan này?")) setOverviewHidden(true) }}>Xóa</button>
                 </span>
               )}
             </div>
@@ -377,25 +373,29 @@ export function AuditPlanView({
               </div>
             </div>
           </div>
-          <div className="ch" style={{ margin: "24px 0 8px" }}>
-            <div className="ch-l"><h3 style={{ fontSize: 14, margin: 0 }}>Hạng mục kiểm toán</h3></div>
-            <div className="center-detail-tools">
-              <button type="button" className="btn-line" onClick={exportCsv}>Xuất Excel (CSV)</button>
-              <Perm minPerm="dept_head">
-                {itemEditMode && (
-                  <button type="button" className="btn-danger" disabled={!itemSelected.size} onClick={() => setItemBulkConfirm(true)} style={{ opacity: itemSelected.size ? 1 : 0.5 }}>Xoá mục đã chọn</button>
-                )}
-                <button type="button" className={itemEditMode ? "btn-success" : "btn-line"} onClick={toggleItemEditMode}>{itemEditMode ? "Xong" : "Chỉnh sửa"}</button>
-                <button type="button" className="btn-line" onClick={() => setShowPhaseForm(true)}>+ Giai đoạn</button>
-                <button type="button" className="btn-pri" onClick={() => { setEditingItem(null); setShowItemForm(true) }}>+ Thêm hạng mục</button>
-              </Perm>
-            </div>
-          </div>
-          <FilterBar search={{ value: search, onChange: setSearch, placeholder: "Tìm theo tên hạng mục hoặc phụ trách…" }}>
-            <CustomSelect value={visiblePlanId} onChange={setOpenPlanId} width={220} options={plans.map((p) => ({ value: p.id, label: p.title }))} />
-          </FilterBar>
-          <DataTable columns={itemColumns} rows={scopedItems} rowKey={(it) => it.id} loading={pending} emptyTitle="Chưa có hạng mục nào" />
         </>
+      )}
+
+      {openPlanId && currentPlan && (
+      <>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", margin: "24px 0 8px" }}>
+        <h3 style={{ fontSize: 14, margin: 0 }}>Hạng mục kiểm toán</h3>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button type="button" className="btn-line" onClick={exportCsv}>Xuất Excel (CSV)</button>
+          <Perm minPerm="dept_head">
+            {itemEditMode && (
+              <button type="button" className="btn-danger" disabled={!itemSelected.size} onClick={() => setItemBulkConfirm(true)} style={{ opacity: itemSelected.size ? 1 : 0.5 }}>Xoá mục đã chọn</button>
+            )}
+            <button type="button" className={itemEditMode ? "btn-success" : "btn-line"} onClick={toggleItemEditMode}>{itemEditMode ? "Xong" : "Chỉnh sửa"}</button>
+            <button type="button" className="btn-line" onClick={() => setShowPhaseForm(true)}>+ Giai đoạn</button>
+            <button type="button" className="btn-pri" onClick={() => { setEditingItem(null); setShowItemForm(true) }}>+ Thêm hạng mục</button>
+          </Perm>
+        </div>
+      </div>
+      <FilterBar search={{ value: search, onChange: setSearch, placeholder: "Tìm theo tên hạng mục hoặc phụ trách…" }}>
+      </FilterBar>
+      <DataTable columns={itemColumns} rows={scopedItems} rowKey={(it) => it.id} loading={pending} emptyTitle="Chưa có hạng mục nào" />
+      </>
       )}
 
       <FormModal open={showPlanForm} title="Thêm kế hoạch kiểm toán" onClose={() => setShowPlanForm(false)} onSubmit={() => { const f = document.getElementById("tf-auditplan-form") as HTMLFormElement | null; if (f) submitPlan(new FormData(f)) }} submitting={pending}>

@@ -69,7 +69,7 @@ export function DashboardView({ data }: { data: DashboardRawData }) {
   const dueBars = useMemo(() => computeDueBars(tasks), [tasks])
   const spotlight = useMemo(() => computeSpotlight(tasks, members), [tasks, members])
   const team = useMemo(() => computeTeam(tasks, members, testItems), [tasks, members, testItems])
-  const pvd = useMemo(() => computePvd(projects, pvdMonth), [projects, pvdMonth])
+  const pvd = useMemo(() => computePvd(projects, tasks, pvdMonth), [projects, tasks, pvdMonth])
   const paycards1 = useMemo(() => computePaycards1(samples, testItems, customers, quotes), [samples, testItems, customers, quotes])
   const paycards2 = useMemo(() => computePaycards2(equipment), [equipment])
   const overdue = useMemo(() => computeOverdue(tasks, members), [tasks, members])
@@ -288,7 +288,7 @@ export function DashboardView({ data }: { data: DashboardRawData }) {
           </div>
         </div>
 
-        <div className="grid" id="dash-info-grid" style={{ gridTemplateColumns: "repeat(3,1fr)", marginBottom: 18, alignItems: "stretch" }}>
+        <div id="dash-info-grid" className="grid" style={{ gridTemplateColumns: "repeat(3,1fr)", marginBottom: 18, alignItems: "stretch" }}>
           <div className="card" style={{ marginBottom: 0, display: "flex", flexDirection: "column", cursor: "pointer" }} onClick={() => setDetailType("status")}>
             <div className="ch">
               <div className="ch-l">
