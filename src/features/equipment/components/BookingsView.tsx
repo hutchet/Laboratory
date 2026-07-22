@@ -195,7 +195,17 @@ export function BookingsView({
       department: String(formData.get("department") || ""),
       purpose: String(formData.get("purpose") || ""),
     }
-    startTransition(async () => { await saveBooking(input); setShowForm(false); setEditing(null); setSlotPrefill(null) })
+    setFormError(null)
+    startTransition(async () => {
+      try {
+        await saveBooking(input)
+        setShowForm(false)
+        setEditing(null)
+        setSlotPrefill(null)
+      } catch (err) {
+        setFormError(err instanceof Error ? err.message : "Có lỗi xảy ra, vui lòng thử lại.")
+      }
+    })
   }
   function confirmDelete() {
     if (!confirmDeleteId) return

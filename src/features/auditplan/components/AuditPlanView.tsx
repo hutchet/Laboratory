@@ -161,8 +161,19 @@ export function AuditPlanView({
   function handleSeed() {
     startTransition(async () => { await seedIso17025Plan() })
   }
+  // Cong thuc T.luong (ngay) port tu renderAuditPlan ban goc (dua tren
+  // planStart/planEnd, khong luu rieng field "dur" vi model hien tai chua co).
+  function itemDurationDays(it: AuditItemRow): number | null {
+    if (!it.planStart || !it.planEnd) return null
+    const ms = new Date(it.planEnd.slice(0, 10)).getTime() - new Date(it.planStart.slice(0, 10)).getTime()
+    return Math.round(ms / 86400000) + 1
+  }
+
   function exportCsv() {
-    const header = ["No", "Hạng mục", "Phụ trách", "Bắt đầu KH", "Kết thúc KH", "Bắt đầu TT", "Kết thúc TT", "Trạng thái", "Ghi chú"]
+    // Sua loi header/du lieu bi lech cot: header cu ghi "No" nhung gia tri
+    // thuc te la ten Giai doan; bo sung cot T.luong (ngay) cho khop voi bang
+    // chi tiet/popup (dung 10 cot nhu renderAuditPlan/openApTaskForm ban goc).
+    const header = ["Giai đoạn", "Hạng mục", "Phụ trách", "Bắt đầu KH", "Kết thúc KH", "Bắt đầu TT", "Kết thúc TT", "T.lượng (ngày)", "Trạng thái", "Ghi chú"]
     const rows = scopedItems.map((it) => [
       it.phase?.name ?? "",
       it.name,
@@ -171,6 +182,7 @@ export function AuditPlanView({
       it.planEnd ? it.planEnd.slice(0, 10) : "",
       it.actualStart ? it.actualStart.slice(0, 10) : "",
       it.actualEnd ? it.actualEnd.slice(0, 10) : "",
+      itemDurationDays(it) ?? "",
       AUDIT_STATUS_LABEL[auditAutoStatus(it)],
       it.note ?? "",
     ])
@@ -189,13 +201,18 @@ export function AuditPlanView({
     },
   ]
 
+  // Port cua .row-chk/.acts (globals.css dong 350-353 ban goc): 2 cot nay LUON
+  // co trong bang, chi "visibility:hidden" khi chua bam "Chinh sua" - port dung
+  // pattern da chuan hoa o PurchaseView.tsx (khong xoa het cot khoi mang de
+  // tranh bang bi nhay do rong khi bam "Chinh sua"/"Xong").
   const itemColumns: Array<DataTableColumn<AuditItemRow>> = [
-    ...(itemEditMode
-      ? [{
-          key: "sel", header: "", defaultWidth: 44,
-          render: (it: AuditItemRow) => <input type="checkbox" checked={itemSelected.has(it.id)} onChange={() => toggleItemSelect(it.id)} />,
-        } as DataTableColumn<AuditItemRow>]
-      : []),
+    {
+      key: "sel", header: "", defaultWidth: 44,
+      render: (it) => itemEditMode ? <input type="checkbox" checked={itemSelected.has(it.id)} onChange={() => toggleItemSelect(it.id)} /> : null,
+    },
+    // Cot STT port cua renderAuditPlan ban goc - truoc day bi bo sot khi gop
+    // cac hang muc thanh 1 bang dep (giong fix da ap dung o PurchaseView.tsx).
+    { key: "stt", header: "STT", defaultWidth: 44, render: (it) => scopedItems.findIndex((x) => x.id === it.id) + 1 },
     { key: "phase", header: "Giai đoạn", render: (it) => it.phase?.name ?? "—" },
     { key: "name", header: "Hạng mục", render: (it) => <span style={{ fontWeight: 600 }}>{it.name}</span> },
     { key: "assignee", header: "Phụ trách", render: (it) => it.assignee ?? "—" },
@@ -203,16 +220,18 @@ export function AuditPlanView({
     { key: "planEnd", header: "KT KH", render: (it) => (it.planEnd ? it.planEnd.slice(0, 10) : "—") },
     { key: "actualStart", header: "BD TT", render: (it) => (it.actualStart ? it.actualStart.slice(0, 10) : "—") },
     { key: "actualEnd", header: "KT TT", render: (it) => (it.actualEnd ? it.actualEnd.slice(0, 10) : "—") },
+    // Cot "T.luong (ngay)" port cua renderAuditPlan ban goc - truoc day bi bo sot.
+    { key: "duration", header: "T.lượng", align: "right", render: (it) => itemDurationDays(it) ?? "—" },
     { key: "status", header: "Trạng thái", render: (it) => { const s = auditAutoStatus(it); return <StatusBadge label={AUDIT_STATUS_LABEL[s]} tone={autoStatusTone(s)} /> } },
     { key: "note", header: "Ghi chú", render: (it) => <span style={{ color: "#6b7280" }}>{it.note ?? "—"}</span> },
     {
       key: "actions", header: "", align: "right",
-      render: (it) => (
+      render: (it) => itemEditMode ? (
         <span style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
           <Perm minPerm="dept_head"><button type="button" onClick={() => { setEditingItem(it); setShowItemForm(true) }} style={{ border: "none", background: "none", color: "#1d5fd6", cursor: "pointer" }}>Sửa</button>
           <button type="button" onClick={() => setConfirmDeleteItemId(it.id)} style={{ border: "none", background: "none", color: "#c62828", cursor: "pointer" }}>Xoá</button></Perm>
         </span>
-      ),
+      ) : null,
     },
   ]
 
@@ -297,7 +316,7 @@ export function AuditPlanView({
           <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 16, marginBottom: 20 }}>
             <div>
               <h3 style={{ fontSize: 14, margin: "0 0 8px" }}>Tiến đứ (Gantt)</h3>
-              <AuditGanttChart items={scopedItems} phases={scopedPhases} />
+              <AuditGanttChart items={scopedItems} phases={scopedPhases} onEditItem={(it) => { setEditingItem(it); setShowItemForm(true) }} />
             </div>
             <div>
               <h3 style={{ fontSize: 14, margin: "0 0 8px" }}>Tải công việc theo phụ trách</h3>

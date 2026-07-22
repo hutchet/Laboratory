@@ -27,7 +27,7 @@ export function Pagination({ page, pageCount, totalItems, pageSize, onPageChange
           type="button"
           disabled={page === 1}
           onClick={() => onPageChange(page - 1)}
-          style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid #dfe3e8", background: "#fff", cursor: page === 1 ? "not-allowed" : "pointer", opacity: page === 1 ? 0.5 : 1 }}
+          style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "5px 10px", borderRadius: 6, border: "1px solid #dfe3e8", background: "#fff", cursor: page === 1 ? "not-allowed" : "pointer", opacity: page === 1 ? 0.5 : 1 }}
         >
           ‹
         </button>
@@ -53,7 +53,7 @@ export function Pagination({ page, pageCount, totalItems, pageSize, onPageChange
           type="button"
           disabled={page === pageCount}
           onClick={() => onPageChange(page + 1)}
-          style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid #dfe3e8", background: "#fff", cursor: page === pageCount ? "not-allowed" : "pointer", opacity: page === pageCount ? 0.5 : 1 }}
+          style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "5px 10px", borderRadius: 6, border: "1px solid #dfe3e8", background: "#fff", cursor: page === pageCount ? "not-allowed" : "pointer", opacity: page === pageCount ? 0.5 : 1 }}
         >
           ›
         </button>

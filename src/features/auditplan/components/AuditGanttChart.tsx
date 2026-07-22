@@ -103,9 +103,22 @@ const ZOOM_OPTIONS: Array<{ key: Zoom; label: string }> = [
 /**
  * Port cua renderAuditPlan Gantt block (~line 6208-6227), gio them dieu khien
  * zoom (ngay/tuan/thang) va dieu huong thoi gian (~ap-daynav/ap-zoom ban goc,
- * dong 3896-3897 & 6047-6069).
+ * dong 3896-3897 & 6047-6069). Dung dung class CSS .pl-gantt-wrap/.pl-gantt/
+ * .pl-corner/.pl-ghead/.pl-rowlabel/.pl-packrow/.pl-gcell/.pl-bar/.pl-toolbar/
+ * .pl-daynav/.pl-zoom/.pl-empty voi GanttChart cua Plan (globals.css) de dong
+ * bo cuon ngang+doc (max-height, sticky header/label) va bam vao hang/thanh
+ * Gantt de mo form sua (onEditItem) - truoc day component nay tu ve toan bo
+ * bang inline style, khong cuon doc duoc va khong bam-sua duoc.
  */
-export function AuditGanttChart({ items, phases }: { items: AuditItemRow[]; phases: AuditPhaseRow[] }) {
+export function AuditGanttChart({
+  items,
+  phases,
+  onEditItem,
+}: {
+  items: AuditItemRow[]
+  phases: AuditPhaseRow[]
+  onEditItem?: (item: AuditItemRow) => void
+}) {
   const [zoom, setZoom] = useState<Zoom>("day")
   const [focusDate, setFocusDate] = useState<string>(todayIso())
   const colRefs = useRef<Array<HTMLDivElement | null>>([])
@@ -159,32 +172,32 @@ export function AuditGanttChart({ items, phases }: { items: AuditItemRow[]; phas
     orphan.forEach((it) => rows.push({ type: "item", item: it }))
   }
 
-  if (items.length === 0) {
-    return <div style={{ padding: 24, textAlign: "center", color: "#8a8f98", fontSize: 13 }}>Chưa có hạng mục nào để hiển thị Gantt.</div>
-  }
+  const legend = (
+    <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 12, marginBottom: 8 }}>
+      {(Object.keys(AUDIT_STATUS_COLOR) as Array<keyof typeof AUDIT_STATUS_COLOR>).map((k) => (
+        <span key={k} style={{ display: "flex", alignItems: "center", gap: 5 }}>
+          <span style={{ display: "inline-block", width: 14, height: 10, borderRadius: 3, background: AUDIT_STATUS_COLOR[k] }} />
+          {AUDIT_STATUS_LABEL[k]}
+        </span>
+      ))}
+      {/* Port cua 2 muc legend con thieu (dong 3905-3906 ban goc): thanh ke
+          hoach nhat + thanh vuot ke hoach co soc, khop du 6 muc legend goc. */}
+      <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+        <span style={{ display: "inline-block", width: 14, height: 10, borderRadius: 3, background: "#1d5fd6", opacity: 0.45 }} />
+        Kế hoạch (nhạt)
+      </span>
+      <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+        <span style={{ display: "inline-block", width: 14, height: 10, borderRadius: 3, background: "#c62828", backgroundImage: "repeating-linear-gradient(45deg, rgba(255,255,255,.5) 0, rgba(255,255,255,.5) 3px, transparent 3px, transparent 6px)" }} />
+        Vượt so với kế hoạch (thực tế trễ hơn)
+      </span>
+    </div>
+  )
 
-  return (
-    <div>
-      <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 12, marginBottom: 8 }}>
-        {(Object.keys(AUDIT_STATUS_COLOR) as Array<keyof typeof AUDIT_STATUS_COLOR>).map((k) => (
-          <span key={k} style={{ display: "flex", alignItems: "center", gap: 5 }}>
-            <span style={{ display: "inline-block", width: 14, height: 10, borderRadius: 3, background: AUDIT_STATUS_COLOR[k] }} />
-            {AUDIT_STATUS_LABEL[k]}
-          </span>
-        ))}
-        {/* Port cua 2 muc legend con thieu (dong 3905-3906 ban goc): thanh ke
-            hoach nhat + thanh vuot ke hoach co soc, khop du 6 muc legend goc. */}
-        <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
-          <span style={{ display: "inline-block", width: 14, height: 10, borderRadius: 3, background: "#1d5fd6", opacity: 0.45 }} />
-          Kế hoạch (nhạt)
-        </span>
-        <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
-          <span style={{ display: "inline-block", width: 14, height: 10, borderRadius: 3, background: "#c62828", backgroundImage: "repeating-linear-gradient(45deg, rgba(255,255,255,.5) 0, rgba(255,255,255,.5) 3px, transparent 3px, transparent 6px)" }} />
-          Vượt so với kế hoạch (thực tế trễ hơn)
-        </span>
-      </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+  const toolbar = (
+    <div className="pl-toolbar">
+      <div />
+      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        <div className="pl-daynav">
           <ArrowButton direction="chevronLeft" onClick={() => shiftFocus(-1)} ariaLabel="Lùi thời gian" />
           <input
             type={inputType}
@@ -197,28 +210,48 @@ export function AuditGanttChart({ items, phases }: { items: AuditItemRow[]; phas
               else if (zoom === "week") scrollToFocus(`${v}-01`)
               else scrollToFocus(`${v}-01-01`)
             }}
-            style={{ padding: "5px 8px", borderRadius: 8, border: "1px solid #dfe3e8", fontSize: 12.5 }}
           />
           <ArrowButton direction="chevronRight" onClick={() => shiftFocus(1)} ariaLabel="Tới thời gian" />
         </div>
-        <div style={{ display: "flex", gap: 4 }}>
+        <div className="pl-zoom">
           {ZOOM_OPTIONS.map((z) => (
-            <button
-              key={z.key}
-              type="button"
-              onClick={() => setZoom(z.key)}
-              style={{ padding: "5px 12px", borderRadius: 8, border: "1px solid #1d5fd6", background: zoom === z.key ? "#1d5fd6" : "#fff", color: zoom === z.key ? "#fff" : "#1d5fd6", fontSize: 12.5, cursor: "pointer" }}
-            >
+            <button key={z.key} type="button" className={zoom === z.key ? "active" : undefined} onClick={() => setZoom(z.key)}>
               {z.label}
             </button>
           ))}
         </div>
       </div>
-      <div style={{ overflowX: "auto", border: "1px solid #e6e9ee", borderRadius: 10 }}>
-        <div style={{ display: "grid", gridTemplateColumns: `220px repeat(${cols.length}, ${colWidth}px)`, minWidth: 220 + cols.length * colWidth }}>
-          <div style={{ gridColumn: 1, gridRow: "1 / span 2", background: "#f7f8fa", borderBottom: "1px solid #e6e9ee", borderRight: "1px solid #e6e9ee" }} />
+    </div>
+  )
+
+  if (items.length === 0) {
+    return (
+      <div>
+        {legend}
+        {toolbar}
+        <div className="pl-empty">
+          <b>Chưa có hạng mục nào để hiển thị Gantt.</b>
+          Thêm hạng mục ở bảng bên dưới.
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      {legend}
+      {toolbar}
+      <div className="pl-gantt-wrap">
+        <div
+          className="pl-gantt"
+          style={{
+            gridTemplateColumns: `200px repeat(${cols.length}, ${colWidth}px)`,
+            gridAutoRows: "36px",
+          }}
+        >
+          <div className="pl-corner" style={{ gridColumn: 1, gridRow: "1 / span 2" }} />
           {runs.map((run) => (
-            <div key={run.startIdx} style={{ gridColumn: `${run.startIdx + 2} / span ${run.span}`, gridRow: 1, fontSize: 10.5, fontWeight: 700, textAlign: "center", padding: "3px 0", background: "#eef2f7", borderBottom: "1px solid #e6e9ee", color: "#4b5563" }}>
+            <div key={run.startIdx} className="pl-ghead grp" style={{ gridColumn: `${run.startIdx + 2} / span ${run.span}`, gridRow: 1 }}>
               {groupLabel(zoom, run.group)}
             </div>
           ))}
@@ -226,7 +259,8 @@ export function AuditGanttChart({ items, phases }: { items: AuditItemRow[]; phas
             <div
               key={c.key}
               ref={(el) => { colRefs.current[i] = el }}
-              style={{ gridColumn: i + 2, gridRow: 2, fontSize: 10, textAlign: "center", padding: "4px 0", background: c.isToday ? "#e3edff" : c.isWeekend ? "#f2f3f5" : "#f7f8fa", borderBottom: "1px solid #e6e9ee", color: "#6b7280" }}
+              className={`pl-ghead${c.isToday ? " today" : ""}${c.isWeekend ? " weekend" : ""}`}
+              style={{ gridColumn: i + 2, gridRow: 2 }}
             >
               {c.label}
             </div>
@@ -235,7 +269,7 @@ export function AuditGanttChart({ items, phases }: { items: AuditItemRow[]; phas
             const row = ri + 3
             if (r.type === "phase") {
               return (
-                <div key={`phase-${r.phase.id}`} style={{ gridColumn: `1 / span ${cols.length + 1}`, gridRow: row, background: "#eef2f7", fontWeight: 700, fontSize: 12, padding: "5px 10px" }}>
+                <div key={`phase-${r.phase.id}`} className="pl-packrow" style={{ gridColumn: `1 / span ${cols.length + 1}`, gridRow: row }}>
                   {r.phase.name}
                 </div>
               )
@@ -243,69 +277,59 @@ export function AuditGanttChart({ items, phases }: { items: AuditItemRow[]; phas
             const it = r.item
             const status = auditAutoStatus(it)
             const color = AUDIT_STATUS_COLOR[status] || "#9aa1ab"
-            const planS = toDay(it.planStart), planE = toDay(it.planEnd) || planS
-            const actS = toDay(it.actualStart), actE = toDay(it.actualEnd) || (actS ? today : null)
+            const planS = toDay(it.planStart)
+            const planE = toDay(it.planEnd) || planS
+            const actS = toDay(it.actualStart)
+            const actE = toDay(it.actualEnd) || (actS ? today : null)
+            // Port cua ap-legend-dot.stripe ban goc (dong 1852, 3906): phan thuc te
+            // vuot qua ngay ket thuc ke hoach duoc ve co soc rieng, gio dung lop phu
+            // ".seg seg-beyond-late" ben trong CHINH thanh thuc te (globals.css ~671-676)
+            // thay cho 1 div tuyet doi rieng nhu ban truoc.
+            const overrunStart = planE && actE && actE > planE ? addDays(planE, 1) : null
+            const actSpan = colSpan(cols, actS || today, actE || actS || today)
+            const overrunPct = overrunStart && actS ? ((colIndexForDate(cols, overrunStart) - colIndexForDate(cols, actS)) / actSpan) * 100 : null
             return (
               <div key={it.id} style={{ display: "contents" }}>
-                <div style={{ gridColumn: 1, gridRow: row, fontSize: 12, padding: "6px 10px", borderTop: "1px solid #f1f2f4", borderRight: "1px solid #e6e9ee", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }} title={it.name}>
-                  {it.name}
+                <div className="pl-rowlabel" style={{ gridColumn: 1, gridRow: row }} onClick={() => onEditItem?.(it)}>
+                  <div className="tn">{it.name}</div>
+                  <div className="tm">{AUDIT_STATUS_LABEL[status] || status}</div>
                 </div>
                 {cols.map((c, ci) => (
-                  <div key={ci} style={{ gridColumn: ci + 2, gridRow: row, borderTop: "1px solid #f1f2f4", background: c.isToday ? "#f5f8ff" : undefined }} />
+                  <div key={ci} className={`pl-gcell${c.isWeekend ? " weekend" : ""}${c.isToday ? " today-col" : ""}`} style={{ gridColumn: ci + 2, gridRow: row }} />
                 ))}
                 {planS && (
                   <div
-                    title={`${it.name} (${AUDIT_STATUS_LABEL[status] || status}) ${planS} → ${planE}`}
+                    className="pl-bar"
+                    onClick={() => onEditItem?.(it)}
+                    title={`${it.name} — Kế hoạch: ${planS} → ${planE}`}
                     style={{
                       gridColumn: `${colIndexForDate(cols, planS) + 2} / span ${colSpan(cols, planS, planE || planS)}`,
                       gridRow: row,
-                      margin: "6px 2px",
-                      borderRadius: 5,
                       background: color,
-                      opacity: actS ? 0.35 : 0.85,
-                      height: 14,
+                      opacity: actS ? 0.42 : 0.9,
                     }}
-                  />
+                  >
+                    <span>{it.name}</span>
+                  </div>
                 )}
-                {actS && (() => {
-                  // Port cua ap-legend-dot.stripe ban goc (dong 1852, 3906): phan
-                  // thuc te vuot qua ngay ket thuc ke hoach duoc ve co soc rieng.
-                  const overrunStart = planE && actE && actE > planE ? addDays(planE, 1) : null
-                  const normalEnd = overrunStart ? planE! : actE || actS
-                  return (
-                    <>
-                      <div
-                        title={`Thực tế: ${actS} → ${actE}`}
-                        style={{
-                          gridColumn: `${colIndexForDate(cols, actS) + 2} / span ${colSpan(cols, actS, normalEnd)}`,
-                          gridRow: row,
-                          margin: overrunStart ? "6px 0 6px 2px" : "6px 2px",
-                          borderRadius: overrunStart ? "5px 0 0 5px" : 5,
-                          background: color,
-                          height: 14,
-                          position: "relative",
-                          top: -20,
-                        }}
-                      />
-                      {overrunStart && actE && (
-                        <div
-                          title={`Vượt kế hoạch: ${overrunStart} → ${actE}`}
-                          style={{
-                            gridColumn: `${colIndexForDate(cols, overrunStart) + 2} / span ${colSpan(cols, overrunStart, actE)}`,
-                            gridRow: row,
-                            margin: "6px 2px 6px 0",
-                            borderRadius: "0 5px 5px 0",
-                            background: color,
-                            backgroundImage: "repeating-linear-gradient(45deg, rgba(255,255,255,.5) 0, rgba(255,255,255,.5) 3px, transparent 3px, transparent 6px)",
-                            height: 14,
-                            position: "relative",
-                            top: -20,
-                          }}
-                        />
-                      )}
-                    </>
-                  )
-                })()}
+                {actS && (
+                  <div
+                    className="pl-bar"
+                    onClick={() => onEditItem?.(it)}
+                    title={`${it.name} — Thực tế: ${actS} → ${actE}${overrunStart ? " (vượt kế hoạch)" : ""}`}
+                    style={{
+                      gridColumn: `${colIndexForDate(cols, actS) + 2} / span ${actSpan}`,
+                      gridRow: row,
+                      background: color,
+                      top: -18,
+                    }}
+                  >
+                    {overrunPct != null && (
+                      <div className="seg seg-beyond-late" style={{ left: `${overrunPct}%`, width: `${100 - overrunPct}%` }} />
+                    )}
+                    <span>{it.name}</span>
+                  </div>
+                )}
               </div>
             )
           })}

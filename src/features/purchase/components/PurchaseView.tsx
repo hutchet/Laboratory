@@ -1,5 +1,5 @@
 "use client"
-import { useMemo, useState, useTransition } from "react"
+import { useEffect, useMemo, useState, useTransition } from "react"
 import { CustomSelect } from "@/shared/ui/custom-select"
 import { PageShell } from "@/shared/ui/page-shell"
 import { FilterBar } from "@/shared/ui/filter-bar"
@@ -74,6 +74,33 @@ export function PurchaseView({
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [bulkConfirm, setBulkConfirm] = useState(false)
   const [pending, startTransition] = useTransition()
+  // Port cua eqCenterEditMode/EquipmentView (che do sua chi ap dung trong pham
+  // vi 1 nhom dang mo, khong con la nut o dau trang toan cuc).
+  const [editMode, setEditMode] = useState(false)
+  function toggleEditMode() {
+    setEditMode((v) => { if (v) setSelected(new Set()); return !v })
+  }
+
+  // Port cua #page-title.title-back (EquipmentView/DepreciationView): khi da mo
+  // 1 nhom, tieu de tren topbar tro thanh nut back thay cho nut rieng "Danh sach nhom".
+  useEffect(() => {
+    const el = document.getElementById("page-title")
+    if (!el) return
+    if (openGroup) {
+      el.classList.add("title-back")
+      el.title = "Quay lại danh sách nhóm"
+      const handler = () => { setOpenGroup(null); setEditMode(false); setSelected(new Set()) }
+      el.addEventListener("click", handler)
+      return () => {
+        el.classList.remove("title-back")
+        el.removeAttribute("title")
+        el.removeEventListener("click", handler)
+      }
+    }
+    el.classList.remove("title-back")
+    el.removeAttribute("title")
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openGroup])
 
   // ---- KPI (ported from pm-k-total / pm-k-value / pm-k-ongoing / pm-k-done) ----
   const totalValue = useMemo(() => items.reduce((s, it) => s + purchaseParseAmount(it.amount), 0), [items])
@@ -145,11 +172,18 @@ export function PurchaseView({
 
   // Ported from the 19-column table in renderPurchase (checkbox/STT/actions handled separately).
   // defaultWidth values are ported 1:1 from the original cols=[{w:...}] definitions.
+  // Port cua .row-chk/.selall-chk/.acts (globals.css dong 350-353): trong ban
+  // goc 2 cot nay LUON co trong DOM/chiem dung do rong cot, chi an bang
+  // visibility:hidden khi khong o che do Chinh sua (khong xoa het cot nhu
+  // truoc, vi vay do rong bang khong bi nhay khi bam Chinh sua/Xong).
   const columns: Array<DataTableColumn<PurchaseItemRow>> = [
     {
       key: "sel", header: "", defaultWidth: 44,
-      render: (it) => <input type="checkbox" checked={selected.has(it.id)} onChange={() => toggleSelect(it.id)} />,
+      render: (it) => editMode ? <input type="checkbox" checked={selected.has(it.id)} onChange={() => toggleSelect(it.id)} onClick={(ev) => ev.stopPropagation()} /> : null,
     },
+    // Port cua cot "STT" (dong 5892 ban goc, giua checkbox va Ten hang muc) -
+    // truoc day bi bo sot khi build lai bang.
+    { key: "stt", header: "STT", defaultWidth: 56, render: (it) => activeList.findIndex((x) => x.id === it.id) + 1 },
     { key: "name", header: "Tên hạng mục", defaultWidth: 220, render: (it) => <span style={{ fontWeight: 600 }}>{it.name}</span> },
     { key: "amount", header: "Giá trị", align: "right", defaultWidth: 130, render: (it) => (it.amount ? `${purchaseFormatAmount(purchaseParseAmount(it.amount))} đ` : "—") },
     { key: "price", header: "Đơn giá", defaultWidth: 110, render: (it) => it.price ?? "—" },
@@ -171,12 +205,12 @@ export function PurchaseView({
     { key: "tfslink", header: "TFS Link", defaultWidth: 80, render: (it) => (it.tfslink && it.tfslink.startsWith("http") ? <a href={it.tfslink} target="_blank" rel="noopener">Link</a> : "—") },
     {
       key: "actions", header: "", align: "right", defaultWidth: 110,
-      render: (it) => (
-        <span style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-          <button type="button" onClick={() => openEdit(it)} style={{ border: "none", background: "none", color: "#1d5fd6", cursor: "pointer" }}>Sửa</button>
-          <button type="button" onClick={() => setConfirmDeleteId(it.id)} style={{ border: "none", background: "none", color: "#c62828", cursor: "pointer" }}>Xoá</button>
+      render: (it) => editMode ? (
+        <span style={{ display: "flex", gap: 8, justifyContent: "flex-end" }} onClick={(ev) => ev.stopPropagation()}>
+          <button type="button" className="txt-act pri" onClick={() => openEdit(it)}>Sửa</button>
+          <button type="button" className="txt-act del" onClick={() => setConfirmDeleteId(it.id)}>Xoá</button>
         </span>
-      ),
+      ) : null,
     },
   ]
 
@@ -268,16 +302,16 @@ export function PurchaseView({
     <PageShell
       title={`Theo dõi mua hàng — ${openGroup}`}
       actions={<>
-        <button type="button" className="btn-line" onClick={() => setOpenGroup(null)} style={{ marginRight: 8 }}>← Danh sách nhóm</button>
         <button type="button" className="btn-line" onClick={exportCsv} style={{ marginRight: 8 }}>Xuất CSV</button>
-        {selected.size > 0 && (
+        {editMode && selected.size > 0 && (
           <button type="button" className="btn-danger" onClick={() => setBulkConfirm(true)} style={{ marginRight: 8 }}>Xoá {selected.size} mục đã chọn</button>
         )}
+        <button type="button" className="btn-line" onClick={toggleEditMode} style={{ marginRight: 8 }}>{editMode ? "Xong" : "Chỉnh sửa"}</button>
         <button type="button" className="btn-pri" onClick={openNew}>+ Thêm hạng mục</button>
       </>}
       filters={<FilterBar search={{ value: q, onChange: setQ, placeholder: "Tìm hạng mục..." }} />}
     >
-      <DataTable columns={columns} rows={activeList} rowKey={(it) => it.id} loading={pending} emptyTitle="Chưa có hạng mục nào trong nhóm này" resizable />
+      <DataTable columns={columns} rows={activeList} rowKey={(it) => it.id} onRowClick={openEdit} loading={pending} emptyTitle="Chưa có hạng mục nào trong nhóm này" resizable />
 
       {showForm && (
         <PurchaseFormModal
