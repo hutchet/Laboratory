@@ -8,6 +8,7 @@ export type AvatarInitialsProps = { name: string; size?: number; title?: string;
 
 export function AvatarInitials({ name, size = 28, title, src }: AvatarInitialsProps) {
   const bg = avatarColor(name || "?")
+  const r = Math.max(6, Math.round(size / 4))
   if (src) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
@@ -20,7 +21,7 @@ export function AvatarInitials({ name, size = 28, title, src }: AvatarInitialsPr
           display: "inline-flex",
           width: size,
           height: size,
-          borderRadius: "50%",
+          borderRadius: r,
           objectFit: "cover",
           flexShrink: 0,
         }}
@@ -37,7 +38,7 @@ export function AvatarInitials({ name, size = 28, title, src }: AvatarInitialsPr
         justifyContent: "center",
         width: size,
         height: size,
-        borderRadius: "50%",
+        borderRadius: r,
         background: bg,
         color: "#fff",
         fontSize: Math.max(10, size * 0.4),

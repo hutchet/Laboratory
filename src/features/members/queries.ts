@@ -21,6 +21,7 @@ export async function listMembers(): Promise<MemberRow[]> {
     allCenters: m.allCenters,
     centerName: m.center?.name ?? null,
     groupName: m.group?.name ?? null,
+    avatar: m.avatar,
     createdAt: m.createdAt.toISOString(),
   }))
 }
@@ -43,6 +44,7 @@ export type CurrentMemberInfo = {
   name: string
   email: string | null
   accessRole: string | null
+  avatar: string | null
 }
 
 // Ported from the original's adminbar (#adminbar-av/#adminbar-nm/#adminbar-em,
@@ -55,8 +57,8 @@ export async function getCurrentMemberInfo(): Promise<CurrentMemberInfo> {
   const name = session?.user?.name || email || "Người dùng"
   const matched = email ? await db.member.findUnique({ where: { email } }) : null
   if (matched) {
-    return { name: matched.name, email: matched.email, accessRole: matched.accessRole }
+    return { name: matched.name, email: matched.email, accessRole: matched.accessRole, avatar: matched.avatar }
   }
   const admin = await db.member.findFirst({ where: { accessRole: "admin" } })
-  return { name, email, accessRole: admin?.accessRole ?? "admin" }
+  return { name, email, accessRole: admin?.accessRole ?? "admin", avatar: null }
 }

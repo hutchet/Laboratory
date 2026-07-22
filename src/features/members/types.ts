@@ -19,6 +19,7 @@ export type MemberRow = {
   allCenters: boolean
   centerName: string | null
   groupName: string | null
+  avatar: string | null
   createdAt: string
 }
 

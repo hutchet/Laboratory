@@ -47,8 +47,11 @@ export function MembersView({
   const [resetPasswordFor, setResetPasswordFor] = useState<MemberRow | null>(null)
   const [resetPasswordValue, setResetPasswordValue] = useState("")
   const [resetPasswordError, setResetPasswordError] = useState<string | null>(null)
-  // Additive — yeu cau "them che do gan anh avatar vao tai khoan": preview + gia tri anh
-  // (data URI base64) dang chinh trong form Them/Sua thanh vien. null = xoa anh hien co.
+  // Additive — yeu cau them che do gan anh avatar vao tai khoan: preview + crop UI.
+  // Nguoi dung chon file -> hien thi anh goc + 3 slider vi tri/do lon -> bam Confirm -> cat
+  // xuong 240x240 (giu ty le canvas) -> luu vao avatarPreview (data URI base64 JPEG).
+  const [avatarRawUrl, setAvatarRawUrl] = useState<string | null>(null)
+  const [avatarCrop, setAvatarCrop] = useState({ x: 0, y: 0, size: 100 })
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
   const [avatarError, setAvatarError] = useState<string | null>(null)
 
@@ -92,7 +95,7 @@ export function MembersView({
   const groupOptionsForForm = useMemo(() => groupOptions.filter((g) => !formCenterId || g.centerId === formCenterId), [groupOptions, formCenterId])
 
   function openNew() { setEditing(null); setFormCenterId(""); setAvatarPreview(null); setAvatarError(null); setShowForm(true) }
-  function openEdit(m: MemberRow) { setEditing(m); setFormCenterId(m.centerId ?? ""); setShowForm(true) }
+  function openEdit(m: MemberRow) { setEditing(m); setFormCenterId(m.centerId ?? ""); setAvatarPreview(m.avatar ?? null); setAvatarError(null); setShowForm(true) }
   // Additive — doc file anh nguoi dung chon, nen kich thuoc xuong toi da 240x240 (giu ty le,
   // qua canvas) roi xuat ra JPEG chat luong 0.85 truoc khi luu data URI vao avatarPreview, de
   // tranh luu anh goc qua nang (co the vai MB) vao DB dang text.
@@ -261,9 +264,7 @@ export function MembersView({
         // currently logged-in account with avatar initials, name, email, and role badge.
         // Additive: khi thành viên đã gắn ảnh avatar thì hiện ảnh đó thay cho initials.
         <div style={{ display: "flex", alignItems: "center", gap: 13, background: "linear-gradient(135deg,#eef2ff,#e7ecff)", border: "1px solid #e0e7ff", borderRadius: 14, padding: "14px 16px", marginBottom: 18 }}>
-          <span style={{ width: 44, height: 44, borderRadius: 11, background: "linear-gradient(135deg,#5b7bff,#3a55d9)", color: "#fff", display: "grid", placeItems: "center", fontWeight: 600, fontSize: 15 }}>
-              {initials(currentMember.name)}
-            </span>
+          <AvatarInitials name={currentMember.name} size={44} src={currentMember.avatar} />
           <div>
             <div style={{ fontWeight: 600, fontSize: 14 }}>{currentMember.name}</div>
             <div style={{ fontSize: 12, color: "#6b7280" }}>{currentMember.email ?? "—"}</div>
