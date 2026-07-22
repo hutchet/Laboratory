@@ -8,12 +8,12 @@ import { FormModal } from "@/shared/ui/form-modal"
 import { CustomSelect } from "@/shared/ui/custom-select"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { StatusBadge } from "@/shared/ui/status-badge"
+import { IconButton } from "@/shared/ui/icon-button"
 import { Perm } from "@/shared/lib/rbac-client"
 import {
   saveAuditPlan, deleteAuditPlan,
   saveAuditPhase, deleteAuditPhase,
   saveAuditItem, deleteAuditItem, bulkDeleteAuditItems,
-  seedIso17025Plan,
 } from "../actions"
 import { AUDIT_STATUS_LABEL, AUDIT_STATUS_COLOR, auditAutoStatus, type AuditPlanRow, type AuditPhaseRow, type AuditItemRow } from "../types"
 import { AuditGanttChart } from "./AuditGanttChart"
@@ -61,13 +61,35 @@ export function AuditPlanView({
   const [itemEditMode, setItemEditMode] = useState(false)
   const [openPlanId, setOpenPlanId] = useState<string>("")
   const [search, setSearch] = useState("")
+  const [planSearch, setPlanSearch] = useState("")
   // Port cua apOverviewHidden/apOverviewTitle ban goc (dong ~6033-6035, 6165,
   // 6371-6389): an/hien khoi tong quan + doi ten tieu de, luu tam theo phien
   // xem (khong phai du lieu nghiep vu nen khong can luu server).
   const [overviewHidden, setOverviewHidden] = useState(false)
-  const [overviewTitle, setOverviewTitle] = useState("Tổng quan tiến độ ISO 17025")
+  const [overviewTitle, setOverviewTitle] = useState("Tổng quan tiến độ")
   const [editingOverviewTitle, setEditingOverviewTitle] = useState(false)
   const [overviewTitleDraft, setOverviewTitleDraft] = useState(overviewTitle)
+
+  // Port cua #page-title.title-back ban goc (giong PlanView.tsx): khi da mo 1
+  // ke hoach cu the, tieu de trang tro thanh nut "back" - bam vao tieu de la
+  // ve lai danh sach the ke hoach (thay cho nut "‹ Danh sach ke hoach" rieng).
+  useEffect(() => {
+    const el = document.getElementById("page-title")
+    if (!el) return
+    if (openPlanId) {
+      el.classList.add("title-back")
+      el.title = "Quay lại danh sách kế hoạch"
+      const handler = () => setOpenPlanId("")
+      el.addEventListener("click", handler)
+      return () => {
+        el.classList.remove("title-back")
+        el.removeAttribute("title")
+        el.removeEventListener("click", handler)
+      }
+    }
+    el.classList.remove("title-back")
+    el.removeAttribute("title")
+  }, [openPlanId])
 
   // CustomSelect dieu khien bang state (cung mau sua nhu PlanView ban ba) —
   // ap dung cho tat ca select trong trang nay: filter chon ke hoach + 3 form popup.
@@ -94,6 +116,10 @@ export function AuditPlanView({
     [items, visiblePlanId, search],
   )
   const scopedPhases = useMemo(() => phases.filter((p) => !visiblePlanId || p.auditPlanId === visiblePlanId), [phases, visiblePlanId])
+  const filteredPlans = useMemo(
+    () => plans.filter((p) => !planSearch || p.title.toLowerCase().includes(planSearch.toLowerCase())),
+    [plans, planSearch],
+  )
 
   const kpi = useMemo(() => {
     const statuses = scopedItems.map((it) => auditAutoStatus(it))
@@ -191,9 +217,6 @@ export function AuditPlanView({
     const ids = Array.from(itemSelected)
     startTransition(async () => { await bulkDeleteAuditItems(ids); setItemSelected(new Set()); setItemBulkConfirm(false) })
   }
-  function handleSeed() {
-    startTransition(async () => { await seedIso17025Plan() })
-  }
   // Cong thuc T.luong (ngay) port tu renderAuditPlan ban goc (dua tren
   // planStart/planEnd, khong luu rieng field "dur" vi model hien tai chua co).
   function itemDurationDays(it: AuditItemRow): number | null {
@@ -229,7 +252,7 @@ export function AuditPlanView({
   const itemColumns: Array<DataTableColumn<AuditItemRow>> = [
     {
       key: "sel", header: "", defaultWidth: 44,
-      render: (it) => itemEditMode ? <input type="checkbox" checked={itemSelected.has(it.id)} onChange={() => toggleItemSelect(it.id)} /> : null,
+      render: (it) => itemEditMode ? <input type="checkbox" checked={itemSelected.has(it.id)} onChange={() => toggleItemSelect(it.id)} onClick={(ev) => ev.stopPropagation()} /> : null,
     },
     // Cot STT port cua renderAuditPlan ban goc - truoc day bi bo sot khi gop
     // cac hang muc thanh 1 bang dep (giong fix da ap dung o PurchaseView.tsx).
@@ -248,9 +271,11 @@ export function AuditPlanView({
     {
       key: "actions", header: "", align: "right",
       render: (it) => itemEditMode ? (
-        <span style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-          <Perm minPerm="dept_head"><button type="button" onClick={() => { setEditingItem(it); setShowItemForm(true) }} style={{ border: "none", background: "none", color: "#1d5fd6", cursor: "pointer" }}>Sửa</button>
-          <button type="button" onClick={() => setConfirmDeleteItemId(it.id)} style={{ border: "none", background: "none", color: "#c62828", cursor: "pointer" }}>Xoá</button></Perm>
+        <span style={{ display: "flex", gap: 8, justifyContent: "flex-end" }} onClick={(ev) => ev.stopPropagation()}>
+          <Perm minPerm="dept_head">
+            <IconButton icon="edit" variant="ghost" size={30} title="Sửa" onClick={() => { setEditingItem(it); setShowItemForm(true) }} />
+            <IconButton icon="delete" variant="danger" size={30} title="Xoá" onClick={() => setConfirmDeleteItemId(it.id)} />
+          </Perm>
         </span>
       ) : null,
     },
@@ -260,26 +285,25 @@ export function AuditPlanView({
     <PageShell
       title="Kế hoạch kiểm toán nội bộ"
       actions={!openPlanId ? (
-        <div style={{ display: "flex", gap: 8 }}>
-          <button type="button" className="btn-line" onClick={handleSeed}>+ Tạo từ mẫu ISO 17025</button>
-          <button type="button" className="btn-pri" onClick={() => setShowPlanForm(true)}>+ Kế hoạch</button>
-        </div>
-      ) : (
-        <button type="button" className="btn-line" onClick={() => setOpenPlanId("")}>‹ Danh sách kế hoạch</button>
-      )}
+        <button type="button" className="btn-pri" onClick={() => setShowPlanForm(true)}>+ Kế hoạch</button>
+      ) : null}
     >
       {!openPlanId && (
       <>
-      <h3 style={{ fontSize: 14, margin: "0 0 8px" }}>Kế hoạch</h3>
-      {plans.length === 0 ? (
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
+        <h3 style={{ fontSize: 14, margin: 0 }}>Kế hoạch</h3>
+        <FilterBar search={{ value: planSearch, onChange: setPlanSearch, placeholder: "Tìm kế hoạch…" }} />
+      </div>
+      {filteredPlans.length === 0 ? (
         <div className="empty">Chưa có kế hoạch nào.</div>
       ) : (
         // y/c: trang danh sach the (card list) cho Ke hoach kiem dinh, dung dung
         // khuon mau hub-card cua the Trung tam (EquipmentView.tsx #eq-center-cards)
         // thay cho bang DataTable cu - bam vao 1 the de chon lam ke hoach dang xem
-        // (giu nguyen logic setActivePlanId/visiblePlanId hien co).
-        <div id="ap-plan-cards" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 18, marginBottom: 20 }}>
-          {plans.map((p) => {
+        // (giu nguyen logic setActivePlanId/visiblePlanId hien co). Luoi nay dung
+        // chuan 4 the/hang PC - 3/laptop - 2/ipad - 1/mobile (CSS #ap-plan-cards).
+        <div id="ap-plan-cards">
+          {filteredPlans.map((p) => {
             const initial = p.title.trim().slice(0, 2).toUpperCase() || "KH"
             return (
               <div key={p.id} className="hub-card" onClick={() => setOpenPlanId(p.id)}>
@@ -314,12 +338,11 @@ export function AuditPlanView({
           <div className="ch" style={{ margin: "0 0 16px" }}>
             <div><h3 style={{ margin: 0 }}>{currentPlan.title}</h3><span>{currentPlan.scheduledAt ? new Date(currentPlan.scheduledAt).toLocaleDateString("vi-VN") : "Chưa có ngày dự kiến"}</span></div>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(5, minmax(0,1fr))", gap: 12, margin: "0 0 20px" }}>
+          <div className="kpis-tier" style={{ marginBottom: 20 }}>
             <KpiCard label="Tổng hạng mục" value={kpi.total} tone="neutral" trend={kpiTrends.total} />
             <KpiCard label="Hoàn thành" value={kpi.done} tone="success" trend={kpiTrends.done} />
             <KpiCard label="Đang triển khai" value={kpi.doing} tone="warning" trend={kpiTrends.doing} />
             <KpiCard label="Quá hạn" value={kpi.overdue} tone="danger" trend={kpiTrends.overdue} />
-            <KpiCard label="Chưa bắt đầu" value={kpi.todo} tone="neutral" trend={kpiTrends.todo} />
           </div>
 
           {overviewHidden ? (
@@ -365,11 +388,12 @@ export function AuditPlanView({
               <div style={{ fontSize: 20, fontWeight: 700 }}>{scopedPhases.length} nhóm</div>
             </div>
             <div>
-              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8, color: "#444" }}>Khối lượng theo người phụ trách</div>
-              {workload.length === 0 && <div style={{ color: "#8a8f98", fontSize: 13 }}>Chưa có dữ liệu.</div>}
-              {workload.slice(0, 4).map(([name, count]) => (
-                <div key={name} style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 3 }}>
-                  <span>{name}</span><span style={{ fontWeight: 600 }}>{count}</span>
+              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8, color: "#444" }}>Tải công việc theo phụ trách</div>
+              {workload.length === 0 ? <div style={{ color: "#8a8f98", fontSize: 13 }}>Chưa có dữ liệu.</div> : workload.map(([name, count]) => (
+                <div key={name} className="pl-hbar-row">
+                  <span className="pl-hbar-label" title={name}>{name}</span>
+                  <div className="pl-hbar-track"><div className="pl-hbar-fill" style={{ width: `${Math.round((count / maxWorkload) * 100)}%`, background: "var(--pri)" }} /></div>
+                  <span className="pl-hbar-val">{count}</span>
                 </div>
               ))}
             </div>
@@ -377,56 +401,36 @@ export function AuditPlanView({
           </div>
           )}
 
-          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 16, marginBottom: 20 }}>
-            {/* minWidth:0 la fix cho loi CSS Grid "blowout" quen thuoc: neu khong co
-                dong nay, cot luoi nay se tu gian rong theo dung do rong noi dung cua
-                bang Gantt (nhieu cot ngay) thay vi gioi han theo "2fr", khien
-                .pl-gantt-wrap (overflow:auto) khong bao gio thuc su bi tran de kich
-                hoat thanh cuon rieng cua no - phan con lai bi .main{{overflow-x:hidden}}
-                cat mat luon, nhin giong nhu "khong co cuon ngang/doc" nao ca. */}
-            <div style={{ minWidth: 0, overflow: "hidden" }}>
-              <h3 style={{ fontSize: 14, margin: "0 0 8px" }}>Tiến độ (Gantt)</h3>
-              <AuditGanttChart items={scopedItems} phases={scopedPhases} onEditItem={(it) => { setEditingItem(it); setShowItemForm(true) }} />
-            </div>
-            <div>
-              <h3 style={{ fontSize: 14, margin: "0 0 8px" }}>Tải công việc theo phụ trách</h3>
-              <div style={{ border: "1px solid #e6e9ee", borderRadius: 10, padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
-                {workload.length === 0 && <div style={{ color: "#8a8f98", fontSize: 13 }}>Chưa có dữ liệu.</div>}
-                {workload.map(([name, count]) => (
-                  <div key={name}>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 3 }}>
-                      <span>{name}</span><span style={{ fontWeight: 600 }}>{count}</span>
-                    </div>
-                    <div style={{ background: "#eef1f5", borderRadius: 4, height: 6 }}>
-                      <div style={{ background: "#1d5fd6", borderRadius: 4, height: 6, width: `${(count / maxWorkload) * 100}%` }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+          {/* Gantt keo dan het chieu ngang man hinh (khong con chia cot voi panel
+              workload rieng - workload da gop vao khoi tong quan phia tren, giong
+              cau truc PlanView.tsx). minWidth:0 giu nguyen de .pl-gantt-wrap
+              (overflow:auto) cuon rieng thay vi bi .main{{overflow-x:hidden}} cat mat. */}
+          <div style={{ minWidth: 0, overflow: "hidden", marginBottom: 20 }}>
+            <h3 style={{ fontSize: 14, margin: "0 0 8px" }}>Tiến độ (Gantt)</h3>
+            <AuditGanttChart items={scopedItems} phases={scopedPhases} onEditItem={(it) => { setEditingItem(it); setShowItemForm(true) }} />
           </div>
         </>
       )}
 
       {openPlanId && currentPlan && (
       <>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", margin: "24px 0 8px" }}>
-        <h3 style={{ fontSize: 14, margin: 0 }}>Hạng mục kiểm toán</h3>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button type="button" className="btn-line" onClick={exportCsv}>Xuất Excel (CSV)</button>
-          <Perm minPerm="dept_head">
-            {itemEditMode && (
-              <button type="button" className="btn-danger" disabled={!itemSelected.size} onClick={() => setItemBulkConfirm(true)} style={{ opacity: itemSelected.size ? 1 : 0.5 }}>Xoá mục đã chọn</button>
-            )}
-            <button type="button" className={itemEditMode ? "btn-success" : "btn-line"} onClick={toggleItemEditMode}>{itemEditMode ? "Xong" : "Chỉnh sửa"}</button>
-            <button type="button" className="btn-line" onClick={() => setShowPhaseForm(true)}>+ Giai đoạn</button>
-            <button type="button" className="btn-pri" onClick={() => { setEditingItem(null); setShowItemForm(true) }}>+ Thêm hạng mục</button>
-          </Perm>
-        </div>
+      <h3 style={{ fontSize: 14, margin: "24px 0 8px" }}>Hạng mục kiểm toán</h3>
+      <div style={{ marginBottom: 12 }}>
+        <FilterBar search={{ value: search, onChange: setSearch, placeholder: "Tìm theo tên hạng mục hoặc phụ trách…" }}>
+          <div style={{ display: "flex", gap: 8, marginLeft: "auto" }}>
+            <button type="button" className="btn-line" onClick={exportCsv}>Xuất Excel (CSV)</button>
+            <Perm minPerm="dept_head">
+              {itemEditMode && (
+                <button type="button" className="btn-danger" disabled={!itemSelected.size} onClick={() => setItemBulkConfirm(true)} style={{ opacity: itemSelected.size ? 1 : 0.5 }}>Xoá mục đã chọn</button>
+              )}
+              <button type="button" className={itemEditMode ? "btn-success" : "btn-line"} onClick={toggleItemEditMode}>{itemEditMode ? "Xong" : "Chỉnh sửa"}</button>
+              <button type="button" className="btn-line" onClick={() => setShowPhaseForm(true)}>+ Giai đoạn</button>
+              <button type="button" className="btn-pri" onClick={() => { setEditingItem(null); setShowItemForm(true) }}>+ Thêm hạng mục</button>
+            </Perm>
+          </div>
+        </FilterBar>
       </div>
-      <FilterBar search={{ value: search, onChange: setSearch, placeholder: "Tìm theo tên hạng mục hoặc phụ trách…" }}>
-      </FilterBar>
-      <DataTable columns={itemColumns} rows={scopedItems} rowKey={(it) => it.id} loading={pending} emptyTitle="Chưa có hạng mục nào" />
+      <DataTable columns={itemColumns} rows={scopedItems} rowKey={(it) => it.id} onRowClick={(row) => { setEditingItem(row); setShowItemForm(true) }} loading={pending} emptyTitle="Chưa có hạng mục nào" resizable />
       </>
       )}
 
