@@ -75,6 +75,7 @@ export async function listProjects(): Promise<ProjectRow[]> {
       derivedPriority,
       dueDate,
       risk,
+      createdAt: p.createdAt,
     }
   })
 }

@@ -11,6 +11,7 @@ import { KpiCard } from "@/shared/ui/kpi-card"
 import { IconButton } from "@/shared/ui/icon-button"
 import { CustomSelect } from "@/shared/ui/custom-select"
 import { Perm } from "@/shared/lib/rbac-client"
+import { computeSimpleTrend } from "@/shared/lib/trend"
 import { saveSample, deleteSample, bulkDeleteSamples } from "../actions"
 import { SAMPLE_STATUS_LABEL, SAMPLE_STATUS_ORDER, groupSamplesByProject, type SampleRow, type Option } from "../types"
 
@@ -53,6 +54,7 @@ export function SamplesView({ samples, customers, projects }: { samples: SampleR
     const received = samples.filter((s) => s.derivedStatus === "received").length
     return { total, testing, done, received }
   }, [samples])
+  const trends=useMemo(()=>({total:computeSimpleTrend(samples,s=>true,s=>s.createdAt),testing:computeSimpleTrend(samples,s=>s.derivedStatus==="testing",s=>s.createdAt),done:computeSimpleTrend(samples,s=>s.derivedStatus==="completed"||s.derivedStatus==="returned",s=>s.createdAt),received:computeSimpleTrend(samples,s=>s.derivedStatus==="received",s=>s.createdAt)}),[samples])
 
   const filtered = useMemo(() => {
     return samples.filter((s) => {
@@ -144,10 +146,10 @@ export function SamplesView({ samples, customers, projects }: { samples: SampleR
     <PageShell title="Quản lý Mẫu">
       <div id="page-samples">
       <div className="kpis-tier" style={{ marginBottom: 20 }}>
-        <KpiCard label="Tổng số mẫu" value={kpis.total} />
-        <KpiCard label="Đang thử nghiệm" value={kpis.testing} tone="warning" />
-        <KpiCard label="Hoàn thành" value={kpis.done} tone="success" />
-        <KpiCard label="Mới nhận, chưa xếp lịch" value={kpis.received} tone="danger" />
+        <KpiCard label="Tổng số mẫu" value={kpis.total} trend={trends.total} />
+        <KpiCard label="Đang thử nghiệm" value={kpis.testing} tone="warning" trend={trends.testing} />
+        <KpiCard label="Hoàn thành" value={kpis.done} tone="success" trend={trends.done} />
+        <KpiCard label="Mới nhận, chưa xếp lịch" value={kpis.received} tone="danger" trend={trends.received} />
       </div>
       <div className="section-head">
         <h3>Tất cả mẫu</h3>

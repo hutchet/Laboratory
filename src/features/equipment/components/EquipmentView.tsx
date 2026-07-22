@@ -174,28 +174,7 @@ export function EquipmentView({ equipment, centers, bookings = [] }: { equipment
     const max = Math.max(1, ...groups.map((g) => g.items.length))
     return { total, ready, maint, rooms, pct, max }
   }, [equipment, groups])
-
-  // ---- KPI trends ----
-  const eqTrendReady = useMemo(() => computeSimpleTrend(equipment, (e) => e.status !== "maintenance", (e) => e.createdAt), [equipment])
-  const eqTrendMaint = useMemo(() => computeSimpleTrend(equipment, (e) => e.status === "maintenance", (e) => e.createdAt), [equipment])
-  const eqTrendRooms = useMemo(() => {
-    const all = equipment
-    const now = Date.now()
-    const DAY = 86400000
-    const weekAgo = now - 7 * DAY
-    // Rooms doesn't use item count — compute unique rooms per snapshot
-    const currRooms = new Set(all.filter((e) => new Date(e.createdAt).getTime() <= now).map((e) => e.room).filter(Boolean)).size
-    const prevRooms = new Set(all.filter((e) => new Date(e.createdAt).getTime() <= weekAgo).map((e) => e.room).filter(Boolean)).size
-    let pct: number, up: boolean | null
-    if (prevRooms === 0) { pct = 0; up = null }
-    else { const raw = Math.round(((currRooms - prevRooms) / prevRooms) * 100); pct = Math.abs(raw); up = raw === 0 ? null : raw > 0 }
-    const sparkline: number[] = []
-    for (let i = 6; i >= 0; i--) {
-      const asOf = now - i * DAY
-      sparkline.push(new Set(all.filter((e) => new Date(e.createdAt).getTime() <= asOf).map((e) => e.room).filter(Boolean)).size)
-    }
-    return { pct, up, sparkline }
-  }, [equipment])
+  const eqTrends=useMemo(()=>({ready:computeSimpleTrend(equipment,e=>e.status!=="maintenance",e=>e.createdAt),maint:computeSimpleTrend(equipment,e=>e.status==="maintenance",e=>e.createdAt),centerCount:computeSimpleTrend(equipment,e=>true,e=>e.createdAt),rooms:computeSimpleTrend(equipment,e=>!!e.room,e=>e.createdAt)}),[equipment])
 
   function openNew(centerId?: string | null) {
     setEditing(null)

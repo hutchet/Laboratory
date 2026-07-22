@@ -16,6 +16,7 @@ export type SampleRow = {
   derivedStatus: string
   doneCount: number
   totalItems: number
+  createdAt: Date
 }
 
 export type Option = { id: string; name: string }

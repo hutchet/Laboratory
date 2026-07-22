@@ -38,6 +38,7 @@ export type TestItemRow = {
   equipment: { id: string; name: string } | null
   pic: { id: string; name: string } | null
   testPlan: { id: string; title: string | null; project: { id: string; name: string } | null } | null
+  createdAt: Date
 }
 
 export type TestPlanRow = {

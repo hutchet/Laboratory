@@ -22,6 +22,7 @@ export type ProjectRow = {
   // vien cua ke hoach thu nghiem gan voi du an nay (neu co), de hien thi link
   // "Ke hoach thu nghiem" tren trang Du an.
   planStats: { hasPlan: boolean; planId: string | null; testCount: number; staffCount: number } | null
+  createdAt: Date
 }
 
 export type Option = { id: string; name: string }

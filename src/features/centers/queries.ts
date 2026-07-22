@@ -32,6 +32,7 @@ export async function listCenters(): Promise<CenterRow[]> {
       activeProjectCount,
       customerCount: customerIds.size,
       totalValue,
+      createdAt: c.createdAt,
     }
   })
 }

@@ -7,6 +7,7 @@ import { ArrowButton } from "@/shared/ui/arrow-button"
 import { CustomSelect } from "@/shared/ui/custom-select"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { Perm } from "@/shared/lib/rbac-client"
+import { computeSimpleTrend } from "@/shared/lib/trend"
 import { saveBooking, deleteBooking, bulkDeleteBooking, saveEquipment } from "../actions"
 import type { BookingRow, EquipmentRow, Option } from "../types"
 
@@ -250,6 +251,7 @@ export function BookingsView({
   const readyCount = scopedEquipment.filter((e) => e.status === "active").length
   const maintCount = scopedEquipment.filter((e) => e.status === "maintenance").length
   const readyEquipment = useMemo(() => scopedEquipment.filter((e) => e.status !== "maintenance"), [scopedEquipment])
+  const bkTrends=useMemo(()=>({total:computeSimpleTrend(scopedEquipment,e=>true,e=>e.createdAt),ready:computeSimpleTrend(scopedEquipment,e=>e.status==="active",e=>e.createdAt),maint:computeSimpleTrend(scopedEquipment,e=>e.status==="maintenance",e=>e.createdAt),bookings:computeSimpleTrend(scopedBookings,b=>true,b=>b.createdAt)}),[scopedEquipment,scopedBookings])
 
   // Tong quan toan he thong (dung khi CHUA mo 1 Trung tam nao) cho luoi hub-card.
   const overviewTotal = equipment.length
@@ -306,10 +308,10 @@ export function BookingsView({
       {openGroup && (
       <>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(160px, 1fr))", gap: 12, marginBottom: 18 }}>
-        <KpiCard label="Tổng thiết bị" value={totalCount} hint={openGroup.name} />
-        <KpiCard label="Sẵn sàng" value={readyCount} hint="Có thể đặt lịch" tone="success" />
-        <KpiCard label="Đang bảo trì" value={maintCount} hint="Tạm ngưng đặt lịch" tone="danger" />
-        <KpiCard label="Lượt đặt trong ngày" value={todaysBookings.length} hint={fmtVN(selectedDate)} tone="warning" />
+        <KpiCard label="Tổng thiết bị" value={totalCount} hint={openGroup.name} trend={bkTrends.total} />
+        <KpiCard label="Sẵn sàng" value={readyCount} hint="Có thể đặt lịch" tone="success" trend={bkTrends.ready} />
+        <KpiCard label="Đang bảo trì" value={maintCount} hint="Tạm ngưng đặt lịch" tone="danger" trend={bkTrends.maint} />
+        <KpiCard label="Lượt đặt trong ngày" value={todaysBookings.length} hint={fmtVN(selectedDate)} tone="warning" trend={bkTrends.bookings} />
       </div>
 
       <div style={{ border: "1px solid #e2e5e9", borderRadius: 12, background: "#fff", padding: 16, marginBottom: 18 }}>

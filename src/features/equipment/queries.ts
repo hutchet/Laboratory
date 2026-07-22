@@ -43,6 +43,7 @@ export async function listBookings(): Promise<BookingRow[]> {
     purpose: b.purpose,
     equipment: b.equipment ? { id: b.equipment.id, name: b.equipment.name } : null,
     center: b.center ? { id: b.center.id, name: b.center.name } : null,
+    createdAt: b.createdAt,
   }))
 }
 

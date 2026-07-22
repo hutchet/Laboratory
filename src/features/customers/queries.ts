@@ -30,6 +30,7 @@ export async function listCustomers(): Promise<CustomerRow[]> {
       projectCount,
       activeProjectCount,
       displayValue,
+      createdAt: c.createdAt,
     }
   })
 }

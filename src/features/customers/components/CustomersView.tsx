@@ -8,6 +8,7 @@ import { KpiCard } from "@/shared/ui/kpi-card"
 import { SearchInput } from "@/shared/ui/search-input"
 import { ActionIcon } from "@/shared/ui/icons"
 import { Perm } from "@/shared/lib/rbac-client"
+import { computeSimpleTrend } from "@/shared/lib/trend"
 import { saveCustomer, deleteCustomer } from "../actions"
 import type { CustomerRow } from "../types"
 
@@ -22,6 +23,7 @@ export function CustomersView({ customers }:{ customers:CustomerRow[] }) {
   const [confirmDeleteId,setConfirmDeleteId]=useState<string|null>(null)
   const [pending,startTransition]=useTransition()
   const kpis=useMemo(()=>({total:customers.length,withProj:customers.filter(c=>c.projectCount>0).length,totalProjects:customers.reduce((s,c)=>s+c.projectCount,0),totalValue:customers.reduce((s,c)=>s+c.displayValue,0)}),[customers])
+  const trends=useMemo(()=>({total:computeSimpleTrend(customers,c=>true,c=>c.createdAt),withProj:computeSimpleTrend(customers,c=>c.projectCount>0,c=>c.createdAt),projects:computeSimpleTrend(customers,c=>c.projectCount>0,c=>c.createdAt),value:computeSimpleTrend(customers,c=>c.displayValue>0,c=>c.createdAt)}),[customers])
   const filtered=useMemo(()=>customers.filter(c=>!q||c.name.toLowerCase().includes(q.toLowerCase())),[customers,q])
   function handleSubmit(fd:FormData){
     const input={id:editing?.id,name:String(fd.get("name")||"")||"Khách hàng",contact:String(fd.get("contact")||"")||null,email:String(fd.get("email")||"")||null,phone:String(fd.get("phone")||"")||null,address:String(fd.get("address")||"")||null,value:fd.get("value")?Number(fd.get("value")):null,notes:String(fd.get("notes")||"")||null}
@@ -31,10 +33,10 @@ export function CustomersView({ customers }:{ customers:CustomerRow[] }) {
   return (
     <PageShell title="Khách hàng">
       <div className="kpis-tier" style={{marginBottom:20}}>
-        <KpiCard label="Tổng khách hàng" value={kpis.total} />
-        <KpiCard label="Đang có dự án" value={kpis.withProj} tone="warning" />
-        <KpiCard label="Tổng dự án liên quan" value={kpis.totalProjects} tone="success" />
-        <KpiCard label="Tổng giá trị hợp đồng" value={fmtVal(kpis.totalValue)} tone="danger" />
+        <KpiCard label="Tổng khách hàng" value={kpis.total} trend={trends.total} />
+        <KpiCard label="Đang có dự án" value={kpis.withProj} tone="warning" trend={trends.withProj} />
+        <KpiCard label="Tổng dự án liên quan" value={kpis.totalProjects} tone="success" trend={trends.projects} />
+        <KpiCard label="Tổng giá trị hợp đồng" value={fmtVal(kpis.totalValue)} tone="danger" trend={trends.value} />
       </div>
       <div className="section-head">
         <h3>Tất cả khách hàng</h3>

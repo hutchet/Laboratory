@@ -9,6 +9,7 @@ import { KpiCard } from "@/shared/ui/kpi-card"
 import { SearchInput } from "@/shared/ui/search-input"
 import { PlainSelect } from "@/shared/ui/plain-select"
 import { Perm } from "@/shared/lib/rbac-client"
+import { computeSimpleTrend } from "@/shared/lib/trend"
 import { saveCenter, deleteCenter, saveGroup, deleteGroup, grantViewerAccess, revokeViewerAccess } from "../actions"
 import type { CenterRow, GroupRow, ViewerAccessGrant, ViewerCandidate } from "../types"
 
@@ -44,6 +45,7 @@ export function CentersView({ centers, groups = [], memberOptions = [], viewerCa
   }
   function confirmDeleteGroup(){ if(!confirmDeleteGroupId) return; const id=confirmDeleteGroupId; startTransition(async()=>{ await deleteGroup(id); setConfirmDeleteGroupId(null) }) }
   const kpis=useMemo(()=>({total:centers.length,totalProjects:centers.reduce((s,c)=>s+c.projectCount,0),totalValue:centers.reduce((s,c)=>s+c.totalValue,0),totalCustomerLinks:centers.reduce((s,c)=>s+c.customerCount,0)}),[centers])
+  const trends=useMemo(()=>({total:computeSimpleTrend(centers,c=>true,c=>c.createdAt),projects:computeSimpleTrend(centers,c=>c.projectCount>0,c=>c.createdAt),value:computeSimpleTrend(centers,c=>c.totalValue>0,c=>c.createdAt),customers:computeSimpleTrend(centers,c=>c.customerCount>0,c=>c.createdAt)}),[centers])
   const filtered=useMemo(()=>centers.filter(c=>!q||c.name.toLowerCase().includes(q.toLowerCase())),[centers,q])
   function handleSubmit(fd:FormData){
     const input={id:editing?.id,name:String(fd.get("name")||"")||"Trung tâm",address:String(fd.get("address")||"")||null,manager:String(fd.get("manager")||"")||null,phone:String(fd.get("phone")||"")||null,notes:String(fd.get("notes")||"")||null,elecPrice:fd.get("elecPrice")?Number(fd.get("elecPrice")):null,rentPrice:fd.get("rentPrice")?Number(fd.get("rentPrice")):null}
@@ -53,10 +55,10 @@ export function CentersView({ centers, groups = [], memberOptions = [], viewerCa
   return (
     <PageShell title="Trung tâm thử nghiệm">
       <div className="kpis-tier" style={{marginBottom:20}}>
-        <KpiCard label="Tổng trung tâm" value={kpis.total} />
-        <KpiCard label="Tổng dự án liên kết" value={kpis.totalProjects} tone="warning" />
-        <KpiCard label="Tổng giá trị dự án" value={fmtVal(kpis.totalValue)} tone="success" />
-        <KpiCard label="Khách hàng liên quan" value={kpis.totalCustomerLinks} tone="danger" />
+        <KpiCard label="Tổng trung tâm" value={kpis.total} trend={trends.total} />
+        <KpiCard label="Tổng dự án liên kết" value={kpis.totalProjects} tone="warning" trend={trends.projects} />
+        <KpiCard label="Tổng giá trị dự án" value={fmtVal(kpis.totalValue)} tone="success" trend={trends.value} />
+        <KpiCard label="Khách hàng liên quan" value={kpis.totalCustomerLinks} tone="danger" trend={trends.customers} />
       </div>
       <div className="section-head">
         <h3>Tất cả trung tâm thử nghiệm</h3>

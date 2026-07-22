@@ -31,6 +31,7 @@ export async function listTestItems(): Promise<TestItemRow[]> {
     equipment: t.equipment ? { id: t.equipment.id, name: t.equipment.name } : null,
     pic: t.pic ? { id: t.pic.id, name: t.pic.name } : null,
     testPlan: t.testPlan ? { id: t.testPlan.id, title: t.testPlan.title, project: t.testPlan.project ? { id: t.testPlan.project.id, name: t.testPlan.project.name } : null } : null,
+    createdAt: t.createdAt,
   }))
 }
 

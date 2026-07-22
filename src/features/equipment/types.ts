@@ -55,6 +55,7 @@ export type BookingRow = {
   purpose: string | null
   equipment: { id: string; name: string } | null
   center: { id: string; name: string } | null
+  createdAt: Date
 }
 
 export type Option = { id: string; name: string }

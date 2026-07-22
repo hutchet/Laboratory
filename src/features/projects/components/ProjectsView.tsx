@@ -10,6 +10,7 @@ import { DateField } from '@/shared/ui/date-field'
 import { PageShell } from "@/shared/ui/page-shell"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { KpiCard } from "@/shared/ui/kpi-card"
+import { computeSimpleTrend } from "@/shared/lib/trend"
 import { useRouter } from "next/navigation"
 import { saveProject, deleteProject } from "../actions"
 import { PROJECT_STATUS_LABEL, PROJECT_PRIORITY_LABEL, type ProjectRow, type Option } from "../types"
@@ -55,6 +56,7 @@ export function ProjectsView({ projects, customers, centers }:{ projects:Project
   const [formCenterId,setFormCenterId] = useState("")
 
   const kpis = useMemo(()=>({ active:projects.length, doing:projects.filter(p=>p.derivedStatus==="doing").length, done:projects.filter(p=>p.derivedStatus==="done").length, risk:projects.filter(p=>p.risk).length }),[projects])
+  const trends=useMemo(()=>({active:computeSimpleTrend(projects,p=>true,p=>p.createdAt),doing:computeSimpleTrend(projects,p=>p.derivedStatus==="doing",p=>p.createdAt),done:computeSimpleTrend(projects,p=>p.derivedStatus==="done",p=>p.createdAt),risk:computeSimpleTrend(projects,p=>!!p.risk,p=>p.createdAt)}),[projects])
   const filtered = useMemo(()=>projects.filter(p=>{
     if(chip==="doing"&&p.derivedStatus!=="doing") return false
     if(chip==="done"&&p.derivedStatus!=="done") return false
@@ -82,10 +84,10 @@ export function ProjectsView({ projects, customers, centers }:{ projects:Project
     <PageShell title="Dự án">
       <div id="page-projects" style={{display:"flex",flexDirection:"column",minHeight:"calc(100vh - 108px)"}}>
       <div className="kpis-tier" style={{marginBottom:20}}>
-        <KpiCard label="Dự án đang hoạt động" value={kpis.active} />
-        <KpiCard label="Đang thực hiện" value={kpis.doing} tone="warning" />
-        <KpiCard label="Đã hoàn thành" value={kpis.done} tone="success" />
-        <KpiCard label="Dự án rủi ro" value={kpis.risk} tone="danger" />
+        <KpiCard label="Dự án đang hoạt động" value={kpis.active} trend={trends.active} />
+        <KpiCard label="Đang thực hiện" value={kpis.doing} tone="warning" trend={trends.doing} />
+        <KpiCard label="Đã hoàn thành" value={kpis.done} tone="success" trend={trends.done} />
+        <KpiCard label="Dự án rủi ro" value={kpis.risk} tone="danger" trend={trends.risk} />
       </div>
       <div className="section-head">
         <h3>Tất cả dự án</h3>

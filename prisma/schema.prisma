@@ -203,21 +203,21 @@ model ReportRow {
 }
 
 model Center {
-  id        String  @id @default(cuid())
+  id        String    @id @default(cuid())
   name      String
   address   String?
   manager   String?
   phone     String?
   notes     String?
-  // Dùng cho tính chi phí điện/nhà xưởng trong Quote Matrix (ported từ qtMachineElec/qtMachineNX).
   elecPrice Float?
   rentPrice Float?
+
+  createdAt DateTime @default(now())
 
   equipment         Equipment[]
   equipmentBookings EquipmentBooking[]
   depreciationAssets DepreciationAsset[]
   projects          Project[]
-  // Additive (thiết kế 6 cấp bậc + phân vùng Trung tâm/Nhóm):
   groups             Group[]
   members            Member[]
   users              User[]
@@ -299,7 +299,7 @@ model EquipmentBooking {
 }
 
 model Customer {
-  id      String  @id @default(cuid())
+  id      String    @id @default(cuid())
   name    String
   contact String?
   email   String?
@@ -307,6 +307,8 @@ model Customer {
   address String?
   value   Float?
   notes   String?
+
+  createdAt DateTime @default(now())
 
   quotes   Quote[]
   projects Project[]

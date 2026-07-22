@@ -14,6 +14,7 @@ export type CenterRow = {
   activeProjectCount: number
   customerCount: number
   totalValue: number
+  createdAt: Date
 }
 
 // Thiet ke: Tai khoan 6 cap bac + Phan vung du lieu theo Trung tam thu nghiem &

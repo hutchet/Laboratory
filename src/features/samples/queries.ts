@@ -38,6 +38,7 @@ export async function listSamples(): Promise<SampleRow[]> {
       derivedStatus: sampleAutoStatus({ status: s.status, items }),
       doneCount,
       totalItems: items.length,
+      createdAt: s.createdAt,
     }
   })
 }

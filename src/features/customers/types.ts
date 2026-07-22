@@ -11,4 +11,5 @@ export type CustomerRow = {
   projectCount: number
   activeProjectCount: number
   displayValue: number
+  createdAt: Date
 }

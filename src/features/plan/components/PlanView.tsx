@@ -13,6 +13,7 @@ import { CustomSelect } from "@/shared/ui/custom-select"
 import { GanttChart } from "./GanttChart"
 import { PlanCard } from "./PlanCard"
 import { Perm } from "@/shared/lib/rbac-client"
+import { computeSimpleTrend } from "@/shared/lib/trend"
 import { saveTestItem, deleteTestItem, saveTestPack, deleteTestPack, bulkDeleteTestItems } from "../actions"
 import { RESULT_LABEL, RESULT_COLOR, LEVEL_OPTIONS, TEAM_OPTIONS, TEAM_LABEL, PRIORITY_OPTIONS, PRIORITY_LABEL, autoStatus, isOverdue, type TestItemRow, type TestPackRow, type TestPlanRow, type Option, type EquipmentOption } from "../types"
 
@@ -193,6 +194,7 @@ export function PlanView({
     scopedItems.forEach((it) => { const s = autoStatus(it); byStatus[s] = (byStatus[s] || 0) + 1 })
     return { total, pass, fail, ongoing, overdue, avgProgress, byStatus }
   }, [scopedItems])
+  const planTrends=useMemo(()=>({total:computeSimpleTrend(scopedItems,i=>true,i=>i.createdAt),pass:computeSimpleTrend(scopedItems,i=>i.result==="pass",i=>i.createdAt),fail:computeSimpleTrend(scopedItems,i=>i.result==="fail",i=>i.createdAt),ongoing:computeSimpleTrend(scopedItems,i=>autoStatus(i)==="ongoing",i=>i.createdAt)}),[scopedItems])
 
   const statusDonutSegments = useMemo(
     () => PLAN_STATUS_DONUT_KEYS.map((k) => ({ value: kpi.byStatus[k] || 0, color: RESULT_COLOR[k] })).filter((s) => s.value > 0),
@@ -346,10 +348,10 @@ export function PlanView({
       ) : (
         <>
           <div className="kpis-tier" style={{ marginBottom: 18 }}>
-            <KpiCard label="Tổng bài thử" value={kpi.total} hint="Trong kế hoạch" tone="neutral" />
-            <KpiCard label="Đạt" value={kpi.pass} hint="Số bài đạt" tone="success" />
-            <KpiCard label="Không đạt" value={kpi.fail} hint="Số bài không đạt" tone="danger" />
-            <KpiCard label="Đang thực hiện" value={kpi.ongoing} hint="Đang triển khai" tone="warning" />
+            <KpiCard label="Tổng bài thử" value={kpi.total} hint="Trong kế hoạch" tone="neutral" trend={planTrends.total} />
+            <KpiCard label="Đạt" value={kpi.pass} hint="Số bài đạt" tone="success" trend={planTrends.pass} />
+            <KpiCard label="Không đạt" value={kpi.fail} hint="Số bài không đạt" tone="danger" trend={planTrends.fail} />
+            <KpiCard label="Đang thực hiện" value={kpi.ongoing} hint="Đang triển khai" tone="warning" trend={planTrends.ongoing} />
           </div>
 
           <div className="card" style={{ marginBottom: 18 }}>
