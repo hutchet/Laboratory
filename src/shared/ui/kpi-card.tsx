@@ -32,10 +32,19 @@ function KpiSparkline({ values, up, hero, tone }: { values: number[]; up: boolea
   const range = max - min || 1
   const xs = values.map((_, i) => PAD + (i / (values.length - 1)) * (W - PAD * 2))
   const ys = values.map((v) => H - PAD - ((v - min) / range) * (H - PAD * 2))
-  const color = trendColor(tone ?? "neutral", up)
+  const color = trendColor(tone ?? "neutral")
   const d = xs.reduce((acc, x, i) => acc + (i === 0 ? `M${x.toFixed(1)},${ys[i].toFixed(1)}` : ` L${x.toFixed(1)},${ys[i].toFixed(1)}`), "")
+  const fillD = `${d} L${xs[xs.length-1]},${H} L${xs[0]},${H} Z`
+  const gradId = `ksg-${tone ?? "n"}-${values.length}-${Date.now()}`
   return (
     <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="kcard-spark">
+      <defs>
+        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity={0.25} />
+          <stop offset="100%" stopColor={color} stopOpacity={0} />
+        </linearGradient>
+      </defs>
+      <path d={fillD} fill={`url(#${gradId})`} stroke="none" />
       <path d={d} fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" opacity={0.9} />
       <circle cx={xs[xs.length - 1]} cy={ys[ys.length - 1]} r={hero ? 3 : 2.3} fill={color} />
     </svg>
@@ -65,11 +74,10 @@ const TONE_SPARK_COLOR: Record<KpiCardTone, string> = {
   danger:  "#b91c1c",
 }
 
-// Up = xanh lá, Down = đỏ, Flat = không đổi màu (giữ nguyên tone)
-function trendColor(tone: KpiCardTone, up: boolean | null): string {
-  if (up === true) return "#16a34a"   // up → green-600
-  if (up === false) return "#dc2626"  // down → red-600
-  return TONE_SPARK_COLOR[tone]       // flat → tone color
+// Màu sparkline = màu tone card (đậm hơn nền), KHÔNG đổi theo up/down
+// Up/down chỉ quyết định ▲/▼ trong label text
+function trendColor(tone: KpiCardTone): string {
+  return TONE_SPARK_COLOR[tone]
 }
 // Material-3 CSS (globals.css line 1065-1068) applies md-sys-color-*-container backgrounds
 // via these classes with !important, overriding any inline background
