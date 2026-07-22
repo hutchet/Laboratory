@@ -161,6 +161,10 @@ model Member {
   email      String?  @unique
   phone      String?
 
+  // Additive — ảnh đại diện (avatar) lưu dạng data URI base64 JPEG ~240x240, tối đa
+  // vài chục KB. Không lưu file trực tiếp để tránh phụ thuộc storage bên ngoài.
+  avatar     String?
+
   // Additive (thiết kế 6 cấp bậc + phân vùng Trung tâm/Nhóm): centerId/groupId xác định
   // phạm vi dữ liệu thành viên được thấy; isOperations=true bỏ qua phân vùng Trung tâm cho
   // các module vận hành ngang (Equipment/Booking/Khấu hao/Chi phí biến đổi/Quality/AuditPlan).

@@ -94,6 +94,7 @@ export function MembersView({
       gender: String(formData.get("gender") || ""),
       team: String(formData.get("team") || ""),
       accessRole: String(formData.get("accessRole") || "viewer"),
+      avatar: String(formData.get("avatar") || "") || null,
       password: String(formData.get("password") || "") || undefined,
       centerId: String(formData.get("centerId") || "") || null,
       groupId: String(formData.get("groupId") || "") || null,
@@ -280,6 +281,14 @@ export function MembersView({
             <label>Phân quyền</label>
             <CustomSelect value={mAccessRole} onChange={setMAccessRole} width="100%" options={NEW_ACCESS_ROLE_OPTIONS.map((opt) => ({ value: opt.value, label: opt.label }))} />
           </div>
+          {/* Ảnh đại diện — chọn file ảnh, tự động resize xuống 240px, preview + data URI */}
+          <label style={{ fontSize: 12, fontWeight: 600 }}>Ảnh đại diện
+            <input type="file" accept="image/*" onChange={(e) => handleAvatarFile(e.target.files?.[0] ?? null)} style={{ width: "100%", fontSize: 13, marginTop: 4 }} />
+            {avatarPreview && <img src={avatarPreview} alt="avatar preview" style={{ width: 72, height: 72, borderRadius: 8, objectFit: "cover", marginTop: 6, border: "1px solid #dfe3e8" }} />}
+            {avatarError && <span style={{ display: "block", fontSize: 11, color: "#c62828", marginTop: 2 }}>{avatarError}</span>}
+            <span style={{ display: "block", fontSize: 11, color: "#6b7280", marginTop: 2 }}>Chọn ảnh JPEG/PNG, tự động nén xuống 240px. Để trống nếu không muốn đổi ảnh.</span>
+          </label>
+          <input type="hidden" name="avatar" value={avatarPreview ?? ""} />
           {/* Sửa lỗi phát hiện khi rà lại P0: trước đây không có cách nào tạo/đổi mật khẩu
               đăng nhập thật (User.passwordHash) từ trang này, nên đổi "Phân quyền" ở trên
               chỉ đổi phần hiển thị, không đổi được quyền thực thi ở server. Ô này là tuỳ chọn —

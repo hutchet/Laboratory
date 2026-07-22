@@ -88,6 +88,20 @@ export async function GET() {
     })
     results.push("Member record created")
 
+    // 4. Ensure UserRole exists — critical for RBAC (getUserRbacContext reads UserRole table)
+    const directorRole = await prisma.role.findUnique({ where: { name: "director" } })
+    const adminAliasRole = await prisma.role.findUnique({ where: { name: "admin" } })
+    for (const role of [directorRole, adminAliasRole].filter(Boolean)) {
+      if (role) {
+        await prisma.userRole.upsert({
+          where: { userId_roleId: { userId: user.id, roleId: role.id } },
+          update: {},
+          create: { userId: user.id, roleId: role.id },
+        })
+      }
+    }
+    results.push("UserRole (director+admin) synced")
+
     return NextResponse.json({ ok: true, results })
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: e.message, stack: e.stack?.split("\n").slice(0, 5) }, { status: 500 })

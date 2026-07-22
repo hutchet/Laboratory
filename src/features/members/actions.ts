@@ -58,6 +58,7 @@ export type SaveMemberInput = {
   email?: string | null
   gender?: string | null
   team?: string | null
+  avatar?: string | null
   accessRole?: string | null
   password?: string | null
   // Thiet ke: Tai khoan 6 cap bac + Phan vung du lieu theo Trung tam thu nghiem &
@@ -76,6 +77,7 @@ export async function saveMember(input: SaveMemberInput) {
     email: string | null
     gender: string | null
     team: string | null
+    avatar: string | null
     accessRole: string
     centerId: string | null
     groupId: string | null
@@ -87,6 +89,7 @@ export async function saveMember(input: SaveMemberInput) {
     email: input.email || null,
     gender: input.gender || null,
     team: input.team || null,
+    avatar: input.avatar || null,
     accessRole: input.accessRole || "viewer",
     centerId: input.centerId || null,
     groupId: input.groupId || null,

@@ -978,8 +978,8 @@
 .material-3 .side{width:256px;background:var(--md-sys-color-surface-container-low);border-right:1px solid var(--md-sys-color-outline-variant);padding:16px 12px;box-shadow:none;backdrop-filter:none!important}
 .material-3 .brand{font-size:20px;font-weight:600;color:var(--md-sys-color-on-surface)}
 .material-3 .brand .logo{background:var(--md-sys-color-primary);color:var(--md-sys-color-on-primary);border-radius:var(--md-sys-shape-medium);box-shadow:none}
-.material-3 .nav-h{color:var(--md-sys-color-on-surface-variant);font-size:11px;letter-spacing:.08em}
-.material-3 .nav{min-height:48px;border-radius:24px;padding:0 16px;color:var(--md-sys-color-on-surface-variant);font-size:14px;font-weight:500;position:relative;overflow:hidden;transition:background var(--md-sys-duration-short),color var(--md-sys-duration-short)}
+.material-3 .nav-h{color:var(--md-sys-color-on-surface-variant);font-size:11px;letter-spacing:.08em;padding-top:15px!important;padding-bottom:7px!important}
+.material-3 .nav{min-height:49px;border-radius:24px;padding:0 16px;color:var(--md-sys-color-on-surface-variant);font-size:14px;font-weight:500;position:relative;overflow:hidden;transition:background var(--md-sys-duration-short),color var(--md-sys-duration-short);margin-bottom:1px}
 .material-3 .nav:hover{background:color-mix(in srgb,var(--md-sys-color-on-surface) 8%,transparent);color:var(--md-sys-color-on-surface)}
 .material-3 .nav.active{background:var(--md-sys-color-secondary-container);color:var(--md-sys-color-on-secondary-container);font-weight:600}
 .material-3 .nav svg{width:20px;height:20px;color:currentColor;stroke-width:1.8}
