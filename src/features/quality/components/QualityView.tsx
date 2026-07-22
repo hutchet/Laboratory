@@ -88,16 +88,20 @@ export function QualityView({
   ]
 
   return (
-    <PageShell title="Quản lý chất lượng (ISO 17025)" subtitle="Checklist từ dữ liệu thật, lịch hiệu chuẩn, nhật ký truy vết">
-      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 20 }}>
-        <KpiCard label="Quá hạn hiệu chuẩn" value={overdue.length} tone={overdue.length ? "danger" : "neutral"} />
-        <KpiCard label="Sắp đến hạn (≤30 ngày)" value={soon.length} tone={soon.length ? "warning" : "neutral"} />
-        <KpiCard label="Còn hiệu lực" value={ok.length} tone="success" />
-        <KpiCard label="Tổng nhật ký truy vết" value={auditLogCount} tone="neutral" />
+    <PageShell title="Hệ thống quản lý chất lượng" subtitle="Checklist theo ISO/IEC 17025:2017, lịch hiệu chuẩn, nhật ký truy vết — tất cả từ dữ liệu thật">
+      <div className="grid kpis" style={{ marginBottom: 18 }}>
+        <KpiCard label="Quá hạn hiệu chuẩn" value={overdue.length} hint="Cần xử lý ngay" tone={overdue.length ? "danger" : "neutral"} />
+        <KpiCard label="Sắp đến hạn (≤30 ngày)" value={soon.length} hint="Cần lên lịch tái hiệu chuẩn" tone={soon.length ? "warning" : "neutral"} />
+        <KpiCard label="Còn hiệu lực" value={ok.length} hint="Đang tuân thủ" tone="success" />
+        <KpiCard label="Tổng nhật ký truy vết" value={auditLogCount} hint="Toàn bộ lịch sử thao tác" tone="neutral" />
       </div>
 
-      <h3 style={{ fontSize: 14, margin: "0 0 10px" }}>Checklist tuân thủ (theo mục ISO/IEC 17025)</h3>
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 28 }}>
+      <div className="card" style={{ marginBottom: 18 }}>
+        <div className="ch">
+          <h3>Tiêu chí kiểm soát theo ISO/IEC 17025:2017</h3>
+          <span>Phòng thử nghiệm được quản lý theo các điều khoản của tiêu chuẩn — không phải tiêu chí nội bộ của phần mềm này</span>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {QL_CHECKLIST_GROUPS.map((g) => {
           const total = g.items.length
           const doneCount = g.items.filter((it) => isChecked(it.key)).length
@@ -132,25 +136,38 @@ export function QualityView({
             </div>
           )
         })}
+        </div>
       </div>
 
-      <h3 style={{ fontSize: 14, margin: "0 0 10px" }}>Lịch hiệu chuẩn thiết bị</h3>
-      <div style={{ marginBottom: 28 }}>
-        <DataTable columns={calColumns} rows={calibration} rowKey={(r) => r.id} emptyTitle="Chưa có thiết bị nào có dữ liệu hiệu chuẩn" />
+      <div className="card" style={{ marginBottom: 18, padding: 0, overflowX: "auto" }}>
+        <div className="ch" style={{ padding: "16px 18px 0" }}>
+          <h3>Lịch tái hiệu chuẩn thiết bị</h3>
+          <span>Sắp xếp theo mức độ khẩn cấp</span>
+        </div>
+        <div style={{ padding: "12px 18px 18px" }}>
+          <DataTable columns={calColumns} rows={calibration} rowKey={(r) => r.id} emptyTitle="Chưa có thiết bị nào có dữ liệu hiệu chuẩn" />
+        </div>
       </div>
 
-      <h3 style={{ fontSize: 14, margin: "0 0 10px" }}>Nhật ký truy vết (audit trail)</h3>
-      <div style={{ marginBottom: 10 }}>
-        <FilterBar search={{ value: q, onChange: setQ, placeholder: "Tìm theo nội dung/người thực hiện..." }}>
-          <CustomSelect
-            value={entityFilter}
-            onChange={setEntityFilter}
-            options={QL_ENTITY_OPTIONS}
-            width={200}
-          />
-        </FilterBar>
+      <div className="card" style={{ padding: 0, overflowX: "auto" }}>
+        <div className="ch ch-toolbar" style={{ padding: "16px 18px 0" }}>
+          <div>
+            <h3>Nhật ký thao tác (Audit trail)</h3>
+            <span>Ghi nhận ai đã làm gì, vào lúc nào</span>
+          </div>
+          <FilterBar search={{ value: q, onChange: setQ, placeholder: "Tìm theo nội dung/người thực hiện..." }}>
+            <CustomSelect
+              value={entityFilter}
+              onChange={setEntityFilter}
+              options={QL_ENTITY_OPTIONS}
+              width={200}
+            />
+          </FilterBar>
+        </div>
+        <div style={{ padding: "12px 18px 18px" }}>
+          <DataTable columns={auditColumns} rows={filteredAudit} rowKey={(a) => a.id} emptyTitle="Chưa có nhật ký nào khớp điều kiện lọc" resizable />
+        </div>
       </div>
-      <DataTable columns={auditColumns} rows={filteredAudit} rowKey={(a) => a.id} emptyTitle="Chưa có nhật ký nào khớp điều kiện lọc" resizable />
     </PageShell>
   )
 }

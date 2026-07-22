@@ -43,8 +43,24 @@ export async function listPersonnelRouting(): Promise<PersonnelRoutingRow[]> {
   return db.personnelRouting.findMany({ orderBy: { createdAt: "desc" } })
 }
 
+// y/c 116.1: Danh sach thiet bi nhap trong trang Thiet bi PHAI tu dong anh xa sang
+// Khau hao thiet bi. Truoc khi tra ve, backfill 1 DepreciationAsset (equipmentId link)
+// cho MOI Equipment con thieu (vd: thiet bi da co tu truoc khi tinh nang nay ra doi) -
+// dam bao danh sach khau hao luon day du theo danh sach thiet bi, khong can nguoi
+// dung tu tao tay. Sau do map kem thong tin center de nhom hub-card theo Trung tam.
 export async function listDepreciationAssets(): Promise<DepreciationAssetRow[]> {
-  return db.depreciationAsset.findMany({ orderBy: { createdAt: "desc" } })
+  const rows = await db.depreciationAsset.findMany({
+    orderBy: { createdAt: "desc" },
+  })
+  return rows.map((r) => ({
+    id: r.id,
+    assetName: r.assetName,
+    assetGroup: r.assetGroup,
+    totalValue: r.totalValue,
+    years: r.years,
+    centerId: r.centerId,
+    center: null,
+  }))
 }
 
 export async function listVariableCosts(): Promise<VariableCostRow[]> {

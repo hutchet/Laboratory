@@ -121,25 +121,17 @@ export async function bulkDeletePersonnelRouting(ids: string[]) {
 }
 
 // ---- Depreciation assets ----
-export type SaveDepreciationAssetInput = { id?: string; assetName: string; assetGroup?: string | null; totalValue?: number | null; years?: number | null }
+// y/c 116.1: Tai san khau hao gio LUON gan 1:1 voi 1 Equipment (duoc tu dong tao/
+// backfill trong listDepreciationAssets()) - khong con tao/xoa tay tu trang nay nua.
+// saveDepreciationAsset() chi con sua CAC TRUONG TAI CHINH CON LAI (Nhom tai san,
+// Tong gia tri, So nam KH); assetName luon lay theo ten thiet bi da tao, id la BAT
+// BUOC (bat buoc phai la 1 dong da anh xa tu thiet bi).
+export type SaveDepreciationAssetInput = { id: string; assetGroup?: string | null; totalValue?: number | null; years?: number | null }
 
 export async function saveDepreciationAsset(input: SaveDepreciationAssetInput) {
-  await requirePermission(input.id ? "edit" : "create")
-  const data = { assetName: input.assetName, assetGroup: input.assetGroup || null, totalValue: input.totalValue ?? null, years: input.years ?? null }
-  if (input.id) await db.depreciationAsset.update({ where: { id: input.id }, data })
-  else await db.depreciationAsset.create({ data })
-  revalidatePath("/quote")
-}
-
-export async function deleteDepreciationAsset(id: string) {
-  await requirePermission("delete")
-  await db.depreciationAsset.delete({ where: { id } })
-  revalidatePath("/quote")
-}
-
-export async function bulkDeleteDepreciationAssets(ids: string[]) {
-  await requirePermission("delete")
-  await db.depreciationAsset.deleteMany({ where: { id: { in: ids } } })
+  await requirePermission("edit")
+  const data = { assetGroup: input.assetGroup || null, totalValue: input.totalValue ?? null, years: input.years ?? null }
+  await db.depreciationAsset.update({ where: { id: input.id }, data })
   revalidatePath("/quote")
 }
 

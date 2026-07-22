@@ -192,21 +192,21 @@ export function PurchaseView({
       <PageShell
         title="Theo dõi mua hàng"
         actions={<>
-          <button type="button" onClick={exportCsv} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #dfe3e8", background: "#fff", marginRight: 8 }}>Xuất CSV</button>
-          <button type="button" onClick={openNew} style={{ padding: "8px 14px", borderRadius: 8, border: "none", background: "#1d5fd6", color: "#fff" }}>+ Thêm hạng mục</button>
+          <button type="button" className="btn-line" onClick={exportCsv} style={{ marginRight: 8 }}>Xuất CSV</button>
+          <button type="button" className="btn-pri" onClick={openNew}>+ Thêm hạng mục</button>
         </>}
-        filters={<div style={{ display: "flex", gap: 8 }}>
+        filters={<span style={{ display: "flex", gap: 8 }}>
           {(Object.keys(PURCHASE_GROUPBY_LABEL) as PurchaseGroupBy[]).map((g) => (
             <button
               key={g}
               type="button"
+              className={groupBy === g ? "btn-pri" : "btn-line"}
               onClick={() => setGroupBy(g)}
-              style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid #dfe3e8", background: groupBy === g ? "#1d5fd6" : "#fff", color: groupBy === g ? "#fff" : "#1a1a1a" }}
             >
               Theo {PURCHASE_GROUPBY_LABEL[g]}
             </button>
           ))}
-        </div>}
+        </span>}
       >
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 16 }}>
           <KpiCard label="Tổng hạng mục" value={items.length} tone="neutral" />
@@ -218,31 +218,31 @@ export function PurchaseView({
         {!items.length ? (
           <div style={{ padding: 40, textAlign: "center", color: "#6b7280" }}>Chưa có hạng mục mua hàng nào</div>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 14 }}>
+          <div id="eq-center-cards" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))", gap: 18 }}>
             {groups.map(([key, list]) => {
               const val = list.reduce((s, it) => s + purchaseParseAmount(it.amount), 0)
               const done = list.filter((it) => it.status === "Done").length
               const ongoing = list.filter((it) => it.status === "On-going").length
               const cham = list.filter((it) => it.status === "Chậm").length
-              const progress = list.length ? Math.round((done * 100) / list.length) : 0
+              const initial = key.replace(/Trung tâm|thử nghiệm/gi, "").trim().slice(0, 2).toUpperCase() || "TT"
               return (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => setOpenGroup(key)}
-                  style={{ textAlign: "left", border: "1px solid #e5e7eb", borderRadius: 12, padding: 16, background: "#fff", cursor: "pointer" }}
-                >
-                  <div style={{ fontWeight: 700, marginBottom: 4 }}>{key}</div>
-                  <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 10 }}>{list.length} hạng mục · {purchaseFormatAmount(val)} đ</div>
-                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
-                    <span style={{ fontSize: 11, background: "#f3f4f6", borderRadius: 10, padding: "2px 8px" }}>{done} hoàn thành</span>
-                    <span style={{ fontSize: 11, background: "#f3f4f6", borderRadius: 10, padding: "2px 8px" }}>{ongoing} đang triển khai</span>
-                    {cham > 0 && <span style={{ fontSize: 11, background: "#fee2e2", color: "#c62828", borderRadius: 10, padding: "2px 8px" }}>{cham} chậm</span>}
+                <div key={key} className="hub-card" onClick={() => setOpenGroup(key)}>
+                  <div className="hub-top">
+                    <div className="hub-icon">{initial}</div>
+                    <div className="hub-title"><h4>{key}</h4><p>{list.length} hạng mục · {purchaseFormatAmount(val)} đ</p></div>
+                    <span className="hub-arrow sys-arrow-glyph">›</span>
                   </div>
-                  <div style={{ height: 6, background: "#f0f1f3", borderRadius: 3 }}>
-                    <div style={{ height: 6, width: `${progress}%`, background: "#1d5fd6", borderRadius: 3 }} />
+                  <div className="hub-tags">
+                    <span className="hub-tag">{done} hoàn thành</span>
+                    <span className="hub-tag">{ongoing} đang triển khai</span>
+                    {cham > 0 && <span className="hub-tag" style={{ color: "var(--red)" }}>{cham} chậm</span>}
                   </div>
-                </button>
+                  <div className="hub-stats">
+                    <div className="hub-stat"><b>{list.length}</b><span>Hạng mục</span></div>
+                    <div className="hub-stat"><b style={{ color: "var(--green)" }}>{done}</b><span>Hoàn thành</span></div>
+                    <div className="hub-stat"><b style={{ color: "var(--orange, #f59e0b)" }}>{ongoing}</b><span>Đang triển khai</span></div>
+                  </div>
+                </div>
               )
             })}
           </div>
@@ -268,12 +268,12 @@ export function PurchaseView({
     <PageShell
       title={`Theo dõi mua hàng — ${openGroup}`}
       actions={<>
-        <button type="button" onClick={() => setOpenGroup(null)} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #dfe3e8", background: "#fff", marginRight: 8 }}>← Danh sách nhóm</button>
-        <button type="button" onClick={exportCsv} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #dfe3e8", background: "#fff", marginRight: 8 }}>Xuất CSV</button>
+        <button type="button" className="btn-line" onClick={() => setOpenGroup(null)} style={{ marginRight: 8 }}>← Danh sách nhóm</button>
+        <button type="button" className="btn-line" onClick={exportCsv} style={{ marginRight: 8 }}>Xuất CSV</button>
         {selected.size > 0 && (
-          <button type="button" onClick={() => setBulkConfirm(true)} style={{ padding: "8px 14px", borderRadius: 8, border: "none", background: "#c62828", color: "#fff", marginRight: 8 }}>Xoá {selected.size} mục đã chọn</button>
+          <button type="button" className="btn-danger" onClick={() => setBulkConfirm(true)} style={{ marginRight: 8 }}>Xoá {selected.size} mục đã chọn</button>
         )}
-        <button type="button" onClick={openNew} style={{ padding: "8px 14px", borderRadius: 8, border: "none", background: "#1d5fd6", color: "#fff" }}>+ Thêm hạng mục</button>
+        <button type="button" className="btn-pri" onClick={openNew}>+ Thêm hạng mục</button>
       </>}
       filters={<FilterBar search={{ value: q, onChange: setQ, placeholder: "Tìm hạng mục..." }} />}
     >
@@ -345,18 +345,19 @@ function PurchaseFormModal({
           <label>Trạng thái</label>
           <CustomSelect value={pStatus} onChange={setPStatus} width="100%" options={["", "On-going", "Done", "Chậm", "Hủy"].map((s) => ({ value: s, label: s || "—" }))} />
         </div>
-        <label style={{ fontSize: 12, fontWeight: 600, gridColumn: "1 / -1" }}>Tên hạng mục *
-          <input name="name" required defaultValue={editing?.name ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
-        </label>
+        <div className="field" style={{ gridColumn: "1 / -1" }}>
+          <label>Tên hạng mục *</label>
+          <input name="name" required defaultValue={editing?.name ?? ""} />
+        </div>
         {FIELD_DEFS.map((f) => (
-          <label key={f.key} style={{ fontSize: 12, fontWeight: 600, gridColumn: f.area ? "1 / -1" : undefined }}>
-            {f.label}
+          <div key={f.key} className="field" style={{ gridColumn: f.area ? "1 / -1" : undefined }}>
+            <label>{f.label}</label>
             {f.area ? (
-              <textarea name={String(f.key)} rows={2} defaultValue={(editing?.[f.key] as string) ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4, fontFamily: "inherit" }} />
+              <textarea name={String(f.key)} rows={2} defaultValue={(editing?.[f.key] as string) ?? ""} />
             ) : (
-              <input name={String(f.key)} defaultValue={(editing?.[f.key] as string) ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+              <input name={String(f.key)} defaultValue={(editing?.[f.key] as string) ?? ""} />
             )}
-          </label>
+          </div>
         ))}
       </form>
     </FormModal>

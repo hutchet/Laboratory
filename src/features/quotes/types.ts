@@ -50,12 +50,17 @@ export type PersonnelRoutingRow = {
   reportHours: string | null
 }
 
+// y/c 116.1: Tai san khau hao gio anh xa 1:1 tu Equipment (equipmentId) - assetName
+// va center la "tu dong" theo thiet bi (chi hien thi, khong sua truc tiep o day),
+// nguoi dung chi sua cac truong tai chinh con lai (assetGroup/totalValue/years).
 export type DepreciationAssetRow = {
   id: string
   assetName: string
   assetGroup: string | null
   totalValue: number | null
   years: number | null
+  centerId: string | null
+  center: { id: string; name: string } | null
 }
 
 export type VariableCostRow = {

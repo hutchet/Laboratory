@@ -15,13 +15,13 @@ export async function listEquipment(): Promise<EquipmentRow[]> {
     room: e.room,
     centerId: e.centerId,
     hourlyRate: e.hourlyRate,
-    area: e.area,
-    power: e.power,
-    spec: e.spec,
     calLast: e.calLast ? e.calLast.toISOString() : null,
     calInterval: e.calInterval,
     calCert: e.calCert,
     calVendor: e.calVendor,
+    area: e.area,
+    power: e.power,
+    spec: e.spec,
     center: e.center ? { id: e.center.id, name: e.center.name } : null,
   }))
 }

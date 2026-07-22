@@ -45,6 +45,15 @@ function shiftYear(iso: string, years: number) {
 
 type SlotPrefill = { equipmentId: string; startTime: string; endTime: string } | null
 
+// y/c 116.2: "Dat lich ... cung thiet ke lai theo mo hinh cua cac trang thiet bi -
+// Co danh sach theo trung tam, co KPI, co chinh sua, co bang bieu" - port dung khuon
+// mau hub-card cua EquipmentView.tsx: luoi the theo Trung tam o cap 1, bam vao 1 the
+// moi vao lich/danh sach dat cho rieng cua Trung tam do (giu nguyen toan bo logic
+// Day/Month/Year lich hien co, chi scope theo thiet bi cua Trung tam dang mo).
+const NO_CENTER_KEY = "__none__"
+const NO_CENTER_LABEL = "Trung tâm thử nghiệm chung"
+type CenterGroup = { key: string; name: string; centerId: string | null; items: EquipmentRow[] }
+
 export function BookingsView({
   bookings,
   equipment,
@@ -66,6 +75,7 @@ export function BookingsView({
   const [editMode, setEditMode] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [bulkConfirm, setBulkConfirm] = useState(false)
+  const [openCenterKey, setOpenCenterKey] = useState<string>("")
 
   const [bkEquipmentId, setBkEquipmentId] = useState("")
   const [bkCenterId, setBkCenterId] = useState("")
@@ -91,7 +101,7 @@ export function BookingsView({
     const name = bkNewEqName.trim()
     if (!name) return
     startTransition(async () => {
-      const created = await saveEquipment({ name, category: bkNewEqCat.trim() || "Khác", manufacturer: bkNewEqBrand.trim(), qty: Math.max(1, bkNewEqQty || 1), status: "active" })
+      const created = await saveEquipment({ name, category: bkNewEqCat.trim() || "Khác", manufacturer: bkNewEqBrand.trim(), qty: Math.max(1, bkNewEqQty || 1), status: "active", centerId: openGroup?.centerId ?? undefined })
       if (created?.id) setBkEquipmentId(created.id)
       setBkAddEqOpen(false)
       setBkNewEqName("")
@@ -101,20 +111,65 @@ export function BookingsView({
     })
   }
 
-  const categories = useMemo(() => {
-    const set = new Set<string>()
-    equipment.forEach((e) => { if (e.category) set.add(e.category) })
-    return Array.from(set).sort()
+  // Nhom thiet bi theo Trung tam (giong groups trong EquipmentView.tsx) de lam luoi
+  // hub-card cap 1 cua trang Dat lich.
+  const groups: CenterGroup[] = useMemo(() => {
+    const map = new Map<string, CenterGroup>()
+    for (const e of equipment) {
+      const key = e.centerId ?? NO_CENTER_KEY
+      const name = e.center?.name ?? NO_CENTER_LABEL
+      if (!map.has(key)) map.set(key, { key, name, centerId: e.centerId ?? null, items: [] })
+      map.get(key)!.items.push(e)
+    }
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, "vi"))
   }, [equipment])
 
+  const openGroup = groups.find((g) => g.key === openCenterKey) ?? null
+
+  useEffect(() => {
+    const el = document.getElementById("page-title")
+    if (!el) return
+    if (openGroup) {
+      el.classList.add("title-back")
+      el.title = "Quay lại danh sách trung tâm"
+      const handler = () => backToGrid()
+      el.addEventListener("click", handler)
+      return () => {
+        el.classList.remove("title-back")
+        el.removeAttribute("title")
+        el.removeEventListener("click", handler)
+      }
+    }
+    el.classList.remove("title-back")
+    el.removeAttribute("title")
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openGroup?.key])
+
+  function openCenter(key: string) { setOpenCenterKey(key); setActiveCategory("all") }
+  function backToGrid() { setOpenCenterKey("") }
+
+  // Thiet bi/luot dat duoc "khoanh vung" theo Trung tam dang mo - toan bo lich Day/
+  // Month/Year va danh sach ben duoi deu chi hien du lieu cua Trung tam nay.
+  const scopedEquipment = openGroup ? openGroup.items : []
+  const scopedBookings = useMemo(
+    () => (openGroup ? bookings.filter((b) => scopedEquipment.some((e) => e.id === b.equipmentId)) : []),
+    [openGroup, bookings, scopedEquipment]
+  )
+
+  const categories = useMemo(() => {
+    const set = new Set<string>()
+    scopedEquipment.forEach((e) => { if (e.category) set.add(e.category) })
+    return Array.from(set).sort()
+  }, [scopedEquipment])
+
   const visibleEquipment = useMemo(
-    () => (activeCategory === "all" ? equipment : equipment.filter((e) => e.category === activeCategory)),
-    [equipment, activeCategory]
+    () => (activeCategory === "all" ? scopedEquipment : scopedEquipment.filter((e) => e.category === activeCategory)),
+    [scopedEquipment, activeCategory]
   )
 
   const todaysBookings = useMemo(
-    () => bookings.filter((b) => dateStr(b.startTime) === selectedDate).sort((a, b) => minOfDay(a.startTime) - minOfDay(b.startTime)),
-    [bookings, selectedDate]
+    () => scopedBookings.filter((b) => dateStr(b.startTime) === selectedDate).sort((a, b) => minOfDay(a.startTime) - minOfDay(b.startTime)),
+    [scopedBookings, selectedDate]
   )
 
   function openNew() { setEditing(null); setSlotPrefill(null); setShowForm(true) }
@@ -174,26 +229,78 @@ export function BookingsView({
     else setSelectedDate(shiftYear(selectedDate, 1))
   }
 
-  const totalCount = equipment.length
-  const readyCount = equipment.filter((e) => e.status === "active").length
-  const maintCount = equipment.filter((e) => e.status === "maintenance").length
-  const readyEquipment = useMemo(() => equipment.filter((e) => e.status !== "maintenance"), [equipment])
+  const totalCount = scopedEquipment.length
+  const readyCount = scopedEquipment.filter((e) => e.status === "active").length
+  const maintCount = scopedEquipment.filter((e) => e.status === "maintenance").length
+  const readyEquipment = useMemo(() => scopedEquipment.filter((e) => e.status !== "maintenance"), [scopedEquipment])
+
+  // Tong quan toan he thong (dung khi CHUA mo 1 Trung tam nao) cho luoi hub-card.
+  const overviewTotal = equipment.length
+  const overviewReady = equipment.filter((e) => e.status === "active").length
+  const overviewMaint = equipment.filter((e) => e.status === "maintenance").length
+  const overviewBookingsToday = bookings.filter((b) => dateStr(b.startTime) === selectedDate).length
 
   return (
     <PageShell
       title="Đặt lịch thiết bị"
       actions={
-        <span style={{ display: "flex", gap: 8 }}>
-          {editMode && (
-            <button type="button" className="btn-danger" disabled={!selected.size} onClick={() => setBulkConfirm(true)} style={{ opacity: selected.size ? 1 : 0.5 }}>Xoá mục đã chọn</button>
-          )}
-          <button type="button" className={editMode ? "btn-success" : "btn-line"} onClick={toggleEditMode}>{editMode ? "Xong" : "Chỉnh sửa"}</button>
-          <button type="button" className="btn-pri" onClick={openNew}>+ Đặt lịch</button>
-        </span>
+        openGroup ? (
+          <span style={{ display: "flex", gap: 8 }}>
+            {editMode && (
+              <button type="button" className="btn-danger" disabled={!selected.size} onClick={() => setBulkConfirm(true)} style={{ opacity: selected.size ? 1 : 0.5 }}>Xoá mục đã chọn</button>
+            )}
+            <button type="button" className={editMode ? "btn-success" : "btn-line"} onClick={toggleEditMode}>{editMode ? "Xong" : "Chỉnh sửa"}</button>
+            <button type="button" className="btn-pri" onClick={openNew}>+ Đặt lịch</button>
+          </span>
+        ) : undefined
       }
     >
+      {!openGroup && (
+        <>
+          <div className="grid kpis" style={{ marginBottom: 16 }}>
+            <div className="kcard kb"><div className="v">{overviewTotal}</div><div className="l">Tổng thiết bị</div><div className="s">Toàn hệ thống</div></div>
+            <div className="kcard kg"><div className="v">{overviewReady}</div><div className="l">Sẵn sàng</div><div className="s">Có thể đặt lịch</div></div>
+            <div className="kcard kr"><div className="v">{overviewMaint}</div><div className="l">Đang bảo trì</div><div className="s">Tạm ngưng đặt lịch</div></div>
+            <div className="kcard kp"><div className="v">{overviewBookingsToday}</div><div className="l">Lượt đặt hôm nay</div><div className="s">{fmtVN(todayIso())}</div></div>
+          </div>
+
+          {groups.length === 0 ? (
+            <div className="empty">Chưa có thiết bị nào — thêm thiết bị ở trang Thiết bị để bắt đầu đặt lịch.</div>
+          ) : (
+            <div id="eq-center-cards" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))", gap: 18 }}>
+              {groups.map((g) => {
+                const ready = g.items.filter((e) => e.status === "active").length
+                const maint = g.items.filter((e) => e.status === "maintenance").length
+                const todayCount = bookings.filter((b) => dateStr(b.startTime) === selectedDate && g.items.some((e) => e.id === b.equipmentId)).length
+                const initial = g.name.replace(/Trung tâm|thử nghiệm/gi, "").trim().slice(0, 2).toUpperCase() || "TT"
+                return (
+                  <div key={g.key} className="hub-card" onClick={() => openCenter(g.key)}>
+                    <div className="hub-top">
+                      <div className="hub-icon">{initial}</div>
+                      <div className="hub-title"><h4>{g.name}</h4><p>{g.items.length} thiết bị · {todayCount} lượt đặt hôm nay</p></div>
+                      <span className="hub-arrow sys-arrow-glyph">›</span>
+                    </div>
+                    <div className="hub-tags">
+                      <span className="hub-tag">{ready} sẵn sàng</span>
+                      {maint > 0 && <span className="hub-tag" style={{ color: "var(--red)" }}>{maint} bảo trì</span>}
+                    </div>
+                    <div className="hub-stats">
+                      <div className="hub-stat"><b>{g.items.length}</b><span>Thiết bị</span></div>
+                      <div className="hub-stat"><b style={{ color: "var(--green)" }}>{ready}</b><span>Sẵn sàng</span></div>
+                      <div className="hub-stat"><b style={{ color: "var(--orange, #f59e0b)" }}>{todayCount}</b><span>Đặt hôm nay</span></div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </>
+      )}
+
+      {openGroup && (
+      <>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(160px, 1fr))", gap: 12, marginBottom: 18 }}>
-        <KpiCard label="Tổng thiết bị" value={totalCount} hint="Trong danh mục" />
+        <KpiCard label="Tổng thiết bị" value={totalCount} hint={openGroup.name} />
         <KpiCard label="Sẵn sàng" value={readyCount} hint="Có thể đặt lịch" tone="success" />
         <KpiCard label="Đang bảo trì" value={maintCount} hint="Tạm ngưng đặt lịch" tone="danger" />
         <KpiCard label="Lượt đặt trong ngày" value={todaysBookings.length} hint={fmtVN(selectedDate)} tone="warning" />
@@ -398,6 +505,8 @@ export function BookingsView({
 
       <ConfirmDialog open={!!confirmDeleteId} title="Xoá lịch đặt?" description="Hành động này không thể hoàn tác." danger onConfirm={confirmDelete} onCancel={() => setConfirmDeleteId(null)} />
       <ConfirmDialog open={bulkConfirm} title={`Xoá ${selected.size} lịch đặt đã chọn?`} description="Hành động này không thể hoàn tác." danger onConfirm={confirmBulkDelete} onCancel={() => setBulkConfirm(false)} />
+      </>
+      )}
     </PageShell>
   )
 }
