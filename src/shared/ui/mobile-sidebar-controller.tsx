@@ -41,7 +41,18 @@ export function MobileSidebarController() {
     if (!backdrop) {
       backdrop = document.createElement("div")
       backdrop.className = "v106-side-backdrop"
-      document.body.appendChild(backdrop)
+      // Sua loi "khong thao tac duoc tren sidebar / lop nen de len toan bo man hinh":
+      // truoc day backdrop duoc gan thang vao document.body, tuc NAM NGOAI `.app`
+      // (`.app{position:relative;z-index:1}` o globals.css tao 1 stacking context rieng).
+      // Vi vay z-index:9998 cua backdrop so sanh truc tiep voi z-index:1 cua CA KHOI `.app`
+      // (khong phai voi z-index:9999 cua .side ben trong) va thang, de backdrop nam TREN
+      // toan bo `.app` — bao gom ca .side du .side co z-index:9999 (chi co hieu luc trong
+      // pham vi stacking context cua .app, khong so duoc voi phan tu ngoai .app). Ket qua:
+      // sidebar bi backdrop de len, khong bam/vuot thao tac duoc, cu chi lai roi xuong lop
+      // trang ben duoi. Sua dung: chen backdrop la con cua CHINH `.app` (dung stacking
+      // context voi .side) de 9999 > 9998 co hieu luc thuc, sidebar noi len tren backdrop.
+      const stackingParent = side.parentElement ?? document.body
+      stackingParent.insertBefore(backdrop, side.nextSibling)
       createdBackdrop = true
     }
     const backdropEl = backdrop
