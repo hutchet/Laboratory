@@ -160,6 +160,7 @@
   .kp{background:linear-gradient(135deg,#a276f2 0%,#8b5cf6 55%,#6d3fd1 100%);border-color:transparent;box-shadow:0 10px 24px -10px rgba(109,63,209,.5)}
   .kg{background:linear-gradient(135deg,#3fcf8e 0%,#27ae84 55%,#1c8f6b 100%);border-color:transparent;box-shadow:0 10px 24px -10px rgba(28,143,107,.5)}
   .kr{background:linear-gradient(135deg,#ff7a94 0%,#ef5d77 55%,#d43f5c 100%);border-color:transparent;box-shadow:0 10px 24px -10px rgba(212,63,92,.5)}
+  .kn{background:var(--card);border:1px solid var(--line);color:var(--ink)}
   .kb,.kp,.kg,.kr{color:#fff}
   .kb .l,.kp .l,.kg .l,.kr .l{color:rgba(255,255,255,.94)}
   .kb .s,.kp .s,.kg .s,.kr .s{color:rgba(255,255,255,.72)}
@@ -167,17 +168,19 @@
      (#page-dash, #page-projects) vào ngay class gốc .kcard/.pcard/.cucard - để
      khi các trang khác (Trung tâm, Khách hàng...) dùng lại KpiCard/ProjectCard
      thì tự động PHẲNG giống nhau, không cần vá riêng từng trang nữa. */
-  .kcard.kb:not(.kcard-hero),.kcard.kp:not(.kcard-hero),.kcard.kg:not(.kcard-hero),.kcard.kr:not(.kcard-hero){background:var(--card);border:1px solid var(--line);box-shadow:none;color:var(--ink)}
+  .kcard.kb:not(.kcard-hero),.kcard.kp:not(.kcard-hero),.kcard.kg:not(.kcard-hero),.kcard.kr:not(.kcard-hero),.kcard.kn:not(.kcard-hero){background:var(--card);border:1px solid var(--line);box-shadow:none;color:var(--ink)}
   .kcard.kb:not(.kcard-hero){border-top:3px solid var(--blue)}
   .kcard.kp:not(.kcard-hero){border-top:3px solid var(--purple)}
   .kcard.kg:not(.kcard-hero){border-top:3px solid var(--green)}
   .kcard.kr:not(.kcard-hero){border-top:3px solid var(--red)}
-  .kcard.kb:not(.kcard-hero) .l,.kcard.kp:not(.kcard-hero) .l,.kcard.kg:not(.kcard-hero) .l,.kcard.kr:not(.kcard-hero) .l{color:var(--ink);font-weight:600}
-  .kcard.kb:not(.kcard-hero) .s,.kcard.kp:not(.kcard-hero) .s,.kcard.kg:not(.kcard-hero) .s,.kcard.kr:not(.kcard-hero) .s{color:var(--muted)}
+  .kcard.kn:not(.kcard-hero){border-top:3px solid var(--line)}
+  .kcard.kb:not(.kcard-hero) .l,.kcard.kp:not(.kcard-hero) .l,.kcard.kg:not(.kcard-hero) .l,.kcard.kr:not(.kcard-hero) .l,.kcard.kn:not(.kcard-hero) .l{color:var(--ink);font-weight:600}
+  .kcard.kb:not(.kcard-hero) .s,.kcard.kp:not(.kcard-hero) .s,.kcard.kg:not(.kcard-hero) .s,.kcard.kr:not(.kcard-hero) .s,.kcard.kn:not(.kcard-hero) .s{color:var(--muted)}
   .kcard.kb:not(.kcard-hero) .v{color:var(--blue)}
   .kcard.kp:not(.kcard-hero) .v{color:var(--purple)}
   .kcard.kg:not(.kcard-hero) .v{color:var(--green)}
   .kcard.kr:not(.kcard-hero) .v{color:var(--red)}
+  .kcard.kn:not(.kcard-hero) .v{color:var(--ink)}
   .kcard{position:relative;overflow:hidden}
   .kcard::after{content:'';position:absolute;right:-30px;top:-30px;width:110px;height:110px;border-radius:50%;background:rgba(255,255,255,.10)}
   .kcard-icon{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;margin-bottom:10px;position:relative;z-index:1;background:rgba(255,255,255,.22);color:#fff}
@@ -185,6 +188,7 @@
   .kcard.kp:not(.kcard-hero) .kcard-icon{background:var(--purple-soft);color:var(--purple)}
   .kcard.kg:not(.kcard-hero) .kcard-icon{background:var(--green-soft);color:var(--green)}
   .kcard.kr:not(.kcard-hero) .kcard-icon{background:var(--red-soft);color:var(--red)}
+  .kcard.kn:not(.kcard-hero) .kcard-icon{background:var(--neutral-soft);color:var(--muted)}
   .kcard-icon svg{width:19px;height:19px}
   .kcard-hero .kcard-icon{position:absolute;top:20px;right:20px;margin-bottom:0}
   .kcard-sm .kcard-icon{width:30px;height:30px;border-radius:9px;margin-bottom:7px}

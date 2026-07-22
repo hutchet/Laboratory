@@ -82,7 +82,7 @@ function trendColor(tone: KpiCardTone): string {
 // Material-3 CSS (globals.css line 1065-1068) applies md-sys-color-*-container backgrounds
 // via these classes with !important, overriding any inline background
 const TONE_CLASS: Record<KpiCardTone, string> = {
-  neutral: "kb",
+  neutral: "kn",
   blue:    "kb",
   success: "kg",
   warning: "kp",
