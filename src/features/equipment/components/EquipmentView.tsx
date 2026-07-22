@@ -309,7 +309,7 @@ export function EquipmentView({ equipment, centers, bookings = [] }: { equipment
                   <div className="analytics-head">
                     <div><h3>Tổng quan toàn bộ thiết bị</h3><p>Phân bổ tình trạng và số lượng theo trung tâm thử nghiệm</p></div>
                   </div>
-<div className="analytics-metrics" style={{gridTemplateColumns:"repeat(4,1fr)"}}>
+<div className="analytics-metrics" style={{gridTemplateColumns:"repeat(4,1fr)!important"}}>
                     <div className="analytics-metric"><b>{overview.ready}</b><span>Sẵn sàng</span></div>
                     <div className="analytics-metric"><b>{overview.maint}</b><span>Bảo trì</span></div>
                     <div className="analytics-metric"><b>{groups.length}</b><span>Trung tâm</span></div>
