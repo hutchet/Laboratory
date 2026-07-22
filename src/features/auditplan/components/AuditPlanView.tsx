@@ -189,18 +189,6 @@ export function AuditPlanView({
     downloadCsv("audit-plan.csv", [header, ...rows])
   }
 
-  const planColumns: Array<DataTableColumn<AuditPlanRow>> = [
-    { key: "title", header: "Kế hoạch", render: (p) => <button type="button" onClick={() => setActivePlanId(p.id)} style={{ border: "none", background: "none", padding: 0, fontWeight: 600, color: p.id === visiblePlanId ? "#1d5fd6" : "#1b1f24", cursor: "pointer", textAlign: "left" }}>{p.title}</button> },
-    { key: "scheduledAt", header: "Ngày dự kiến", render: (p) => (p.scheduledAt ? new Date(p.scheduledAt).toLocaleDateString("vi-VN") : "—") },
-    { key: "phaseCount", header: "Giai đoạn", align: "right", render: (p) => p.phaseCount },
-    { key: "itemCount", header: "Hạng mục", align: "right", render: (p) => p.itemCount },
-    { key: "status", header: "Trạng thái", render: (p) => <StatusBadge label={AUDIT_STATUS_LABEL[p.status ?? ""] ?? p.status ?? "—"} tone={planStatusTone(p.status)} /> },
-    {
-      key: "actions", header: "", align: "right",
-      render: (p) => <Perm minPerm="dept_head"><button type="button" onClick={() => setConfirmDeletePlanId(p.id)} style={{ border: "none", background: "none", color: "#c62828", cursor: "pointer" }}>Xoá</button></Perm>,
-    },
-  ]
-
   // Port cua .row-chk/.acts (globals.css dong 350-353 ban goc): 2 cot nay LUON
   // co trong bang, chi "visibility:hidden" khi chua bam "Chinh sua" - port dung
   // pattern da chuan hoa o PurchaseView.tsx (khong xoa het cot khoi mang de
@@ -246,7 +234,41 @@ export function AuditPlanView({
       )}
     >
       <h3 style={{ fontSize: 14, margin: "0 0 8px" }}>Kế hoạch</h3>
-      <DataTable columns={planColumns} rows={plans} rowKey={(p) => p.id} loading={pending} emptyTitle="Chưa có kế hoạch nào" />
+      {plans.length === 0 ? (
+        <div className="empty">Chưa có kế hoạch nào.</div>
+      ) : (
+        // y/c: trang danh sach the (card list) cho Ke hoach kiem dinh, dung dung
+        // khuon mau hub-card cua the Trung tam (EquipmentView.tsx #eq-center-cards)
+        // thay cho bang DataTable cu - bam vao 1 the de chon lam ke hoach dang xem
+        // (giu nguyen logic setActivePlanId/visiblePlanId hien co).
+        <div id="ap-plan-cards" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: 18, marginBottom: 20 }}>
+          {plans.map((p) => {
+            const initial = p.title.trim().slice(0, 2).toUpperCase() || "KH"
+            return (
+              <div key={p.id} className={`hub-card${p.id === visiblePlanId ? " selected" : ""}`} onClick={() => setActivePlanId(p.id)}>
+                <div className="hub-top">
+                  <div className="hub-icon">{initial}</div>
+                  <div className="hub-title"><h4>{p.title}</h4><p>{p.scheduledAt ? new Date(p.scheduledAt).toLocaleDateString("vi-VN") : "Chưa có ngày dự kiến"}</p></div>
+                  <span className="hub-arrow sys-arrow-glyph">›</span>
+                </div>
+                <div className="hub-tags">
+                  <StatusBadge label={AUDIT_STATUS_LABEL[p.status ?? ""] ?? p.status ?? "—"} tone={planStatusTone(p.status)} />
+                </div>
+                <div className="hub-stats">
+                  <div className="hub-stat"><b>{p.phaseCount}</b><span>Giai đoạn</span></div>
+                  <div className="hub-stat"><b>{p.itemCount}</b><span>Hạng mục</span></div>
+                </div>
+                <Perm minPerm="dept_head">
+                  <div onClick={(e) => e.stopPropagation()} style={{ display: "flex", gap: 8, borderTop: "1px solid var(--line)", paddingTop: 12 }}>
+                    <button type="button" className="btn-line" style={{ flex: 1 }} onClick={() => setActivePlanId(p.id)}>Xem chi tiết</button>
+                    <button type="button" className="btn-line" onClick={() => setConfirmDeletePlanId(p.id)}>Xoá</button>
+                  </div>
+                </Perm>
+              </div>
+            )
+          })}
+        </div>
+      )}
 
       {plans.length > 0 && (
         <>
@@ -314,8 +336,14 @@ export function AuditPlanView({
           )}
 
           <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 16, marginBottom: 20 }}>
-            <div>
-              <h3 style={{ fontSize: 14, margin: "0 0 8px" }}>Tiến đứ (Gantt)</h3>
+            {/* minWidth:0 la fix cho loi CSS Grid "blowout" quen thuoc: neu khong co
+                dong nay, cot luoi nay se tu gian rong theo dung do rong noi dung cua
+                bang Gantt (nhieu cot ngay) thay vi gioi han theo "2fr", khien
+                .pl-gantt-wrap (overflow:auto) khong bao gio thuc su bi tran de kich
+                hoat thanh cuon rieng cua no - phan con lai bi .main{{overflow-x:hidden}}
+                cat mat luon, nhin giong nhu "khong co cuon ngang/doc" nao ca. */}
+            <div style={{ minWidth: 0, overflow: "hidden" }}>
+              <h3 style={{ fontSize: 14, margin: "0 0 8px" }}>Tiến độ (Gantt)</h3>
               <AuditGanttChart items={scopedItems} phases={scopedPhases} onEditItem={(it) => { setEditingItem(it); setShowItemForm(true) }} />
             </div>
             <div>
