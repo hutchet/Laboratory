@@ -121,8 +121,15 @@ export function BookingsView({
       if (!map.has(key)) map.set(key, { key, name, centerId: e.centerId ?? null, items: [] })
       map.get(key)!.items.push(e)
     }
+    // Include centers without equipment
+    for (const c of centers) {
+      const key = c.id
+      if (!map.has(key)) {
+        map.set(key, { key, name: c.name, centerId: c.id, items: [] })
+      }
+    }
     return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, "vi"))
-  }, [equipment])
+  }, [equipment, centers])
 
   const openGroup = groups.find((g) => g.key === openCenterKey) ?? null
 

@@ -9,6 +9,7 @@ import { MatrixView } from "@/features/quotes/components/MatrixView"
 import { PersonnelView } from "@/features/quotes/components/PersonnelView"
 import { VariableView } from "@/features/quotes/components/VariableView"
 import { DepreciationView } from "@/features/quotes/components/DepreciationView"
+import { listCenterOptions } from "@/features/equipment/queries"
 
 export default async function QuotePage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   const { tab } = await searchParams
@@ -32,8 +33,8 @@ export default async function QuotePage({ searchParams }: { searchParams: Promis
       return <VariableView items={items} />
     }
     case "quote-depreciation": {
-      const items = await listDepreciationAssets()
-      return <DepreciationView items={items} />
+      const [items, centers] = await Promise.all([listDepreciationAssets(), listCenterOptions()])
+      return <DepreciationView items={items} centers={centers} />
     }
     case "quote-overview":
     default: {

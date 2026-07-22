@@ -85,8 +85,15 @@ export function EquipmentView({ equipment, centers, bookings = [] }: { equipment
       if (!map.has(key)) map.set(key, { key, name, centerId: e.centerId, items: [] })
       map.get(key)!.items.push(e)
     }
+    // Include centers without equipment so empty centers appear in the grid
+    for (const c of centers) {
+      const key = c.id
+      if (!map.has(key)) {
+        map.set(key, { key, name: c.name, centerId: c.id, items: [] })
+      }
+    }
     return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, "vi"))
-  }, [equipment])
+  }, [equipment, centers])
 
   const openGroup = groups.find((g) => g.key === openCenterKey) ?? null
 

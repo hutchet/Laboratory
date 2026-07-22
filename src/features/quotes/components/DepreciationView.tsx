@@ -7,6 +7,7 @@ import { FormModal } from "@/shared/ui/form-modal"
 import { Perm } from "@/shared/lib/rbac-client"
 import { saveDepreciationAsset } from "../actions"
 import type { DepreciationAssetRow } from "../types"
+import type { Option } from "@/features/projects/types"
 
 // y/c 116.1 + 116.2: "Danh sách thiết bị được nhập trong trang thiết bị sẽ tự động
 // được ánh xạ sang khấu hao thiết bị" (xem saveEquipment() trong
@@ -28,7 +29,7 @@ const NO_CENTER_LABEL = "Trung tâm thử nghiệm chung"
 
 type CenterGroup = { key: string; name: string; centerId: string | null; items: DepreciationAssetRow[] }
 
-export function DepreciationView({ items }: { items: DepreciationAssetRow[] }) {
+export function DepreciationView({ items, centers = [] }: { items: DepreciationAssetRow[]; centers?: Option[] }) {
   const [q, setQ] = useState("")
   const [editing, setEditing] = useState<DepreciationAssetRow | null>(null)
   const [showForm, setShowForm] = useState(false)
