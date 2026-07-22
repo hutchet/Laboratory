@@ -3282,3 +3282,15 @@ html body .center-detail-card > .qs-box, html body .center-detail-card #pm-detai
 .plan-link:hover{text-decoration:underline}
 .plan-empty{color:var(--muted)}
 
+
+/* v_eqfix1 (22/07 8:36 bug-fix): luoi the Trung tam trang Thiet bi (#eq-center-cards)
+   phai theo dung nguyen tac 4 the/PC, 3 the/laptop, 2 the/ipad, 1 the/mobile (giong
+   .proj-grid) - thay cho repeat(auto-fit,minmax(...)) khong on dinh so cot. CHI doi
+   #eq-center-cards (rieng trang Thiet bi) - KHONG dong thoi doi #qtm-center-cards
+   (trang Bang gia thu nghiem, ngoai pham vi yeu cau nay). !important + append cuoi
+   file de thang cac rule cu cung id (dong ~793/832/1057/1059/1871). */
+#eq-center-cards{display:grid!important;grid-template-columns:repeat(4,1fr)!important;gap:18px!important;margin-bottom:20px!important}
+.material-3 #eq-center-cards{display:grid!important;grid-template-columns:repeat(4,1fr)!important}
+@media(max-width:1600px){#eq-center-cards,.material-3 #eq-center-cards{grid-template-columns:repeat(3,1fr)!important}}
+@media(max-width:1100px){#eq-center-cards,.material-3 #eq-center-cards{grid-template-columns:repeat(2,1fr)!important}}
+@media(max-width:760px){#eq-center-cards,.material-3 #eq-center-cards{grid-template-columns:1fr!important}}

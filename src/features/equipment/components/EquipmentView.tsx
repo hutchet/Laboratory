@@ -6,7 +6,6 @@ import { DataTable, type DataTableColumn } from "@/shared/ui/data-table"
 import { FormModal } from "@/shared/ui/form-modal"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { StatusBadge } from "@/shared/ui/status-badge"
-import { KpiCard } from "@/shared/ui/kpi-card"
 import { CustomSelect } from "@/shared/ui/custom-select"
 import { Perm } from "@/shared/lib/rbac-client"
 import { saveEquipment, deleteEquipment, bulkDeleteEquipment } from "../actions"
@@ -24,16 +23,6 @@ function calTone(state: "overdue" | "soon" | "ok"): "neutral" | "warning" | "dan
   if (state === "overdue") return "danger"
   if (state === "soon") return "warning"
   return "neutral"
-}
-
-// y/c #105.1: bo sung 4 the KPI dau trang - port cua eqk-total/eqk-ready/eqk-maint/
-// eqk-today ban goc (id dong 3664-3667, tinh toan dong 6519-6523): Tong thiet bi,
-// San sang (status=active), Dang bao tri (status=maintenance), Luot dat trong ngay
-// (so booking co startTime roi vao ngay hom nay).
-function isToday(iso: string): boolean {
-  const d = new Date(iso)
-  const now = new Date()
-  return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate()
 }
 
 // y/c 111 (khao sat kien truc: "Lam lai dung ban goc"): port lai dung mo hinh 2 cap
@@ -79,14 +68,6 @@ export function EquipmentView({ equipment, centers, bookings = [] }: { equipment
     }
   }, [showForm, editing, formCenterId])
 
-  const kpi = useMemo(() => {
-    const total = equipment.length
-    const ready = equipment.filter((e) => (e.status ?? "active") === "active").length
-    const maint = equipment.filter((e) => e.status === "maintenance").length
-    const today = bookings.filter((b) => isToday(b.startTime)).length
-    return { total, ready, maint, today }
-  }, [equipment, bookings])
-
   // Port cua eqCategories() ban goc (dong ~6522, 6701): danh sach danh muc
   // duy nhat de goi y trong datalist form them/sua thiet bi (khong bao gom "Tat ca").
   const categoryDatalistOptions = useMemo(
@@ -131,10 +112,6 @@ export function EquipmentView({ equipment, centers, bookings = [] }: { equipment
     el.removeAttribute("title")
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openGroup?.key])
-
-  useEffect(() => {
-    if (openGroup) setCenterNameEdit(openGroup.name)
-  }, [openGroup?.key, openGroup?.name])
 
   function openCenter(key: string) {
     setOpenCenterKey(key)
@@ -242,16 +219,21 @@ export function EquipmentView({ equipment, centers, bookings = [] }: { equipment
     const ids = Array.from(selected)
     startTransition(async () => { await bulkDeleteEquipment(ids); setSelected(new Set()); setBulkConfirm(false) })
   }
-  // Port cua data-save-center-inline (dong 6683, 6846): doi ten Trung tam. Ban goc
-  // luu ten Trung tam ngay tren tung dong thiet bi (equipment[].center); sandbox
-  // dung Trung tam la 1 thuc the rieng (model Center) nen goi saveCenter() cua
-  // module centers - ket qua tuong duong (doi ten hien thi cho toan bo thiet bi
-  // thuoc Trung tam nay).
-  function saveCenterName() {
-    if (!openGroup || !openGroup.centerId) return
+  // y/c bug-fix (22/07 8:36): doi ten Trung tam TRUOC DAY bi gan nham vao nut "Chinh
+  // sua" trong bang thiet bi chi tiet (gay nham lan voi sua THONG TIN THIET BI). Chuyen
+  // thanh 1 modal rieng, mo tu nut "Sua" ngay tren tung the Trung tam (hub-card) o luoi
+  // tong quan - dung nhu yeu cau "them/chinh sua cac the danh sach thiet bi theo trung
+  // tam", khong con lien quan gi den centerEditMode/bang thiet bi nua.
+  const [centerRenameFor, setCenterRenameFor] = useState<CenterGroup | null>(null)
+  function openCenterRename(g: CenterGroup) {
+    setCenterRenameFor(g)
+    setCenterNameEdit(g.name)
+  }
+  function saveCenterRename() {
+    if (!centerRenameFor || !centerRenameFor.centerId) return
     const name = centerNameEdit.trim()
     if (!name) return
-    startTransition(async () => { await saveCenter({ id: openGroup.centerId!, name }) })
+    startTransition(async () => { await saveCenter({ id: centerRenameFor.centerId!, name }); setCenterRenameFor(null) })
   }
 
   // y/c #105.1: an cot Sua/Xoa cho den khi bam "Chinh sua" (centerEditMode=true) -
@@ -262,7 +244,7 @@ export function EquipmentView({ equipment, centers, bookings = [] }: { equipment
     ...(centerEditMode
       ? [{
           key: "sel", header: "", defaultWidth: 40,
-          render: (e: EquipmentRow) => <input type="checkbox" checked={selected.has(e.id)} onChange={() => toggleSelect(e.id)} />,
+          render: (e: EquipmentRow) => <input type="checkbox" checked={selected.has(e.id)} onChange={() => toggleSelect(e.id)} onClick={(ev) => ev.stopPropagation()} />,
         } as DataTableColumn<EquipmentRow>]
       : []),
     { key: "idx", header: "STT", defaultWidth: 48, render: (e) => centerFilteredItems.findIndex((x) => x.id === e.id) + 1 },
@@ -294,7 +276,7 @@ export function EquipmentView({ equipment, centers, bookings = [] }: { equipment
       ? [{
           key: "actions", header: "", align: "right" as const,
           render: (e: EquipmentRow) => (
-            <span style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+            <span style={{ display: "flex", gap: 8, justifyContent: "flex-end" }} onClick={(ev) => ev.stopPropagation()}>
               <button type="button" className="txt-act pri" onClick={() => openEdit(e)}>Sửa</button>
               <button type="button" className="txt-act del" onClick={() => setConfirmDeleteId(e.id)}>Xoá</button>
             </span>
@@ -306,22 +288,10 @@ export function EquipmentView({ equipment, centers, bookings = [] }: { equipment
   return (
     <PageShell
       title="Thiết bị"
-      actions={
-        <Perm minPerm="dept_head">
-          <button type="button" className="btn-pri" onClick={() => openNew(openGroup?.centerId ?? null)}>+ Thêm thiết bị</button>
-        </Perm>
-      }
       filters={
         <FilterBar search={{ value: q, onChange: setQ, placeholder: openGroup ? "Tìm trong trung tâm này..." : "Tìm thiết bị..." }} />
       }
     >
-      <div className="kpis-tier" style={{ marginBottom: 16 }}>
-        <KpiCard label="Tổng thiết bị" value={kpi.total} tone="neutral" />
-        <KpiCard label="Sẵn sàng" value={kpi.ready} tone="success" />
-        <KpiCard label="Đang bảo trì" value={kpi.maint} tone="danger" />
-        <KpiCard label="Lượt đặt trong ngày" value={kpi.today} tone="warning" />
-      </div>
-
       {!openGroup && (
         <>
           {/* Port cua eqOverviewAnalyticsHtml() ban goc: chi hien khi dang xem luoi the
@@ -386,6 +356,14 @@ export function EquipmentView({ equipment, centers, bookings = [] }: { equipment
                       <div className="hub-stat"><b style={{ color: "var(--green)" }}>{ready}</b><span>Sẵn sàng</span></div>
                       <div className="hub-stat"><b style={{ color: "var(--red)" }}>{maint}</b><span>Bảo trì</span></div>
                     </div>
+                    <Perm minPerm="dept_head">
+                      <div onClick={(e) => e.stopPropagation()} style={{ display: "flex", gap: 8, borderTop: "1px solid var(--line)", paddingTop: 12 }}>
+                        <button type="button" className="btn-line" style={{ flex: 1 }} onClick={() => openNew(g.centerId)}>+ Thêm thiết bị</button>
+                        {g.centerId && (
+                          <button type="button" className="btn-line" onClick={() => openCenterRename(g)}>Sửa</button>
+                        )}
+                      </div>
+                    </Perm>
                   </div>
                 )
               })}
@@ -415,35 +393,27 @@ export function EquipmentView({ equipment, centers, bookings = [] }: { equipment
               </div>
             </div>
 
-            {centerEditMode && (
-              <div className="center-edit-panel">
-                <div className="center-edit-head"><h4>Thông tin trung tâm</h4><p>Chỉnh sửa thông tin dùng chung cho toàn bộ thiết bị trong trung tâm.</p></div>
-                <div className="center-edit-grid">
-                  <div className="field">
-                    <label>Tên trung tâm</label>
-                    <input value={centerNameEdit} onChange={(e) => setCenterNameEdit(e.target.value)} disabled={!openGroup.centerId} />
-                  </div>
-                </div>
-                <div className="center-edit-actions">
-                  <button type="button" className="btn-pri" onClick={saveCenterName} disabled={!openGroup.centerId}>Lưu thông tin</button>
-                </div>
-                {!openGroup.centerId && (
-                  <div style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 6 }}>Nhóm mặc định này chưa gắn với 1 Trung tâm cụ thể nên không thể đổi tên — hãy chọn Trung tâm khi thêm/sửa thiết bị.</div>
-                )}
-              </div>
-            )}
-
             <div className="detail-filter-bar">
               <CustomSelect
                 value={mgmtCategory}
                 onChange={setMgmtCategory}
                 options={[{ value: "all", label: "Tất cả danh mục" }, ...centerCategoryOptions.map((c) => ({ value: c, label: c }))]}
+                triggerStyle={{ height: 48 }}
               />
-              <input data-eq-detail-search value={q} onChange={(e) => setQ(e.target.value)} placeholder="Tìm trong trung tâm này..." />
-              <span className="detail-count">{centerFilteredItems.length}/{openGroup.items.length} thiết bị</span>
+              <input data-eq-detail-search value={q} onChange={(e) => setQ(e.target.value)} placeholder="Tìm trong trung tâm này..." style={{ height: 48, boxSizing: "border-box" }} />
+              <span
+                className="detail-count"
+                style={{ height: 48, display: "inline-flex", alignItems: "center", justifyContent: "center", padding: "0 14px", borderRadius: 9, background: "var(--card)", border: "1px solid var(--line)", color: "var(--muted)", fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap", boxSizing: "border-box" }}
+              >
+                {centerFilteredItems.length}/{openGroup.items.length} thiết bị
+              </span>
             </div>
 
-            <DataTable columns={detailColumns} rows={centerFilteredItems} rowKey={(e) => e.id} loading={pending} emptyTitle="Chưa có thiết bị nào" resizable />
+            {/* y/c bug-fix (22/07 8:36): bam truc tiep vao 1 dong de mo lai form Sua thiet
+                bi day du (sua thong tin theo hang muc), khong con phai bat centerEditMode
+                truoc. Checkbox/nut Sua/Xoa rieng da co stopPropagation nen khong bi mo
+                form 2 lan khi bam vao chinh cac nut do. */}
+            <DataTable columns={detailColumns} rows={centerFilteredItems} rowKey={(e) => e.id} onRowClick={openEdit} loading={pending} emptyTitle="Chưa có thiết bị nào" resizable />
           </div>
         </div>
       )}
@@ -552,6 +522,20 @@ export function EquipmentView({ equipment, centers, bookings = [] }: { equipment
             </div>
           </div>
         </form>
+      </FormModal>
+
+      <FormModal
+        open={!!centerRenameFor}
+        title="Sửa tên trung tâm"
+        onClose={() => setCenterRenameFor(null)}
+        onSubmit={saveCenterRename}
+        submitLabel="Lưu"
+        submitting={pending}
+      >
+        <div className="field">
+          <label>Tên trung tâm</label>
+          <input value={centerNameEdit} onChange={(e) => setCenterNameEdit(e.target.value)} autoFocus />
+        </div>
       </FormModal>
 
       <ConfirmDialog open={!!confirmDeleteId} title="Xoá thiết bị?" description="Hành động này không thể hoàn tác." danger onConfirm={confirmDelete} onCancel={() => setConfirmDeleteId(null)} />
