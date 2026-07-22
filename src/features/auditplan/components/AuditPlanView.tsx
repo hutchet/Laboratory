@@ -332,33 +332,24 @@ export function AuditPlanView({
               <div style={{ fontSize: 13, color: "#8a8f98", margin: "10px 0 6px" }}>Số nhóm hạng mục</div>
               <div style={{ fontSize: 20, fontWeight: 700 }}>{scopedPhases.length} nhóm</div>
             </div>
-            <div>
-              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8, color: "#444" }}>Khối lượng theo người phụ trách</div>
-              {workload.length === 0 && <div style={{ color: "#8a8f98", fontSize: 13 }}>Chưa có dữ liệu.</div>}
-              {workload.slice(0, 4).map(([name, count]) => (
-                <div key={name} style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 3 }}>
-                  <span>{name}</span><span style={{ fontWeight: 600 }}>{count}</span>
-                </div>
-              ))}
-            </div>
             </div>
           </div>
           )}
 
-          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 16, marginBottom: 20 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 16, marginBottom: 20, alignItems: "start" }}>
             {/* minWidth:0 la fix cho loi CSS Grid "blowout" quen thuoc: neu khong co
                 dong nay, cot luoi nay se tu gian rong theo dung do rong noi dung cua
                 bang Gantt (nhieu cot ngay) thay vi gioi han theo "2fr", khien
                 .pl-gantt-wrap (overflow:auto) khong bao gio thuc su bi tran de kich
                 hoat thanh cuon rieng cua no - phan con lai bi .main{{overflow-x:hidden}}
                 cat mat luon, nhin giong nhu "khong co cuon ngang/doc" nao ca. */}
-            <div style={{ minWidth: 0, overflow: "hidden" }}>
+            <div style={{ minWidth: 0, overflow: "hidden", alignSelf: "start" }}>
               <h3 style={{ fontSize: 14, margin: "0 0 8px" }}>Tiến độ (Gantt)</h3>
               <AuditGanttChart items={scopedItems} phases={scopedPhases} onEditItem={(it) => { setEditingItem(it); setShowItemForm(true) }} />
             </div>
-            <div>
+            <div style={{ alignSelf: "start" }}>
               <h3 style={{ fontSize: 14, margin: "0 0 8px" }}>Tải công việc theo phụ trách</h3>
-              <div style={{ border: "1px solid #e6e9ee", borderRadius: 10, padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+              <div style={{ border: "1px solid #e6e9ee", borderRadius: 10, padding: 12, display: "flex", flexDirection: "column", gap: 8, maxHeight: 360, overflowY: "auto" }}>
                 {workload.length === 0 && <div style={{ color: "#8a8f98", fontSize: 13 }}>Chưa có dữ liệu.</div>}
                 {workload.map(([name, count]) => (
                   <div key={name}>
@@ -394,7 +385,9 @@ export function AuditPlanView({
       </div>
       <FilterBar search={{ value: search, onChange: setSearch, placeholder: "Tìm theo tên hạng mục hoặc phụ trách…" }}>
       </FilterBar>
-      <DataTable columns={itemColumns} rows={scopedItems} rowKey={(it) => it.id} loading={pending} emptyTitle="Chưa có hạng mục nào" />
+      <div style={{ marginTop: 2 }}>
+        <DataTable columns={itemColumns} rows={scopedItems} rowKey={(it) => it.id} loading={pending} emptyTitle="Chưa có hạng mục nào" onRowClick={(it) => { setEditingItem(it); setShowItemForm(true) }} resizable maxBodyHeight={360} />
+      </div>
       </>
       )}
 

@@ -738,11 +738,20 @@
   /* Chuẩn hóa lưới KPI 4 cấp theo màn hình: PC=4/Laptop=3/iPad=2/Mobile=1 — dùng class riêng .kpis-tier
      (không dùng .kpis mặc định) để không xung đột với các rule .kpis khác đang áp cho Dashboard. */
   .kpis-tier{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  @media(max-width:1600px){.kpis-tier{grid-template-columns:repeat(3,1fr)}}
   @media(max-width:1100px){.kpis-tier{grid-template-columns:repeat(2,1fr)}}
-  @media(max-width:680px){.kpis-tier{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:680px){.kpis-tier{grid-template-columns:1fr}}
   .material-3 .kpis-tier{grid-template-columns:repeat(4,1fr)}
+  @media(max-width:1600px){.material-3 .kpis-tier{grid-template-columns:repeat(3,1fr)}}
   @media(max-width:1100px){.material-3 .kpis-tier{grid-template-columns:repeat(2,1fr)}}
-  @media(max-width:680px){.material-3 .kpis-tier{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:680px){.material-3 .kpis-tier{grid-template-columns:1fr}}
+  /* Trang popup (FormModal) — bố cục ngang, tối ưu PC/laptop: các field con bọc trong .field/.row
+     sẽ tự xếp 2 cột khi đủ rộng; input/select/textarea full-width vẫn giữ 1 cột. */
+  .fm-wide-grid{display:flex;flex-direction:column;gap:12px}
+  @media(min-width:700px){
+    .fm-wide-grid > .row{display:flex;gap:12px}
+    .fm-wide-grid > .row > *{flex:1;min-width:0}
+  }
   /* Chuẩn hóa "box chọn thời gian" — ô input ngày dùng chung bo góc + nền var(--surface-control)
      giống các control khác (SearchInput/CustomSelect). */
   .sys-date-field{height:38px;border-radius:var(--radius-control,10px);border:1px solid var(--line);background:var(--surface-control);padding:0 12px;font-size:13px;color:var(--ink);width:100%;box-sizing:border-box}

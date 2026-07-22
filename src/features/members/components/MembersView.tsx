@@ -139,13 +139,21 @@ export function MembersView({
     })
   }
 
+  const allSelected = filtered.length > 0 && filtered.every((m) => selected.has(m.id))
+  function toggleSelectAll() {
+    setSelected((prev) => (allSelected ? new Set() : new Set(filtered.map((m) => m.id))))
+  }
+
   const columns: Array<DataTableColumn<MemberRow>> = [
-    ...(editMode
-      ? [{
-          key: "sel", header: "", defaultWidth: 44,
-          render: (m: MemberRow) => <input type="checkbox" checked={selected.has(m.id)} onChange={() => toggleSelect(m.id)} />,
-        } as DataTableColumn<MemberRow>]
-      : []),
+    {
+      key: "sel",
+      header: editMode ? <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} /> : "",
+      defaultWidth: 40,
+      render: (m: MemberRow) =>
+        editMode ? (
+          <input type="checkbox" checked={selected.has(m.id)} onClick={(e) => e.stopPropagation()} onChange={() => toggleSelect(m.id)} />
+        ) : null,
+    },
     {
       key: "name", header: "Thành viên",
       render: (m) => (
@@ -178,15 +186,18 @@ export function MembersView({
     { key: "accessRole", header: "Quyền", render: (m) => <StatusBadge label={ACCESS_ROLE_LABEL[m.accessRole ?? "viewer"] ?? m.accessRole ?? "—"} tone="info" /> },
     {
       key: "actions", header: "", align: "right",
-      render: (m) => (
-        <span style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-          <Perm minPerm="dept_head">
-            <button type="button" onClick={() => { setResetPasswordFor(m); setResetPasswordValue(""); setResetPasswordError(null) }} style={{ border: "none", background: "none", color: "#8a5cf6", cursor: "pointer" }}>Đặt lại MK</button>
-          </Perm>
-          <Perm minPerm="director"><button type="button" onClick={() => openEdit(m)} style={{ border: "none", background: "none", color: "#1d5fd6", cursor: "pointer" }}>Sửa</button>
-          <button type="button" onClick={() => setConfirmDeleteId(m.id)} style={{ border: "none", background: "none", color: "#c62828", cursor: "pointer" }}>Xoá</button></Perm>
-        </span>
-      ),
+      render: (m) =>
+        editMode ? (
+          <span className="acts" style={{ display: "flex", gap: 8, justifyContent: "flex-end" }} onClick={(e) => e.stopPropagation()}>
+            <Perm minPerm="dept_head">
+              <button type="button" className="txt-act" onClick={() => { setResetPasswordFor(m); setResetPasswordValue(""); setResetPasswordError(null) }}>Đặt lại MK</button>
+            </Perm>
+            <Perm minPerm="director">
+              <button type="button" className="txt-act pri" onClick={() => openEdit(m)}>Sửa</button>
+              <button type="button" className="txt-act del" onClick={() => setConfirmDeleteId(m.id)}>Xoá</button>
+            </Perm>
+          </span>
+        ) : null,
     },
   ]
 
@@ -197,10 +208,10 @@ export function MembersView({
         <Perm minPerm="director">
           <span style={{ display: "flex", gap: 8 }}>
             {editMode && (
-              <button type="button" disabled={!selected.size} onClick={() => setBulkConfirm(true)} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #c62828", background: "#fff", color: "#c62828", opacity: selected.size ? 1 : 0.5 }}>Xoá mục đã chọn</button>
+              <button type="button" className="btn-danger" disabled={!selected.size} onClick={() => setBulkConfirm(true)} style={{ opacity: selected.size ? 1 : 0.5 }}>Xoá tất cả</button>
             )}
-            <button type="button" onClick={toggleEditMode} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #1d5fd6", background: editMode ? "#1d5fd6" : "#fff", color: editMode ? "#fff" : "#1d5fd6" }}>{editMode ? "Xong" : "Chỉnh sửa"}</button>
-            <button type="button" onClick={openNew} style={{ padding: "8px 14px", borderRadius: 8, border: "none", background: "#1d5fd6", color: "#fff" }}>+ Thêm thành viên</button>
+            <button type="button" className={editMode ? "btn-success" : "btn-line"} onClick={toggleEditMode}>{editMode ? "Xong" : "Chỉnh sửa"}</button>
+            <button type="button" className="btn-pri" onClick={openNew}>+ Thêm thành viên</button>
           </span>
         </Perm>
       }
@@ -223,7 +234,7 @@ export function MembersView({
           </span>
         </div>
       )}
-      <DataTable columns={columns} rows={filtered} rowKey={(m) => m.id} loading={pending} emptyTitle="Chưa có thành viên nào" />
+      <DataTable columns={columns} rows={filtered} rowKey={(m) => m.id} loading={pending} emptyTitle="Chưa có thành viên nào" onRowClick={(m) => openEdit(m)} resizable maxBodyHeight={520} />
 
       <FormModal
         open={showForm}
@@ -234,13 +245,12 @@ export function MembersView({
           if (form) handleSubmit(new FormData(form))
         }}
         submitting={pending}
-        width={640}
       >
         <form key={editing?.id ?? "new"} id="tf-member-form" onSubmit={(e) => e.preventDefault()} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <label style={{ fontSize: 12, fontWeight: 600 }}>Tên *
             <input name="name" required defaultValue={editing?.name ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
           </label>
-          <div style={{ display: "flex", gap: 12 }}>
+          <div className="row" style={{ display: "flex", gap: 12 }}>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Mã
               <input name="code" defaultValue={editing?.code ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
             </label>

@@ -24,10 +24,14 @@ export type DataTableProps<T> = {
   // Ported from the original app's ensureTableResizers/.col-resizer drag handles.
   // When true, every column except the first and last gets a draggable resize handle.
   resizable?: boolean
+  // When set, wraps the table body in a vertical scroll container capped at this
+  // pixel height (sticky header stays visible), in addition to the existing
+  // horizontal scroll. Use to keep long tables from pushing page layout down.
+  maxBodyHeight?: number
 }
 
 /** Standard table used by every list feature. Do not hand-roll <table> markup in feature pages. */
-export function DataTable<T>({ columns, rows, rowKey, onRowClick, emptyTitle = "Không có dữ liệu", emptyDescription, loading, resizable }: DataTableProps<T>) {
+export function DataTable<T>({ columns, rows, rowKey, onRowClick, emptyTitle = "Không có dữ liệu", emptyDescription, loading, resizable, maxBodyHeight }: DataTableProps<T>) {
   const [widths, setWidths] = useState<Record<string, number>>(() => {
     const init: Record<string, number> = {}
     columns.forEach((c) => { init[c.key] = c.defaultWidth ?? (typeof c.width === "number" ? c.width : 140) })
@@ -60,7 +64,7 @@ export function DataTable<T>({ columns, rows, rowKey, onRowClick, emptyTitle = "
   }
 
   return (
-    <div data-tf-kit="data-table" style={{ overflowX: "auto", border: "1px solid #e7eaee", borderRadius: 10 }}>
+    <div data-tf-kit="data-table" style={{ overflowX: "auto", overflowY: maxBodyHeight ? "auto" : undefined, maxHeight: maxBodyHeight, border: "1px solid #e7eaee", borderRadius: 10 }}>
       <table style={{ width: resizable ? "max-content" : "100%", minWidth: resizable ? "100%" : undefined, borderCollapse: "collapse", fontSize: 13 }}>
         {resizable && (
           <colgroup>
@@ -79,7 +83,10 @@ export function DataTable<T>({ columns, rows, rowKey, onRowClick, emptyTitle = "
                   textAlign: c.align || "left",
                   whiteSpace: "nowrap",
                   borderBottom: "1px solid #e7eaee",
-                  position: resizable ? "relative" : undefined,
+                  position: maxBodyHeight ? "sticky" : resizable ? "relative" : undefined,
+                  top: maxBodyHeight ? 0 : undefined,
+                  zIndex: maxBodyHeight ? 2 : undefined,
+                  background: maxBodyHeight ? "#f7f8fa" : undefined,
                 }}
               >
                 {c.header}

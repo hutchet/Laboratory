@@ -11,9 +11,13 @@ export type TaskRow = {
   projectId: string | null
   dueDate: string | null
   project: { id: string; name: string } | null
+  centerId: string | null
+  center: { id: string; name: string } | null
+  createdAt: string
 }
 
 export type Option = { id: string; name: string }
+export type CenterOption = { id: string; name: string }
 
 export const STATUS_LABEL: Record<string, string> = {
   todo: "Chưa làm",

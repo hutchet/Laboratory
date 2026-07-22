@@ -21,6 +21,9 @@ export async function listTasks(): Promise<TaskRow[]> {
     projectId: t.projectId,
     dueDate: t.dueDate ? t.dueDate.toISOString() : null,
     project: t.project ? { id: t.project.id, name: t.project.name } : null,
+    centerId: t.centerId,
+    center: null,
+    createdAt: t.createdAt.toISOString(),
   }))
 }
 
@@ -30,6 +33,13 @@ export async function listProjectOptions(): Promise<Option[]> {
 
 export async function listMemberOptions(): Promise<Option[]> {
   return db.member.findMany({ select: { id: true, name: true } })
+}
+
+// Danh sách trung tâm dùng cho trang "Danh sách trung tâm" (hub-card) của module Công việc —
+// mô hình giống trang Trung tâm: mỗi thẻ trung tâm dẫn vào danh sách công việc riêng của
+// nhân viên thuộc trung tâm đó.
+export async function listTaskCenterOptions(): Promise<import("./types").CenterOption[]> {
+  return db.center.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } })
 }
 
 export type OverdueTaskNotif = {
