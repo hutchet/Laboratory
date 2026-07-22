@@ -93,6 +93,10 @@ export function OverviewView({ quotes, customers, projects }: { quotes: QuoteRow
     const ids = Array.from(selected)
     startTransition(async () => { await bulkDeleteQuotes(ids); setSelected(new Set()); setBulkConfirm(false) })
   }
+  const allSelected = filtered.length > 0 && filtered.every((it) => selected.has(it.id))
+  function toggleSelectAll() {
+    setSelected((prev) => (allSelected ? new Set() : new Set(filtered.map((it) => it.id))))
+  }
 
   function exportExcel() {
     const header = ["Báo giá", "Khách hàng", "Dự án", "Tổng tiền", "Trạng thái"]
@@ -109,8 +113,8 @@ export function OverviewView({ quotes, customers, projects }: { quotes: QuoteRow
   const columns: Array<DataTableColumn<QuoteRow>> = [
     ...(editMode
       ? [{
-          key: "sel", header: "", defaultWidth: 44,
-          render: (it: QuoteRow) => <input type="checkbox" checked={selected.has(it.id)} onChange={() => toggleSelect(it.id)} />,
+          key: "sel", header: <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} />, defaultWidth: 44,
+          render: (it: QuoteRow) => <input type="checkbox" checked={selected.has(it.id)} onClick={(e) => e.stopPropagation()} onChange={() => toggleSelect(it.id)} />,
         } as DataTableColumn<QuoteRow>]
       : []),
     { key: "title", header: "Báo giá", render: (it) => <span style={{ fontWeight: 600 }}>{it.title}</span> },
@@ -120,12 +124,15 @@ export function OverviewView({ quotes, customers, projects }: { quotes: QuoteRow
     { key: "status", header: "Trạng thái", render: (it) => <StatusBadge label={QUOTE_STATUS_LABEL[it.status ?? "draft"] ?? it.status ?? "—"} tone={statusTone(it.status)} /> },
     {
       key: "actions", header: "", align: "right",
-      render: (it) => (
-        <span style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-          <Perm minPerm="dept_head"><button type="button" onClick={() => openEdit(it)} style={{ border: "none", background: "none", color: "#1d5fd6", cursor: "pointer" }}>Sửa</button>
-          <button type="button" onClick={() => setConfirmDeleteId(it.id)} style={{ border: "none", background: "none", color: "#c62828", cursor: "pointer" }}>Xoá</button></Perm>
-        </span>
-      ),
+      render: (it) =>
+        editMode ? (
+          <span className="acts" style={{ display: "flex", gap: 8, justifyContent: "flex-end" }} onClick={(e) => e.stopPropagation()}>
+            <Perm minPerm="dept_head">
+              <button type="button" className="txt-act pri" onClick={() => openEdit(it)}>Sửa</button>
+              <button type="button" className="txt-act del" onClick={() => setConfirmDeleteId(it.id)}>Xoá</button>
+            </Perm>
+          </span>
+        ) : null,
     },
   ]
 
@@ -134,20 +141,20 @@ export function OverviewView({ quotes, customers, projects }: { quotes: QuoteRow
       title="Tổng quan báo giá"
       actions={
         <span style={{ display: "flex", gap: 8 }}>
-          <button type="button" onClick={exportExcel} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #1d5fd6", background: "#fff", color: "#1d5fd6" }}>Xuất Excel</button>
-          <button type="button" onClick={() => window.print()} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #1d5fd6", background: "#fff", color: "#1d5fd6" }}>Xuất PDF</button>
+          <button type="button" className="btn-line" onClick={exportExcel}>Xuất Excel</button>
+          <button type="button" className="btn-line" onClick={() => window.print()}>Xuất PDF</button>
           <Perm minPerm="dept_head">
             {editMode && (
-              <button type="button" disabled={!selected.size} onClick={() => setBulkConfirm(true)} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #c62828", background: "#fff", color: "#c62828", opacity: selected.size ? 1 : 0.5 }}>Xoá mục đã chọn</button>
+              <button type="button" className="btn-danger" disabled={!selected.size} onClick={() => setBulkConfirm(true)} style={{ opacity: selected.size ? 1 : 0.5 }}>Xoá tất cả</button>
             )}
-            <button type="button" onClick={toggleEditMode} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #1d5fd6", background: editMode ? "#1d5fd6" : "#fff", color: editMode ? "#fff" : "#1d5fd6" }}>{editMode ? "Xong" : "Chỉnh sửa"}</button>
-            <button type="button" onClick={openNew} style={{ padding: "8px 14px", borderRadius: 8, border: "none", background: "#1d5fd6", color: "#fff" }}>+ Thêm báo giá</button>
+            <button type="button" className={editMode ? "btn-success" : "btn-line"} onClick={toggleEditMode}>{editMode ? "Xong" : "Chỉnh sửa"}</button>
+            <button type="button" className="btn-pri" onClick={openNew}>+ Thêm báo giá</button>
           </Perm>
         </span>
       }
       filters={<FilterBar search={{ value: q, onChange: setQ, placeholder: "Tìm báo giá..." }} />}
     >
-      <DataTable columns={columns} rows={filtered} rowKey={(it) => it.id} loading={pending} emptyTitle="Chưa có báo giá nào" />
+      <DataTable columns={columns} rows={filtered} rowKey={(it) => it.id} loading={pending} emptyTitle="Chưa có báo giá nào" onRowClick={(it) => openEdit(it)} resizable maxBodyHeight={560} />
 
       <FormModal
         open={showForm}

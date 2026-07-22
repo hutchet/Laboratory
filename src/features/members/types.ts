@@ -19,6 +19,7 @@ export type MemberRow = {
   allCenters: boolean
   centerName: string | null
   groupName: string | null
+  createdAt: string
 }
 
 // 6 cap bac moi + giu lai 5 ten vai tro cu (alias) de tuong thich Role/UserRole da co

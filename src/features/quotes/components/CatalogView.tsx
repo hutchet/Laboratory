@@ -83,12 +83,16 @@ export function CatalogView({ items, personnelConfig, routing }: { items: TestCa
     const ids = Array.from(selected)
     startTransition(async () => { await bulkDeleteTestCatalogItems(ids); setSelected(new Set()); setBulkConfirm(false) })
   }
+  const allSelected = filtered.length > 0 && filtered.every((it) => selected.has(it.id))
+  function toggleSelectAll() {
+    setSelected((prev) => (allSelected ? new Set() : new Set(filtered.map((it) => it.id))))
+  }
 
   const columns: Array<DataTableColumn<TestCatalogRow>> = [
     ...(editMode
       ? [{
-          key: "sel", header: "", defaultWidth: 44,
-          render: (it: TestCatalogRow) => <input type="checkbox" checked={selected.has(it.id)} onChange={() => toggleSelect(it.id)} />,
+          key: "sel", header: <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} />, defaultWidth: 44,
+          render: (it: TestCatalogRow) => <input type="checkbox" checked={selected.has(it.id)} onClick={(e) => e.stopPropagation()} onChange={() => toggleSelect(it.id)} />,
         } as DataTableColumn<TestCatalogRow>]
       : []),
     { key: "code", header: "Mã", render: (it) => it.code ?? "—" },
@@ -100,10 +104,14 @@ export function CatalogView({ items, personnelConfig, routing }: { items: TestCa
     {
       key: "actions", header: "", align: "right",
       render: (it) => (
-        <span style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-          <button type="button" onClick={() => setBreakdownItem(it)} style={{ border: "none", background: "none", color: "#1d5fd6", cursor: "pointer" }}>Cấu thành giá</button>
-          <Perm minPerm="dept_head"><button type="button" onClick={() => openEdit(it)} style={{ border: "none", background: "none", color: "#1d5fd6", cursor: "pointer" }}>Sửa</button>
-          <button type="button" onClick={() => setConfirmDeleteId(it.id)} style={{ border: "none", background: "none", color: "#c62828", cursor: "pointer" }}>Xoá</button></Perm>
+        <span className="acts" style={{ display: "flex", gap: 8, justifyContent: "flex-end" }} onClick={(e) => e.stopPropagation()}>
+          <button type="button" className="txt-act" onClick={() => setBreakdownItem(it)}>Cấu thành giá</button>
+          {editMode && (
+            <Perm minPerm="dept_head">
+              <button type="button" className="txt-act pri" onClick={() => openEdit(it)}>Sửa</button>
+              <button type="button" className="txt-act del" onClick={() => setConfirmDeleteId(it.id)}>Xoá</button>
+            </Perm>
+          )}
         </span>
       ),
     },
@@ -115,15 +123,15 @@ export function CatalogView({ items, personnelConfig, routing }: { items: TestCa
       actions={
         <span style={{ display: "flex", gap: 8 }}>
           {editMode && (
-            <button type="button" disabled={!selected.size} onClick={() => setBulkConfirm(true)} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #c62828", background: "#fff", color: "#c62828", opacity: selected.size ? 1 : 0.5 }}>Xoá mục đã chọn</button>
+            <button type="button" className="btn-danger" disabled={!selected.size} onClick={() => setBulkConfirm(true)} style={{ opacity: selected.size ? 1 : 0.5 }}>Xoá tất cả</button>
           )}
-          <Perm minPerm="dept_head"><button type="button" onClick={toggleEditMode} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #1d5fd6", background: editMode ? "#1d5fd6" : "#fff", color: editMode ? "#fff" : "#1d5fd6" }}>{editMode ? "Xong" : "Chỉnh sửa"}</button>
-          <button type="button" onClick={openNew} style={{ padding: "8px 14px", borderRadius: 8, border: "none", background: "#1d5fd6", color: "#fff" }}>+ Thêm bài thử</button></Perm>
+          <Perm minPerm="dept_head"><button type="button" className={editMode ? "btn-success" : "btn-line"} onClick={toggleEditMode}>{editMode ? "Xong" : "Chỉnh sửa"}</button>
+          <button type="button" className="btn-pri" onClick={openNew}>+ Thêm bài thử</button></Perm>
         </span>
       }
       filters={<FilterBar search={{ value: q, onChange: setQ, placeholder: "Tìm bài thử..." }} />}
     >
-      <DataTable columns={columns} rows={filtered} rowKey={(it) => it.id} loading={pending} emptyTitle="Chưa có bài thử nào" resizable />
+      <DataTable columns={columns} rows={filtered} rowKey={(it) => it.id} loading={pending} emptyTitle="Chưa có bài thử nào" onRowClick={(it) => openEdit(it)} resizable maxBodyHeight={560} />
 
       <FormModal
         open={showForm}

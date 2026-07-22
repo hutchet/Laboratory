@@ -21,6 +21,7 @@ export async function listMembers(): Promise<MemberRow[]> {
     allCenters: m.allCenters,
     centerName: m.center?.name ?? null,
     groupName: m.group?.name ?? null,
+    createdAt: m.createdAt.toISOString(),
   }))
 }
 

@@ -24,9 +24,8 @@ export type DataTableProps<T> = {
   // Ported from the original app's ensureTableResizers/.col-resizer drag handles.
   // When true, every column except the first and last gets a draggable resize handle.
   resizable?: boolean
-  // When set, wraps the table body in a vertical scroll container capped at this
-  // pixel height (sticky header stays visible), in addition to the existing
-  // horizontal scroll. Use to keep long tables from pushing page layout down.
+  // When set, wraps the table body in a fixed-height scroll container with a sticky
+  // header (vertical scrollbar) instead of letting the table grow to fit all rows.
   maxBodyHeight?: number
 }
 
@@ -64,7 +63,16 @@ export function DataTable<T>({ columns, rows, rowKey, onRowClick, emptyTitle = "
   }
 
   return (
-    <div data-tf-kit="data-table" style={{ overflowX: "auto", overflowY: maxBodyHeight ? "auto" : undefined, maxHeight: maxBodyHeight, border: "1px solid #e7eaee", borderRadius: 10 }}>
+    <div
+      data-tf-kit="data-table"
+      style={{
+        overflowX: "auto",
+        overflowY: maxBodyHeight ? "auto" : undefined,
+        maxHeight: maxBodyHeight,
+        border: "1px solid #e7eaee",
+        borderRadius: 10,
+      }}
+    >
       <table style={{ width: resizable ? "max-content" : "100%", minWidth: resizable ? "100%" : undefined, borderCollapse: "collapse", fontSize: 13 }}>
         {resizable && (
           <colgroup>

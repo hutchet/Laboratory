@@ -104,12 +104,16 @@ export function SamplesView({ samples, customers, projects }: { samples: SampleR
     const ids = Array.from(selected)
     startTransition(async () => { await bulkDeleteSamples(ids); setSelected(new Set()); setBulkConfirm(false) })
   }
+  const allSelected = filtered.length > 0 && filtered.every((s) => selected.has(s.id))
+  function toggleSelectAll() {
+    setSelected((prev) => (allSelected ? new Set() : new Set(filtered.map((s) => s.id))))
+  }
 
   const columns: Array<DataTableColumn<SampleRow>> = [
     ...(editMode
       ? [{
-          key: "sel", header: "", defaultWidth: 44,
-          render: (s: SampleRow) => <input type="checkbox" checked={selected.has(s.id)} onChange={() => toggleSelect(s.id)} />,
+          key: "sel", header: <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} />, defaultWidth: 44,
+          render: (s: SampleRow) => <input type="checkbox" checked={selected.has(s.id)} onClick={(e) => e.stopPropagation()} onChange={() => toggleSelect(s.id)} />,
         } as DataTableColumn<SampleRow>]
       : []),
     { key: "code", header: "Mã mẫu", render: (s) => <span style={{ fontWeight: 600 }}>{s.code ?? s.name}</span> },
@@ -120,14 +124,15 @@ export function SamplesView({ samples, customers, projects }: { samples: SampleR
     { key: "status", header: "Trạng thái", render: (s) => <StatusBadge label={SAMPLE_STATUS_LABEL[s.derivedStatus] ?? s.derivedStatus} tone={statusTone(s.derivedStatus)} /> },
     {
       key: "actions", header: "", align: "right",
-      render: (s) => (
-        <span style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-          <Perm minPerm="technician">
-            <IconButton icon="edit" variant="ghost" size={30} title="Sửa" onClick={() => openEdit(s)} />
-            <IconButton icon="delete" variant="danger" size={30} title="Xoá" onClick={() => setConfirmDeleteId(s.id)} />
-          </Perm>
-        </span>
-      ),
+      render: (s) =>
+        editMode ? (
+          <span className="acts" style={{ display: "flex", gap: 8, justifyContent: "flex-end" }} onClick={(e) => e.stopPropagation()}>
+            <Perm minPerm="technician">
+              <IconButton icon="edit" variant="ghost" size={30} title="Sửa" onClick={() => openEdit(s)} />
+              <IconButton icon="delete" variant="danger" size={30} title="Xoá" onClick={() => setConfirmDeleteId(s.id)} />
+            </Perm>
+          </span>
+        ) : null,
     },
   ]
 
@@ -150,9 +155,9 @@ export function SamplesView({ samples, customers, projects }: { samples: SampleR
           <FilterBar search={{ value: q, onChange: setQ, placeholder: "Tìm mã mẫu, seri, dự án..." }} />
           <Perm minPerm="technician">
             {editMode && (
-              <button type="button" disabled={!selected.size} onClick={() => setBulkConfirm(true)} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #c62828", background: "#fff", color: "#c62828", opacity: selected.size ? 1 : 0.5 }}>Xoá mục đã chọn</button>
+              <button type="button" className="btn-danger" disabled={!selected.size} onClick={() => setBulkConfirm(true)} style={{ opacity: selected.size ? 1 : 0.5 }}>Xoá tất cả</button>
             )}
-            <button type="button" onClick={toggleEditMode} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #1d5fd6", background: editMode ? "#1d5fd6" : "#fff", color: editMode ? "#fff" : "#1d5fd6" }}>{editMode ? "Xong" : "Chỉnh sửa"}</button>
+            <button type="button" className={editMode ? "btn-success" : "btn-line"} onClick={toggleEditMode}>{editMode ? "Xong" : "Chỉnh sửa"}</button>
             <AddButton label="Thêm mẫu" onClick={openNew} />
           </Perm>
         </div>
@@ -190,7 +195,7 @@ export function SamplesView({ samples, customers, projects }: { samples: SampleR
               </div>
               {!isCollapsed && (
                 <div style={{ overflowX: "auto" }}>
-                  <DataTable columns={columns} rows={g.samples} rowKey={(s) => s.id} loading={pending} emptyTitle="Chưa có mẫu nào" />
+                  <DataTable columns={columns} rows={g.samples} rowKey={(s) => s.id} loading={pending} emptyTitle="Chưa có mẫu nào" onRowClick={(s) => openEdit(s)} resizable maxBodyHeight={480} />
                 </div>
               )}
             </div>

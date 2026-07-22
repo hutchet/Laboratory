@@ -60,7 +60,7 @@ export function MatrixView({ items }: { items: EquipmentPricingRow[] }) {
         subtitle="Chỉnh giá và nhấn ra ngoài ô để lưu"
         actions={<button type="button" onClick={() => setOpenCenter(null)} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #dfe3e8", background: "#fff" }}>← Quay lại danh sách trung tâm</button>}
       >
-        <DataTable columns={columns} rows={activeGroup.items} rowKey={(it) => it.id} loading={pending} emptyTitle="Chưa có thiết bị nào" resizable />
+        <DataTable columns={columns} rows={activeGroup.items} rowKey={(it) => it.id} loading={pending} emptyTitle="Chưa có thiết bị nào" resizable maxBodyHeight={480} />
       </PageShell>
     )
   }

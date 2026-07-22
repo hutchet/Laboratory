@@ -520,6 +520,11 @@ model AuditItem {
 
   auditPlan AuditPlan   @relation(fields: [auditPlanId], references: [id], onDelete: Cascade)
   phase     AuditPhase? @relation(fields: [phaseId], references: [id])
+
+  // Additive — cần cho biểu đồ trend KPI thực (mục 4d/yêu cầu bổ sung): thời điểm tạo
+  // hạng mục, dùng để so sánh snapshot 7 ngày trước như computeKpiTrend() ở Dashboard.
+  // Cột mới có @default(now()) nên các hàng cũ tự nhận giá trị hợp lệ khi migrate.
+  createdAt DateTime @default(now())
 }
 
 model PurchaseItem {

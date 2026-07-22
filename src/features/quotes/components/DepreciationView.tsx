@@ -193,7 +193,7 @@ export function DepreciationView({ items, centers = [] }: { items: DepreciationA
             <div className="ch">
               <div><h3>{openGroup.name}</h3><span>Danh sách khấu hao chi tiết — ánh xạ tự động từ thiết bị</span></div>
             </div>
-            <DataTable columns={detailColumns} rows={centerFilteredItems} rowKey={(it) => it.id} onRowClick={openEdit} loading={pending} emptyTitle="Chưa có tài sản nào" resizable />
+            <DataTable columns={detailColumns} rows={centerFilteredItems} rowKey={(it) => it.id} onRowClick={openEdit} loading={pending} emptyTitle="Chưa có tài sản nào" resizable maxBodyHeight={560} />
           </div>
         </div>
       )}

@@ -311,7 +311,7 @@ export function PurchaseView({
       </>}
       filters={<FilterBar search={{ value: q, onChange: setQ, placeholder: "Tìm hạng mục..." }} />}
     >
-      <DataTable columns={columns} rows={activeList} rowKey={(it) => it.id} onRowClick={openEdit} loading={pending} emptyTitle="Chưa có hạng mục nào trong nhóm này" resizable />
+      <DataTable columns={columns} rows={activeList} rowKey={(it) => it.id} onRowClick={openEdit} loading={pending} emptyTitle="Chưa có hạng mục nào trong nhóm này" resizable maxBodyHeight={560} />
 
       {showForm && (
         <PurchaseFormModal

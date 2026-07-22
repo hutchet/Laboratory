@@ -45,6 +45,7 @@ export async function listAuditItems(): Promise<AuditItemRow[]> {
     actualStart: it.actualStart ? it.actualStart.toISOString() : null,
     actualEnd: it.actualEnd ? it.actualEnd.toISOString() : null,
     note: it.note,
+    createdAt: (it as any).createdAt.toISOString(),
     phase: it.phase ? { id: it.phase.id, name: it.phase.name, order: it.phase.order } : null,
     auditPlan: it.auditPlan ? { id: it.auditPlan.id, title: it.auditPlan.title } : null,
   }))

@@ -8,6 +8,7 @@ import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { AvatarInitials } from "@/shared/ui/avatar-initials"
 import { CustomSelect } from "@/shared/ui/custom-select"
 import { StatusBadge } from "@/shared/ui/status-badge"
+import { KpiCard } from "@/shared/ui/kpi-card"
 import { Perm } from "@/shared/lib/rbac-client"
 import { saveMember, deleteMember, resetMemberPassword, bulkDeleteMembers } from "../actions"
 import { ACCESS_ROLE_LABEL, NEW_ACCESS_ROLE_OPTIONS, type MemberRow } from "../types"
@@ -52,6 +53,42 @@ export function MembersView({
   const [avatarError, setAvatarError] = useState<string | null>(null)
 
   const filtered = useMemo(() => members.filter((m) => !q || m.name.toLowerCase().includes(q.toLowerCase())), [members, q])
+
+  // 4 the KPI dau trang (muc 4d) — bo sung moi vi trang Thanh vien truoc day khong co
+  // hang KPI nao. Trend dung cung phong cach snapshot theo Member.createdAt nhu Cong viec.
+  const kpi = useMemo(() => ({
+    total: members.length,
+    managers: members.filter((m) => ["admin", "director", "dept_head"].includes(m.accessRole ?? "")).length,
+    assigned: members.filter((m) => !!m.centerId).length,
+    unassigned: members.filter((m) => !m.centerId).length,
+  }), [members])
+
+  const kpiTrends = useMemo(() => {
+    const now = Date.now()
+    const day = 86400000
+    function snapshot(asOfMs: number) {
+      const list = members.filter((m) => new Date(m.createdAt).getTime() <= asOfMs)
+      return {
+        total: list.length,
+        managers: list.filter((m) => ["admin", "director", "dept_head"].includes(m.accessRole ?? "")).length,
+        assigned: list.filter((m) => !!m.centerId).length,
+        unassigned: list.filter((m) => !m.centerId).length,
+      }
+    }
+    function pctChg(curr: number, prev: number) {
+      if (prev === 0) return { pct: curr > 0 ? 100 : 0, up: curr >= prev }
+      return { pct: Math.round((Math.abs(curr - prev) / prev) * 100), up: curr >= prev }
+    }
+    function sparklineFor(key: "total" | "managers" | "assigned" | "unassigned") {
+      const pts: number[] = []
+      for (let i = 6; i >= 0; i--) pts.push(snapshot(now - i * day)[key])
+      return pts
+    }
+    const curr = snapshot(now)
+    const prev = snapshot(now - 7 * day)
+    const keys = ["total", "managers", "assigned", "unassigned"] as const
+    return Object.fromEntries(keys.map((k) => [k, { ...pctChg(curr[k], prev[k]), sparkline: sparklineFor(k) }])) as Record<typeof keys[number], { pct: number; up: boolean; sparkline: number[] }>
+  }, [members])
   const groupOptionsForForm = useMemo(() => groupOptions.filter((g) => !formCenterId || g.centerId === formCenterId), [groupOptions, formCenterId])
 
   function openNew() { setEditing(null); setFormCenterId(""); setAvatarPreview(null); setAvatarError(null); setShowForm(true) }
@@ -116,6 +153,10 @@ export function MembersView({
       return next
     })
   }
+  const allSelected = filtered.length > 0 && filtered.every((m) => selected.has(m.id))
+  function toggleSelectAll() {
+    setSelected((prev) => (allSelected ? new Set() : new Set(filtered.map((m) => m.id))))
+  }
   function toggleEditMode() {
     setEditMode((v) => { if (v) setSelected(new Set()); return !v })
   }
@@ -139,21 +180,13 @@ export function MembersView({
     })
   }
 
-  const allSelected = filtered.length > 0 && filtered.every((m) => selected.has(m.id))
-  function toggleSelectAll() {
-    setSelected((prev) => (allSelected ? new Set() : new Set(filtered.map((m) => m.id))))
-  }
-
   const columns: Array<DataTableColumn<MemberRow>> = [
-    {
-      key: "sel",
-      header: editMode ? <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} /> : "",
-      defaultWidth: 40,
-      render: (m: MemberRow) =>
-        editMode ? (
-          <input type="checkbox" checked={selected.has(m.id)} onClick={(e) => e.stopPropagation()} onChange={() => toggleSelect(m.id)} />
-        ) : null,
-    },
+    ...(editMode
+      ? [{
+          key: "sel", header: <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} />, defaultWidth: 44,
+          render: (m: MemberRow) => <input type="checkbox" checked={selected.has(m.id)} onClick={(e) => e.stopPropagation()} onChange={() => toggleSelect(m.id)} />,
+        } as DataTableColumn<MemberRow>]
+      : []),
     {
       key: "name", header: "Thành viên",
       render: (m) => (
@@ -217,6 +250,12 @@ export function MembersView({
       }
       filters={<FilterBar search={{ value: q, onChange: setQ, placeholder: "Tìm thành viên..." }} />}
     >
+      <div className="kpis-tier" style={{ marginBottom: 20 }}>
+        <KpiCard label="Tổng thành viên" value={kpi.total} tone="neutral" trend={kpiTrends.total} />
+        <KpiCard label="Quản lý" value={kpi.managers} tone="blue" trend={kpiTrends.managers} />
+        <KpiCard label="Đã gán trung tâm" value={kpi.assigned} tone="success" trend={kpiTrends.assigned} />
+        <KpiCard label="Chưa gán trung tâm" value={kpi.unassigned} tone="warning" trend={kpiTrends.unassigned} />
+      </div>
       {currentMember && (
         // Ported from the original's .adminbar block (#page-members): shows the
         // currently logged-in account with avatar initials, name, email, and role badge.
@@ -234,7 +273,7 @@ export function MembersView({
           </span>
         </div>
       )}
-      <DataTable columns={columns} rows={filtered} rowKey={(m) => m.id} loading={pending} emptyTitle="Chưa có thành viên nào" onRowClick={(m) => openEdit(m)} resizable maxBodyHeight={520} />
+      <DataTable columns={columns} rows={filtered} rowKey={(m) => m.id} loading={pending} emptyTitle="Chưa có thành viên nào" onRowClick={(m) => openEdit(m)} resizable maxBodyHeight={560} />
 
       <FormModal
         open={showForm}
@@ -250,7 +289,7 @@ export function MembersView({
           <label style={{ fontSize: 12, fontWeight: 600 }}>Tên *
             <input name="name" required defaultValue={editing?.name ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
           </label>
-          <div className="row" style={{ display: "flex", gap: 12 }}>
+          <div style={{ display: "flex", gap: 12 }}>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Mã
               <input name="code" defaultValue={editing?.code ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
             </label>

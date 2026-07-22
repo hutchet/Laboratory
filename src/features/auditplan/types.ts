@@ -21,6 +21,7 @@ export type AuditItemRow = {
   actualStart: string | null
   actualEnd: string | null
   note: string | null
+  createdAt: string
   phase: { id: string; name: string; order: number | null } | null
   auditPlan: { id: string; title: string } | null
 }

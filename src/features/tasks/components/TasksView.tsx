@@ -65,24 +65,6 @@ function initials(name: string) {
 
 const NO_CENTER = "__none__"
 
-// Trend thằt theo dữ liệu thật (createdAt) cho 4 thẻ KPI ở trang hub — cùng tinh
-// thần với computeKpiTrend/computeKpiSparklines của trang Tổng quan: sparkline 7
-// điểm (số mục phát sinh mỗi ngày trong 7 ngày qua) + % thay đổi so với 7 ngày trước đó.
-function computeCreatedTrend(dates: string[]): { pct: number; up: boolean; sparkline: number[] } {
-  const now = Date.now()
-  const day = 86400000
-  const buckets: number[] = new Array(7).fill(0)
-  let prevWeek = 0
-  for (const d of dates) {
-    const diffDays = Math.floor((now - new Date(d).getTime()) / day)
-    if (diffDays >= 0 && diffDays < 7) buckets[6 - diffDays]++
-    else if (diffDays >= 7 && diffDays < 14) prevWeek++
-  }
-  const thisWeek = buckets.reduce((a, b) => a + b, 0)
-  const pct = prevWeek === 0 ? (thisWeek > 0 ? 100 : 0) : Math.round(((thisWeek - prevWeek) / prevWeek) * 100)
-  return { pct: Math.abs(pct), up: thisWeek >= prevWeek, sparkline: buckets }
-}
-
 export type TasksViewProps = { tasks: TaskRow[]; projects: Option[]; members: Option[]; centers: CenterOption[]; initialQuery?: string }
 
 // Ported from the original app's esc()+CSV-friendly quoting used by AuditPlan/Purchase CSV export.
@@ -164,11 +146,37 @@ export function TasksView({ tasks, projects, members, centers, initialQuery }: T
     done: tasks.filter((t) => t.status === "done").length,
   }), [tasks, centerCards])
 
-  const hubTrends = useMemo(() => ({
-    totalTasks: computeCreatedTrend(tasks.map((t) => t.createdAt)),
-    overdue: computeCreatedTrend(tasks.filter((t) => taskState(t) === "over").map((t) => t.createdAt)),
-    done: computeCreatedTrend(tasks.filter((t) => t.status === "done").map((t) => t.createdAt)),
-  }), [tasks])
+  // Trend theo data thuc cho 3 the KPI hero (muc 4d) — cung phong cach voi
+  // computeKpiTrend/computeKpiSparklines cua Dashboard: snapshot = chi tinh tren
+  // cac task da ton tai (createdAt <= asOf), so sanh hom nay voi 7 ngay truoc.
+  const hubTrends = useMemo(() => {
+    const now = Date.now()
+    const day = 86400000
+    function snapshot(asOfMs: number) {
+      const list = tasks.filter((t) => new Date(t.createdAt).getTime() <= asOfMs)
+      return {
+        total: list.length,
+        overdue: list.filter((t) => taskState(t) === "over").length,
+        done: list.filter((t) => t.status === "done").length,
+      }
+    }
+    function pctChg(curr: number, prev: number) {
+      if (prev === 0) return { pct: curr > 0 ? 100 : 0, up: curr >= prev }
+      return { pct: Math.round((Math.abs(curr - prev) / prev) * 100), up: curr >= prev }
+    }
+    function sparklineFor(key: "total" | "overdue" | "done") {
+      const pts: number[] = []
+      for (let i = 6; i >= 0; i--) pts.push(snapshot(now - i * day)[key])
+      return pts
+    }
+    const curr = snapshot(now)
+    const prev = snapshot(now - 7 * day)
+    return {
+      totalTasks: { ...pctChg(curr.total, prev.total), sparkline: sparklineFor("total") },
+      overdue: { ...pctChg(curr.overdue, prev.overdue), sparkline: sparklineFor("overdue") },
+      done: { ...pctChg(curr.done, prev.done), sparkline: sparklineFor("done") },
+    }
+  }, [tasks])
 
   function toggleSort(key: SortKey) {
     if (sortKey === key) setSortDir((d) => (d === 1 ? -1 : 1))

@@ -106,6 +106,38 @@ export function AuditPlanView({
     }
   }, [scopedItems])
 
+  // Trend theo data thuc cho 5 the KPI (muc 4d, dua vao AuditItem.createdAt moi bo sung) —
+  // cung phong cach voi computeKpiTrend/computeKpiSparklines cua Dashboard: snapshot = chi
+  // tinh tren cac hang muc da ton tai (createdAt <= asOf), so sanh hom nay voi 7 ngay truoc.
+  const kpiTrends = useMemo(() => {
+    const now = Date.now()
+    const day = 86400000
+    function snapshot(asOfMs: number) {
+      const list = scopedItems.filter((it) => new Date(it.createdAt).getTime() <= asOfMs)
+      const statuses = list.map((it) => auditAutoStatus(it))
+      return {
+        total: list.length,
+        done: statuses.filter((s) => s === "done").length,
+        doing: statuses.filter((s) => s === "doing").length,
+        overdue: statuses.filter((s) => s === "overdue").length,
+        todo: statuses.filter((s) => s === "todo").length,
+      }
+    }
+    function pctChg(curr: number, prev: number) {
+      if (prev === 0) return { pct: curr > 0 ? 100 : 0, up: curr >= prev }
+      return { pct: Math.round((Math.abs(curr - prev) / prev) * 100), up: curr >= prev }
+    }
+    function sparklineFor(key: "total" | "done" | "doing" | "overdue" | "todo") {
+      const pts: number[] = []
+      for (let i = 6; i >= 0; i--) pts.push(snapshot(now - i * day)[key])
+      return pts
+    }
+    const curr = snapshot(now)
+    const prev = snapshot(now - 7 * day)
+    const keys = ["total", "done", "doing", "overdue", "todo"] as const
+    return Object.fromEntries(keys.map((k) => [k, { ...pctChg(curr[k], prev[k]), sparkline: sparklineFor(k) }])) as Record<typeof keys[number], { pct: number; up: boolean; sparkline: number[] }>
+  }, [scopedItems])
+
   const workload = useMemo(() => {
     const map = new Map<string, number>()
     scopedItems.forEach((it) => {
@@ -283,11 +315,11 @@ export function AuditPlanView({
             <div><h3 style={{ margin: 0 }}>{currentPlan.title}</h3><span>{currentPlan.scheduledAt ? new Date(currentPlan.scheduledAt).toLocaleDateString("vi-VN") : "Chưa có ngày dự kiến"}</span></div>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(5, minmax(0,1fr))", gap: 12, margin: "0 0 20px" }}>
-            <KpiCard label="Tổng hạng mục" value={kpi.total} tone="neutral" />
-            <KpiCard label="Hoàn thành" value={kpi.done} tone="success" />
-            <KpiCard label="Đang triển khai" value={kpi.doing} tone="warning" />
-            <KpiCard label="Quá hạn" value={kpi.overdue} tone="danger" />
-            <KpiCard label="Chưa bắt đầu" value={kpi.todo} tone="neutral" />
+            <KpiCard label="Tổng hạng mục" value={kpi.total} tone="neutral" trend={kpiTrends.total} />
+            <KpiCard label="Hoàn thành" value={kpi.done} tone="success" trend={kpiTrends.done} />
+            <KpiCard label="Đang triển khai" value={kpi.doing} tone="warning" trend={kpiTrends.doing} />
+            <KpiCard label="Quá hạn" value={kpi.overdue} tone="danger" trend={kpiTrends.overdue} />
+            <KpiCard label="Chưa bắt đầu" value={kpi.todo} tone="neutral" trend={kpiTrends.todo} />
           </div>
 
           {overviewHidden ? (
@@ -332,24 +364,33 @@ export function AuditPlanView({
               <div style={{ fontSize: 13, color: "#8a8f98", margin: "10px 0 6px" }}>Số nhóm hạng mục</div>
               <div style={{ fontSize: 20, fontWeight: 700 }}>{scopedPhases.length} nhóm</div>
             </div>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8, color: "#444" }}>Khối lượng theo người phụ trách</div>
+              {workload.length === 0 && <div style={{ color: "#8a8f98", fontSize: 13 }}>Chưa có dữ liệu.</div>}
+              {workload.slice(0, 4).map(([name, count]) => (
+                <div key={name} style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 3 }}>
+                  <span>{name}</span><span style={{ fontWeight: 600 }}>{count}</span>
+                </div>
+              ))}
+            </div>
             </div>
           </div>
           )}
 
-          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 16, marginBottom: 20, alignItems: "start" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 16, marginBottom: 20 }}>
             {/* minWidth:0 la fix cho loi CSS Grid "blowout" quen thuoc: neu khong co
                 dong nay, cot luoi nay se tu gian rong theo dung do rong noi dung cua
                 bang Gantt (nhieu cot ngay) thay vi gioi han theo "2fr", khien
                 .pl-gantt-wrap (overflow:auto) khong bao gio thuc su bi tran de kich
                 hoat thanh cuon rieng cua no - phan con lai bi .main{{overflow-x:hidden}}
                 cat mat luon, nhin giong nhu "khong co cuon ngang/doc" nao ca. */}
-            <div style={{ minWidth: 0, overflow: "hidden", alignSelf: "start" }}>
+            <div style={{ minWidth: 0, overflow: "hidden" }}>
               <h3 style={{ fontSize: 14, margin: "0 0 8px" }}>Tiến độ (Gantt)</h3>
               <AuditGanttChart items={scopedItems} phases={scopedPhases} onEditItem={(it) => { setEditingItem(it); setShowItemForm(true) }} />
             </div>
-            <div style={{ alignSelf: "start" }}>
+            <div>
               <h3 style={{ fontSize: 14, margin: "0 0 8px" }}>Tải công việc theo phụ trách</h3>
-              <div style={{ border: "1px solid #e6e9ee", borderRadius: 10, padding: 12, display: "flex", flexDirection: "column", gap: 8, maxHeight: 360, overflowY: "auto" }}>
+              <div style={{ border: "1px solid #e6e9ee", borderRadius: 10, padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
                 {workload.length === 0 && <div style={{ color: "#8a8f98", fontSize: 13 }}>Chưa có dữ liệu.</div>}
                 {workload.map(([name, count]) => (
                   <div key={name}>
@@ -385,9 +426,7 @@ export function AuditPlanView({
       </div>
       <FilterBar search={{ value: search, onChange: setSearch, placeholder: "Tìm theo tên hạng mục hoặc phụ trách…" }}>
       </FilterBar>
-      <div style={{ marginTop: 2 }}>
-        <DataTable columns={itemColumns} rows={scopedItems} rowKey={(it) => it.id} loading={pending} emptyTitle="Chưa có hạng mục nào" onRowClick={(it) => { setEditingItem(it); setShowItemForm(true) }} resizable maxBodyHeight={360} />
-      </div>
+      <DataTable columns={itemColumns} rows={scopedItems} rowKey={(it) => it.id} loading={pending} emptyTitle="Chưa có hạng mục nào" />
       </>
       )}
 
@@ -423,7 +462,7 @@ export function AuditPlanView({
         </form>
       </FormModal>
 
-      <FormModal open={showItemForm} title={editingItem ? "Sửa hạng mục" : "Thêm hạng mục"} onClose={() => { setShowItemForm(false); setEditingItem(null) }} onSubmit={() => { const f = document.getElementById("tf-audititem-form") as HTMLFormElement | null; if (f) submitItem(new FormData(f)) }} submitting={pending} width={640}>
+      <FormModal open={showItemForm} title={editingItem ? "Sửa hạng mục" : "Thêm hạng mục"} onClose={() => { setShowItemForm(false); setEditingItem(null) }} onSubmit={() => { const f = document.getElementById("tf-audititem-form") as HTMLFormElement | null; if (f) submitItem(new FormData(f)) }} submitting={pending}>
         <form key={editingItem?.id ?? "new"} id="tf-audititem-form" onSubmit={(e) => e.preventDefault()} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <input type="hidden" name="auditPlanId" value={itemFormPlanId} />
           <input type="hidden" name="phaseId" value={itemFormPhaseId} />

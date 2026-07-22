@@ -66,12 +66,16 @@ export function PersonnelView({ config, routing }: { config: PersonnelRateConfig
     const ids = Array.from(selected)
     startTransition(async () => { await bulkDeletePersonnelRouting(ids); setSelected(new Set()); setBulkConfirm(false) })
   }
+  const allSelected = filtered.length > 0 && filtered.every((it) => selected.has(it.id))
+  function toggleSelectAll() {
+    setSelected((prev) => (allSelected ? new Set() : new Set(filtered.map((it) => it.id))))
+  }
 
   const columns: Array<DataTableColumn<PersonnelRoutingRow>> = [
     ...(editMode
       ? [{
-          key: "sel", header: "", defaultWidth: 44,
-          render: (it: PersonnelRoutingRow) => <input type="checkbox" checked={selected.has(it.id)} onChange={() => toggleSelect(it.id)} />,
+          key: "sel", header: <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} />, defaultWidth: 44,
+          render: (it: PersonnelRoutingRow) => <input type="checkbox" checked={selected.has(it.id)} onClick={(e) => e.stopPropagation()} onChange={() => toggleSelect(it.id)} />,
         } as DataTableColumn<PersonnelRoutingRow>]
       : []),
     { key: "testCode", header: "Mã", render: (it) => it.testCode ?? "—" },
@@ -82,12 +86,15 @@ export function PersonnelView({ config, routing }: { config: PersonnelRateConfig
     { key: "reportHours", header: "Giờ báo cáo", render: (it) => it.reportHours ?? "—" },
     {
       key: "actions", header: "", align: "right",
-      render: (it) => (
-        <span style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-          <Perm minPerm="dept_head"><button type="button" onClick={() => openEdit(it)} style={{ border: "none", background: "none", color: "#1d5fd6", cursor: "pointer" }}>Sửa</button>
-          <button type="button" onClick={() => setConfirmDeleteId(it.id)} style={{ border: "none", background: "none", color: "#c62828", cursor: "pointer" }}>Xoá</button></Perm>
-        </span>
-      ),
+      render: (it) =>
+        editMode ? (
+          <span className="acts" style={{ display: "flex", gap: 8, justifyContent: "flex-end" }} onClick={(e) => e.stopPropagation()}>
+            <Perm minPerm="dept_head">
+              <button type="button" className="txt-act pri" onClick={() => openEdit(it)}>Sửa</button>
+              <button type="button" className="txt-act del" onClick={() => setConfirmDeleteId(it.id)}>Xoá</button>
+            </Perm>
+          </span>
+        ) : null,
     },
   ]
 
@@ -97,10 +104,10 @@ export function PersonnelView({ config, routing }: { config: PersonnelRateConfig
       actions={
         <span style={{ display: "flex", gap: 8 }}>
           {editMode && (
-            <button type="button" disabled={!selected.size} onClick={() => setBulkConfirm(true)} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #c62828", background: "#fff", color: "#c62828", opacity: selected.size ? 1 : 0.5 }}>Xoá mục đã chọn</button>
+            <button type="button" className="btn-danger" disabled={!selected.size} onClick={() => setBulkConfirm(true)} style={{ opacity: selected.size ? 1 : 0.5 }}>Xoá tất cả</button>
           )}
-          <Perm minPerm="dept_head"><button type="button" onClick={toggleEditMode} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #1d5fd6", background: editMode ? "#1d5fd6" : "#fff", color: editMode ? "#fff" : "#1d5fd6" }}>{editMode ? "Xong" : "Chỉnh sửa"}</button>
-          <button type="button" onClick={openNew} style={{ padding: "8px 14px", borderRadius: 8, border: "none", background: "#1d5fd6", color: "#fff" }}>+ Thêm định tuyến</button></Perm>
+          <Perm minPerm="dept_head"><button type="button" className={editMode ? "btn-success" : "btn-line"} onClick={toggleEditMode}>{editMode ? "Xong" : "Chỉnh sửa"}</button>
+          <button type="button" className="btn-pri" onClick={openNew}>+ Thêm định tuyến</button></Perm>
         </span>
       }
       filters={<FilterBar search={{ value: q, onChange: setQ, placeholder: "Tìm bài thử..." }} />}
@@ -127,7 +134,7 @@ export function PersonnelView({ config, routing }: { config: PersonnelRateConfig
         <button type="submit" style={{ padding: "8px 14px", borderRadius: 8, border: "none", background: "#1d5fd6", color: "#fff" }}>Lưu đơn giá</button>
       </form>
 
-      <DataTable columns={columns} rows={filtered} rowKey={(it) => it.id} loading={pending} emptyTitle="Chưa có định tuyến nào" resizable />
+      <DataTable columns={columns} rows={filtered} rowKey={(it) => it.id} loading={pending} emptyTitle="Chưa có định tuyến nào" onRowClick={(it) => openEdit(it)} resizable maxBodyHeight={560} />
 
       <FormModal
         open={showForm}
