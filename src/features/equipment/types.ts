@@ -8,6 +8,9 @@ export type EquipmentRow = {
   qty: number | null
   status: string | null
   room: string | null
+  area: number | null
+  power: number | null
+  spec: string | null
   centerId: string | null
   hourlyRate: number | null
   calLast: string | null

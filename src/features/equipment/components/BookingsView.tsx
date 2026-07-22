@@ -6,7 +6,8 @@ import { FormModal } from "@/shared/ui/form-modal"
 import { ArrowButton } from "@/shared/ui/arrow-button"
 import { CustomSelect } from "@/shared/ui/custom-select"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
-import { saveBooking, deleteBooking } from "../actions"
+import { Perm } from "@/shared/lib/rbac-client"
+import { saveBooking, deleteBooking, bulkDeleteBooking, saveEquipment } from "../actions"
 import type { BookingRow, EquipmentRow, Option } from "../types"
 
 type ViewMode = "day" | "month" | "year"
@@ -62,16 +63,43 @@ export function BookingsView({
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
   const [formError, setFormError] = useState<string | null>(null)
+  const [editMode, setEditMode] = useState(false)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [bulkConfirm, setBulkConfirm] = useState(false)
 
   const [bkEquipmentId, setBkEquipmentId] = useState("")
   const [bkCenterId, setBkCenterId] = useState("")
+  const [bkAddEqOpen, setBkAddEqOpen] = useState(false)
+  const [bkNewEqName, setBkNewEqName] = useState("")
+  const [bkNewEqCat, setBkNewEqCat] = useState("")
+  const [bkNewEqBrand, setBkNewEqBrand] = useState("")
+  const [bkNewEqQty, setBkNewEqQty] = useState(1)
 
   useEffect(() => {
     if (showForm) {
       setBkEquipmentId(editing?.equipmentId ?? slotPrefill?.equipmentId ?? "")
       setBkCenterId(editing?.centerId ?? "")
+      setBkAddEqOpen(false)
+      setBkNewEqName("")
+      setBkNewEqCat("")
+      setBkNewEqBrand("")
+      setBkNewEqQty(1)
     }
   }, [showForm, editing, slotPrefill])
+
+  function saveQuickEquipment() {
+    const name = bkNewEqName.trim()
+    if (!name) return
+    startTransition(async () => {
+      const created = await saveEquipment({ name, category: bkNewEqCat.trim() || "Khác", manufacturer: bkNewEqBrand.trim(), qty: Math.max(1, bkNewEqQty || 1), status: "active" })
+      if (created?.id) setBkEquipmentId(created.id)
+      setBkAddEqOpen(false)
+      setBkNewEqName("")
+      setBkNewEqCat("")
+      setBkNewEqBrand("")
+      setBkNewEqQty(1)
+    })
+  }
 
   const categories = useMemo(() => {
     const set = new Set<string>()
@@ -119,6 +147,21 @@ export function BookingsView({
     const id = confirmDeleteId
     startTransition(async () => { await deleteBooking(id); setConfirmDeleteId(null) })
   }
+  function toggleSelect(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+  function toggleEditMode() {
+    setEditMode((v) => { if (v) setSelected(new Set()); return !v })
+  }
+  function confirmBulkDelete() {
+    const ids = Array.from(selected)
+    startTransition(async () => { await bulkDeleteBooking(ids); setSelected(new Set()); setBulkConfirm(false) })
+  }
 
   function goPrev() {
     if (viewMode === "day") setSelectedDate(shiftDate(selectedDate, -1))
@@ -139,7 +182,15 @@ export function BookingsView({
   return (
     <PageShell
       title="Đặt lịch thiết bị"
-      actions={<button type="button" onClick={openNew} style={{ padding: "8px 14px", borderRadius: 8, border: "none", background: "#1d5fd6", color: "#fff" }}>+ Đặt lịch</button>}
+      actions={
+        <span style={{ display: "flex", gap: 8 }}>
+          {editMode && (
+            <button type="button" className="btn-danger" disabled={!selected.size} onClick={() => setBulkConfirm(true)} style={{ opacity: selected.size ? 1 : 0.5 }}>Xoá mục đã chọn</button>
+          )}
+          <button type="button" className={editMode ? "btn-success" : "btn-line"} onClick={toggleEditMode}>{editMode ? "Xong" : "Chỉnh sửa"}</button>
+          <button type="button" className="btn-pri" onClick={openNew}>+ Đặt lịch</button>
+        </span>
+      }
     >
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(160px, 1fr))", gap: 12, marginBottom: 18 }}>
         <KpiCard label="Tổng thiết bị" value={totalCount} hint="Trong danh mục" />
@@ -154,31 +205,33 @@ export function BookingsView({
           <span style={{ fontSize: 12, color: "#6b7280" }}>Bấm khung giờ còn trống để đặt. Khung giờ đã có người đặt sẽ không thể chọn lại — hãy chọn giờ khác hoặc ngày khác.</span>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+        <div className="eqdatenav">
           <ArrowButton direction="chevronLeft" onClick={goPrev} ariaLabel="Lùi" />
-          {viewMode === "day" && (
-            <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} style={inputStyle} />
-          )}
-          {viewMode === "month" && (
-            <input type="month" value={selectedDate.slice(0, 7)} onChange={(e) => setSelectedDate(`${e.target.value}-01`)} style={inputStyle} />
-          )}
-          {viewMode === "year" && (
-            <input type="text" readOnly value={selectedDate.slice(0, 4)} style={inputStyle} aria-label="Năm đang xem" />
-          )}
+          <div className="eqdatenav-pick">
+            {viewMode === "day" && (
+              <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} />
+            )}
+            {viewMode === "month" && (
+              <input type="month" value={selectedDate.slice(0, 7)} onChange={(e) => setSelectedDate(`${e.target.value}-01`)} />
+            )}
+            {viewMode === "year" && (
+              <input type="text" readOnly value={selectedDate.slice(0, 4)} aria-label="Năm đang xem" />
+            )}
+          </div>
           <ArrowButton direction="chevronRight" onClick={goNext} ariaLabel="Tới" />
-          <div style={{ display: "flex", gap: 4, marginLeft: 8 }}>
+          <div className="pl-zoom">
             {([["day", "Ngày"], ["month", "Tháng"], ["year", "Năm"]] as Array<[ViewMode, string]>).map(([v, label]) => (
               <button
                 key={v}
                 type="button"
+                className={viewMode === v ? "active" : ""}
                 onClick={() => setViewMode(v)}
-                style={{ ...navBtnStyle, background: viewMode === v ? "#1d5fd6" : "#fff", color: viewMode === v ? "#fff" : "#111" }}
               >
                 {label}
               </button>
             ))}
           </div>
-          <button type="button" onClick={() => setSelectedDate(todayIso())} style={navBtnStyle}>Hôm nay</button>
+          <button type="button" className="btn-line" onClick={() => setSelectedDate(todayIso())}>Hôm nay</button>
         </div>
 
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
@@ -228,26 +281,30 @@ export function BookingsView({
           <table style={{ width: "100%", marginTop: 10, borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ textAlign: "left", fontSize: 12, color: "#6b7280" }}>
+                {editMode && <th style={thStyle}></th>}
                 <th style={thStyle}>Khung giờ</th>
                 <th style={thStyle}>Thiết bị</th>
                 <th style={thStyle}>Người đặt</th>
                 <th style={thStyle}>Phòng ban</th>
                 <th style={thStyle}>Mục đích</th>
-                <th style={thStyle}></th>
+                {editMode && <th style={thStyle}></th>}
               </tr>
             </thead>
             <tbody>
               {todaysBookings.map((b) => (
                 <tr key={b.id} style={{ borderTop: "1px solid #eef0f2", fontSize: 13 }}>
+                  {editMode && <td style={tdStyle}><input type="checkbox" checked={selected.has(b.id)} onChange={() => toggleSelect(b.id)} /></td>}
                   <td style={tdStyle}><span style={{ padding: "2px 8px", borderRadius: 999, background: "#f1f3f5" }}>{timeStr(b.startTime)}–{timeStr(b.endTime)}</span></td>
                   <td style={tdStyle}>{b.equipment?.name ?? "—"}</td>
                   <td style={tdStyle}>{b.bookedBy ?? "—"}</td>
                   <td style={tdStyle}>{b.department ?? "—"}</td>
                   <td style={tdStyle}>{b.purpose ?? "—"}</td>
-                  <td style={{ ...tdStyle, textAlign: "right" }}>
-                    <button type="button" onClick={() => openEdit(b)} style={{ border: "none", background: "none", color: "#1d5fd6", cursor: "pointer", marginRight: 10 }}>Sửa</button>
-                    <button type="button" onClick={() => setConfirmDeleteId(b.id)} style={{ border: "none", background: "none", color: "#c62828", cursor: "pointer" }}>Hủy</button>
-                  </td>
+                  {editMode && (
+                    <td style={{ ...tdStyle, textAlign: "right" }}>
+                      <button type="button" className="txt-act pri" onClick={() => openEdit(b)} style={{ marginRight: 6 }}>Sửa</button>
+                      <button type="button" className="txt-act del" onClick={() => setConfirmDeleteId(b.id)}>Hủy</button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -264,6 +321,7 @@ export function BookingsView({
           if (form) handleSubmit(new FormData(form))
         }}
         submitting={pending}
+        width={640}
       >
         <form key={editing?.id ?? "new"} id="tf-booking-form" onSubmit={(e) => e.preventDefault()} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {formError && (
@@ -277,6 +335,36 @@ export function BookingsView({
             <label>Thiết bị *</label>
             <CustomSelect value={bkEquipmentId} onChange={setBkEquipmentId} width="100%" options={[{ value: "", label: "—" }, ...readyEquipment.map((o) => ({ value: o.id, label: o.name }))]} />
           </div>
+          <Perm minPerm="dept_head">
+            <div style={{ margin: "-6px 0 4px" }}>
+              <button type="button" className="txt-act" onClick={() => setBkAddEqOpen((v) => !v)}>+ Thêm thiết bị mới</button>
+            </div>
+            {bkAddEqOpen && (
+              <div style={{ border: "1px solid #dfe3e8", borderRadius: 10, padding: 10, marginBottom: 4, display: "flex", flexDirection: "column", gap: 8 }}>
+                <div className="row">
+                  <div className="field" style={{ flex: 2, minWidth: 160 }}>
+                    <label>Tên thiết bị *</label>
+                    <input value={bkNewEqName} onChange={(e) => setBkNewEqName(e.target.value)} />
+                  </div>
+                  <div className="field" style={{ flex: 1 }}>
+                    <label>Danh mục</label>
+                    <input value={bkNewEqCat} onChange={(e) => setBkNewEqCat(e.target.value)} placeholder="VD: Thiết bị đo lường" />
+                  </div>
+                </div>
+                <div className="row">
+                  <div className="field" style={{ flex: 2 }}>
+                    <label>Hãng/Dòng máy</label>
+                    <input value={bkNewEqBrand} onChange={(e) => setBkNewEqBrand(e.target.value)} />
+                  </div>
+                  <div className="field" style={{ flex: 1 }}>
+                    <label>Số lượng</label>
+                    <input type="number" min={1} value={bkNewEqQty} onChange={(e) => setBkNewEqQty(Math.max(1, parseInt(e.target.value, 10) || 1))} />
+                  </div>
+                </div>
+                <button type="button" className="btn-pri" style={{ padding: "7px 12px", fontSize: 12.5, alignSelf: "flex-start" }} onClick={saveQuickEquipment}>Lưu thiết bị</button>
+              </div>
+            )}
+          </Perm>
           <div className="row">
             <div className="field" style={{ flex: 1 }}>
               <label>Bắt đầu *</label>
@@ -309,6 +397,7 @@ export function BookingsView({
       </FormModal>
 
       <ConfirmDialog open={!!confirmDeleteId} title="Xoá lịch đặt?" description="Hành động này không thể hoàn tác." danger onConfirm={confirmDelete} onCancel={() => setConfirmDeleteId(null)} />
+      <ConfirmDialog open={bulkConfirm} title={`Xoá ${selected.size} lịch đặt đã chọn?`} description="Hành động này không thể hoàn tác." danger onConfirm={confirmBulkDelete} onCancel={() => setBulkConfirm(false)} />
     </PageShell>
   )
 }
@@ -485,8 +574,6 @@ function YearGrid({
   )
 }
 
-const navBtnStyle: CSSProperties = { padding: "6px 12px", borderRadius: 8, border: "1px solid #dfe3e8", background: "#fff", cursor: "pointer", fontSize: 13 }
-const inputStyle: CSSProperties = { padding: "6px 10px", borderRadius: 8, border: "1px solid #dfe3e8", fontSize: 13 }
 const fieldStyle: CSSProperties = { width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }
 const headCellStyle: CSSProperties = { padding: "6px 10px", borderBottom: "1px solid #e2e5e9", background: "#fafbfc" }
 const timeCellStyle: CSSProperties = { fontSize: 11, color: "#6b7280", padding: "4px 8px", borderTop: "1px solid #eef0f2" }

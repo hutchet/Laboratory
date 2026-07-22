@@ -37,6 +37,9 @@ export type SaveEquipmentInput = {
   qty?: number | null
   status?: string | null
   room?: string | null
+  area?: number | null
+  power?: number | null
+  spec?: string | null
   centerId?: string | null
   hourlyRate?: number | null
   calLast?: string | null
@@ -56,6 +59,9 @@ export async function saveEquipment(input: SaveEquipmentInput) {
     qty: input.qty ?? null,
     status: input.status || "active",
     room: input.room || null,
+    area: input.area ?? null,
+    power: input.power ?? null,
+    spec: input.spec || null,
     centerId: await scopedEquipmentCenterId(userId, input.centerId),
     hourlyRate: input.hourlyRate ?? null,
     calLast: input.calLast ? new Date(input.calLast) : null,
@@ -63,17 +69,19 @@ export async function saveEquipment(input: SaveEquipmentInput) {
     calCert: input.calCert || null,
     calVendor: input.calVendor || null,
   }
+  let saved
   if (input.id) {
     const existing = await db.equipment.findUnique({ where: { id: input.id } })
     const ctx = await getUserRbacContext(userId)
     assertScopedAccess(ctx, "equipment", existing)
-    await db.equipment.update({ where: { id: input.id }, data })
+    saved = await db.equipment.update({ where: { id: input.id }, data })
   } else {
-    await db.equipment.create({ data })
+    saved = await db.equipment.create({ data })
     await logAudit("equipment", "create", data.name, `Thêm thiết bị mới “${data.name}”`)
   }
   revalidatePath("/equipment")
   revalidatePath("/dash")
+  return saved
 }
 
 export async function deleteEquipment(id: string) {
@@ -169,5 +177,17 @@ export async function deleteBooking(id: string) {
   assertScopedAccess(ctx, "bookings", existing)
   await db.equipmentBooking.delete({ where: { id } })
   await logAudit("equipment", "delete", id, "Xoá lịch đặt thiết bị")
+  revalidatePath("/equipment")
+}
+
+// y/c #105.3: bo sung xoa hang loat lich dat (mau voi bulkDeleteEquipment) de
+// module chinh sua chuan hoa (chon nhieu + xoa tat ca) hoat dong duoc tren trang Dat lich.
+export async function bulkDeleteBooking(ids: string[]) {
+  const userId = await requirePermission("delete")
+  const ctx = await getUserRbacContext(userId)
+  const existingList = await db.equipmentBooking.findMany({ where: { id: { in: ids } } })
+  for (const item of existingList) assertScopedAccess(ctx, "bookings", item)
+  await db.equipmentBooking.deleteMany({ where: { id: { in: ids } } })
+  await logAudit("equipment", "delete", `${ids.length} lịch đặt`, `Xoá hàng loạt ${ids.length} lịch đặt đã chọn`)
   revalidatePath("/equipment")
 }

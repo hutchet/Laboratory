@@ -13,7 +13,14 @@ export function CustomSelect({
   onChange,
   width,
   triggerStyle,
-  disabled,
+  // Ra soat lan 4 (mo rong thiet bi, msg #111): phat hien loi co san - JSX cua
+  // component nay tham chieu bien `disabled` (dong 53/54/70/71) nhung ham chua
+  // tung khai bao tham so `disabled`, khien MOI lan render CustomSelect deu nem
+  // ReferenceError: disabled is not defined (loi runtime thuc su, khong phai do
+  // ES lenient - JS luon throw khi doc 1 identifier chua duoc khai bao o dau ca).
+  // Bo sung tham so `disabled?:boolean` (mac dinh false) de khoi phuc dung hanh vi
+  // vo hieu hoa dropdown ma code hien tai dang gia dinh la co san.
+  disabled = false,
 }: {
   value: string
   options: SelectOption[]

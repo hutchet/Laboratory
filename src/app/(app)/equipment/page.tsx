@@ -6,11 +6,11 @@ export default async function EquipmentPage({ searchParams }: { searchParams: Pr
   const { tab } = await searchParams
   const centers = await listCenterOptions()
 
+  const [bookings, equipment] = await Promise.all([listBookings(), listEquipment()])
+
   if (tab === "analytics") {
-    const [bookings, equipment] = await Promise.all([listBookings(), listEquipment()])
     return <BookingsView bookings={bookings} equipment={equipment} centers={centers} />
   }
 
-  const equipment = await listEquipment()
-  return <EquipmentView equipment={equipment} centers={centers} />
+  return <EquipmentView equipment={equipment} centers={centers} bookings={bookings} />
 }

@@ -65,7 +65,6 @@ export function PlanView({
   // ngay trong luc dien form, truoc khi bam Luu.
   const [tiProjectId, setTiProjectId] = useState("")
   const [tiPackId, setTiPackId] = useState("")
-  const [tiSampleId, setTiSampleId] = useState("")
   const [tiPriority, setTiPriority] = useState("")
   const [tiSampleLevel, setTiSampleLevel] = useState("")
   const [tiTeam, setTiTeam] = useState("")
@@ -85,7 +84,6 @@ export function PlanView({
     if (!showForm) return
     setTiProjectId(editing?.testPlan?.project?.id ?? projectFilter ?? "")
     setTiPackId(editing?.packId ?? newItemPackId ?? "")
-    setTiSampleId(editing?.sampleId ?? "")
     setTiPriority(editing?.priority ?? "")
     setTiSampleLevel(editing?.sampleLevel ?? "")
     setTiTeam(editing?.team ?? "")
@@ -266,7 +264,7 @@ export function PlanView({
       picId: String(formData.get("picId") || "") || null,
       result: String(formData.get("result") || ""),
       progress: formData.get("progress") ? Number(formData.get("progress")) : null,
-      sampleId: String(formData.get("sampleId") || "") || null,
+      sampleId: packs.find((p) => p.id === String(formData.get("packId") || ""))?.sampleId ?? null,
       equipmentId: String(formData.get("equipmentId") || "") || null,
       planStart: String(formData.get("planStart") || "") || null,
       planEnd: String(formData.get("planEnd") || "") || null,
@@ -585,7 +583,6 @@ export function PlanView({
               mat du lieu khi luu. */}
           <input type="hidden" name="projectId" value={tiProjectId} />
           <input type="hidden" name="packId" value={tiPackId} />
-          <input type="hidden" name="sampleId" value={tiSampleId} />
           <input type="hidden" name="priority" value={tiPriority} />
           <input type="hidden" name="sampleLevel" value={tiSampleLevel} />
           <input type="hidden" name="team" value={tiTeam} />
@@ -609,15 +606,13 @@ export function PlanView({
               <CustomSelect value={tiProjectId} onChange={setTiProjectId} width="100%" options={[{ value: "", label: "—" }, ...projects.map((p) => ({ value: p.id, label: p.name }))]} />
             </div>
           )}
-          <div className="row">
-            <div className="field" style={{ flex: 1 }}>
-              <label>Mẫu</label>
-              <CustomSelect value={tiPackId} onChange={setTiPackId} width="100%" options={[{ value: "", label: "—" }, ...packs.map((p) => ({ value: p.id, label: p.code }))]} />
-            </div>
-            <div className="field" style={{ flex: 1 }}>
-              <label>Mẫu thử (sample)</label>
-              <CustomSelect value={tiSampleId} onChange={setTiSampleId} width="100%" options={[{ value: "", label: "—" }, ...samples.map((s) => ({ value: s.id, label: s.name }))]} />
-            </div>
+          {/* y/c #105.2: bo truong "Mau thu (sample)" trung lap - sampleId gio
+              duoc suy ra tu goi "Mau" (tiPackId) da chon luc bam Luu
+              (packs.find(p=>p.id===tiPackId)?.sampleId), khong con la 1 dropdown
+              rieng nguoi dung phai chon tay them nua. */}
+          <div className="field">
+            <label>Mẫu</label>
+            <CustomSelect value={tiPackId} onChange={setTiPackId} width="100%" options={[{ value: "", label: "—" }, ...packs.map((p) => ({ value: p.id, label: p.code }))]} />
           </div>
           <div className="row">
             <div className="field" style={{ flex: 1 }}>
