@@ -56,6 +56,12 @@ export async function deleteQuote(id: string) {
   revalidatePath("/quote")
 }
 
+export async function bulkDeleteQuotes(ids: string[]) {
+  await requirePermission("delete")
+  await db.quote.deleteMany({ where: { id: { in: ids } } })
+  revalidatePath("/quote")
+}
+
 // ---- Test catalog ----
 export type SaveTestCatalogInput = { id?: string; code?: string | null; name: string; standard?: string | null; sampleQty?: string | null; leadTime?: string | null; price?: number | null }
 

@@ -107,6 +107,13 @@ export async function deleteMember(id: string) {
   revalidatePath("/members")
 }
 
+export async function bulkDeleteMembers(ids: string[]) {
+  await requirePermission("delete")
+  await db.member.deleteMany({ where: { id: { in: ids } } })
+  await logAudit("member", "delete", `${ids.length} thành viên`, `Xoá hàng loạt ${ids.length} thành viên`)
+  revalidatePath("/members")
+}
+
 // Additive — cho phép Trưởng phòng trở lên (kể cả Giám đốc) đặt lại mật khẩu đăng
 // nhập của một thành viên khác mà không cần biết mật khẩu cũ, theo yêu cầu thiết kế
 // lại trang login (đăng nhập bằng mã nhân viên + admin có quyền reset mật khẩu user).

@@ -12,7 +12,7 @@ import { Perm } from "@/shared/lib/rbac-client"
 import {
   saveAuditPlan, deleteAuditPlan,
   saveAuditPhase, deleteAuditPhase,
-  saveAuditItem, deleteAuditItem,
+  saveAuditItem, deleteAuditItem, bulkDeleteAuditItems,
   seedIso17025Plan,
 } from "../actions"
 import { AUDIT_STATUS_LABEL, AUDIT_STATUS_COLOR, auditAutoStatus, type AuditPlanRow, type AuditPhaseRow, type AuditItemRow } from "../types"
@@ -56,6 +56,9 @@ export function AuditPlanView({
   const [editingItem, setEditingItem] = useState<AuditItemRow | null>(null)
   const [confirmDeletePlanId, setConfirmDeletePlanId] = useState<string | null>(null)
   const [confirmDeleteItemId, setConfirmDeleteItemId] = useState<string | null>(null)
+  const [itemSelected, setItemSelected] = useState<Set<string>>(new Set())
+  const [itemBulkConfirm, setItemBulkConfirm] = useState(false)
+  const [itemEditMode, setItemEditMode] = useState(false)
   const [activePlanId, setActivePlanId] = useState<string>("")
   const [search, setSearch] = useState("")
   // Port cua apOverviewHidden/apOverviewTitle ban goc (dong ~6033-6035, 6165,
@@ -140,6 +143,21 @@ export function AuditPlanView({
     }
     startTransition(async () => { await saveAuditItem(input); setShowItemForm(false); setEditingItem(null) })
   }
+  function toggleItemSelect(id: string) {
+    setItemSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+  function toggleItemEditMode() {
+    setItemEditMode((v) => { if (v) setItemSelected(new Set()); return !v })
+  }
+  function confirmItemBulkDelete() {
+    const ids = Array.from(itemSelected)
+    startTransition(async () => { await bulkDeleteAuditItems(ids); setItemSelected(new Set()); setItemBulkConfirm(false) })
+  }
   function handleSeed() {
     startTransition(async () => { await seedIso17025Plan() })
   }
@@ -172,6 +190,12 @@ export function AuditPlanView({
   ]
 
   const itemColumns: Array<DataTableColumn<AuditItemRow>> = [
+    ...(itemEditMode
+      ? [{
+          key: "sel", header: "", defaultWidth: 44,
+          render: (it: AuditItemRow) => <input type="checkbox" checked={itemSelected.has(it.id)} onChange={() => toggleItemSelect(it.id)} />,
+        } as DataTableColumn<AuditItemRow>]
+      : []),
     { key: "phase", header: "Giai đoạn", render: (it) => it.phase?.name ?? "—" },
     { key: "name", header: "Hạng mục", render: (it) => <span style={{ fontWeight: 600 }}>{it.name}</span> },
     { key: "assignee", header: "Phụ trách", render: (it) => it.assignee ?? "—" },
@@ -299,8 +323,14 @@ export function AuditPlanView({
         <h3 style={{ fontSize: 14, margin: 0 }}>Hạng mục kiểm toán</h3>
         <div style={{ display: "flex", gap: 8 }}>
           <button type="button" onClick={exportCsv} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid #dfe3e8", background: "#fff" }}>Xuất Excel (CSV)</button>
-          <Perm minPerm="dept_head"><button type="button" onClick={() => setShowPhaseForm(true)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid #1d5fd6", background: "#fff", color: "#1d5fd6" }}>+ Giai đoạn</button>
-          <button type="button" onClick={() => { setEditingItem(null); setShowItemForm(true) }} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: "#1d5fd6", color: "#fff" }}>+ Thêm hạng mục</button></Perm>
+          <Perm minPerm="dept_head">
+            {itemEditMode && (
+              <button type="button" disabled={!itemSelected.size} onClick={() => setItemBulkConfirm(true)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid #c62828", background: "#fff", color: "#c62828", opacity: itemSelected.size ? 1 : 0.5 }}>Xoá mục đã chọn</button>
+            )}
+            <button type="button" onClick={toggleItemEditMode} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid #1d5fd6", background: itemEditMode ? "#1d5fd6" : "#fff", color: itemEditMode ? "#fff" : "#1d5fd6" }}>{itemEditMode ? "Xong" : "Chỉnh sửa"}</button>
+            <button type="button" onClick={() => setShowPhaseForm(true)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid #1d5fd6", background: "#fff", color: "#1d5fd6" }}>+ Giai đoạn</button>
+            <button type="button" onClick={() => { setEditingItem(null); setShowItemForm(true) }} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: "#1d5fd6", color: "#fff" }}>+ Thêm hạng mục</button>
+          </Perm>
         </div>
       </div>
       <FilterBar search={{ value: search, onChange: setSearch, placeholder: "Tìm theo tên hạng mục hoặc phụ trách…" }}>
@@ -340,7 +370,7 @@ export function AuditPlanView({
         </form>
       </FormModal>
 
-      <FormModal open={showItemForm} title={editingItem ? "Sửa hạng mục" : "Thêm hạng mục"} onClose={() => { setShowItemForm(false); setEditingItem(null) }} onSubmit={() => { const f = document.getElementById("tf-audititem-form") as HTMLFormElement | null; if (f) submitItem(new FormData(f)) }} submitting={pending}>
+      <FormModal open={showItemForm} title={editingItem ? "Sửa hạng mục" : "Thêm hạng mục"} onClose={() => { setShowItemForm(false); setEditingItem(null) }} onSubmit={() => { const f = document.getElementById("tf-audititem-form") as HTMLFormElement | null; if (f) submitItem(new FormData(f)) }} submitting={pending} width={640}>
         <form key={editingItem?.id ?? "new"} id="tf-audititem-form" onSubmit={(e) => e.preventDefault()} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <input type="hidden" name="auditPlanId" value={itemFormPlanId} />
           <input type="hidden" name="phaseId" value={itemFormPhaseId} />
@@ -389,6 +419,7 @@ export function AuditPlanView({
 
       <ConfirmDialog open={!!confirmDeletePlanId} title="Xoá kế hoạch?" description="Các giai đoạn và hạng mục liên quan cũng sẽ bị xoá." danger onConfirm={() => { const id = confirmDeletePlanId!; startTransition(async () => { await deleteAuditPlan(id); setConfirmDeletePlanId(null) }) }} onCancel={() => setConfirmDeletePlanId(null)} />
       <ConfirmDialog open={!!confirmDeleteItemId} title="Xoá hạng mục?" danger onConfirm={() => { const id = confirmDeleteItemId!; startTransition(async () => { await deleteAuditItem(id); setConfirmDeleteItemId(null) }) }} onCancel={() => setConfirmDeleteItemId(null)} />
+      <ConfirmDialog open={itemBulkConfirm} title="Xoá các hạng mục đã chọn?" description={`Sẽ xoá ${itemSelected.size} hạng mục đã chọn. Hành động này không thể hoàn tác.`} danger onConfirm={confirmItemBulkDelete} onCancel={() => setItemBulkConfirm(false)} />
     </PageShell>
   )
 }

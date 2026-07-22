@@ -107,3 +107,19 @@ export async function deleteSample(id: string) {
   revalidatePath("/samples")
   revalidatePath("/plan")
 }
+
+export async function bulkDeleteSamples(ids: string[]) {
+  const userId = await requirePermission("delete")
+  const ctx = await getUserRbacContext(userId)
+  const existingList = await db.sample.findMany({ where: { id: { in: ids } }, include: { testPack: { include: { items: true } } } })
+  for (const existing of existingList) {
+    assertScopedAccess(ctx, "samples", existing)
+    if (existing.testPack && existing.testPack.items.length === 0) {
+      await db.testPack.delete({ where: { id: existing.testPack.id } })
+    }
+  }
+  await db.sample.deleteMany({ where: { id: { in: ids } } })
+  await logAudit("sample", "delete", `${ids.length} mẫu`, `Xoá hàng loạt ${ids.length} mẫu`)
+  revalidatePath("/samples")
+  revalidatePath("/plan")
+}

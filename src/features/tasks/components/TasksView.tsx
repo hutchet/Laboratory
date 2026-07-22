@@ -9,7 +9,7 @@ import { StatusBadge } from "@/shared/ui/status-badge"
 import { AvatarInitials } from "@/shared/ui/avatar-initials"
 import { ChipFilterDropdown, type ChipFilterOption } from "@/shared/ui/chip-filter"
 import { CustomSelect } from "@/shared/ui/custom-select"
-import { saveTask, deleteTask } from "../actions"
+import { saveTask, deleteTask, bulkDeleteTasks } from "../actions"
 import { STATUS_LABEL, PRIORITY_LABEL, type TaskRow, type Option } from "../types"
 
 // Ported from the original app's SOON_DAYS=3 constant + stateOf(t) helper
@@ -73,6 +73,9 @@ export function TasksView({ tasks, projects, members, initialQuery }: TasksViewP
   const [showForm, setShowForm] = useState(false)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [bulkConfirm, setBulkConfirm] = useState(false)
+  const [editMode, setEditMode] = useState(false)
 
   // CustomSelect la component dieu khien bang state (khong tu sinh input co
   // "name" nhu <select> goc) - dong bo lai moi khi mo form de tranh loi giu
@@ -180,8 +183,29 @@ export function TasksView({ tasks, projects, members, initialQuery }: TasksViewP
       setConfirmDeleteId(null)
     })
   }
+  function toggleSelect(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+  function toggleEditMode() {
+    setEditMode((v) => { if (v) setSelected(new Set()); return !v })
+  }
+  function confirmBulkDelete() {
+    const ids = Array.from(selected)
+    startTransition(async () => { await bulkDeleteTasks(ids); setSelected(new Set()); setBulkConfirm(false) })
+  }
 
   const columns: Array<DataTableColumn<TaskRow>> = [
+    ...(editMode
+      ? [{
+          key: "sel", header: "", defaultWidth: 44,
+          render: (t: TaskRow) => <input type="checkbox" checked={selected.has(t.id)} onChange={() => toggleSelect(t.id)} />,
+        } as DataTableColumn<TaskRow>]
+      : []),
     { key: "title", header: sortableHeader("title", "Công việc"), render: (t) => <span style={{ fontWeight: 600 }}>{t.title}</span> },
     { key: "project", header: sortableHeader("project", "Dự án"), render: (t) => t.project?.name ?? "—" },
     {
@@ -223,6 +247,10 @@ export function TasksView({ tasks, projects, members, initialQuery }: TasksViewP
           <button type="button" onClick={exportExcel} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #dfe3e8", background: "#fff" }}>
             Xuất Excel
           </button>
+          {editMode && (
+            <button type="button" disabled={!selected.size} onClick={() => setBulkConfirm(true)} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #c62828", background: "#fff", color: "#c62828", opacity: selected.size ? 1 : 0.5 }}>Xoá mục đã chọn</button>
+          )}
+          <button type="button" onClick={toggleEditMode} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #1d5fd6", background: editMode ? "#1d5fd6" : "#fff", color: editMode ? "#fff" : "#1d5fd6" }}>{editMode ? "Xong" : "Chỉnh sửa"}</button>
           <button type="button" onClick={openNew} style={{ padding: "8px 14px", borderRadius: 8, border: "none", background: "#1d5fd6", color: "#fff" }}>
             + Thêm công việc
           </button>
@@ -252,6 +280,7 @@ export function TasksView({ tasks, projects, members, initialQuery }: TasksViewP
           if (form) handleSubmit(new FormData(form))
         }}
         submitting={pending}
+        width={640}
       >
         <form key={editing?.id ?? "new"} id="tf-task-form" onSubmit={(e) => e.preventDefault()} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <input type="hidden" name="projectId" value={tProjectId} />
@@ -300,6 +329,14 @@ export function TasksView({ tasks, projects, members, initialQuery }: TasksViewP
         danger
         onConfirm={confirmDelete}
         onCancel={() => setConfirmDeleteId(null)}
+      />
+      <ConfirmDialog
+        open={bulkConfirm}
+        title="Xoá các công việc đã chọn?"
+        description={`Sẽ xoá ${selected.size} công việc đã chọn. Hành động này không thể hoàn tác.`}
+        danger
+        onConfirm={confirmBulkDelete}
+        onCancel={() => setBulkConfirm(false)}
       />
     </PageShell>
   )

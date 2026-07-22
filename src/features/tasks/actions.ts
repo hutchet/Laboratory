@@ -63,3 +63,12 @@ export async function deleteTask(id: string) {
   await db.task.delete({ where: { id } })
   revalidatePath("/tasks")
 }
+
+export async function bulkDeleteTasks(ids: string[]) {
+  const userId = await requireTasksPermission("delete")
+  const ctx = await getUserRbacContext(userId)
+  const existing = await db.task.findMany({ where: { id: { in: ids } } })
+  for (const t of existing) assertScopedAccess(ctx, "tasks", t)
+  await db.task.deleteMany({ where: { id: { in: ids } } })
+  revalidatePath("/tasks")
+}

@@ -112,6 +112,14 @@ export async function deleteAuditItem(id: string) {
   revalidatePath("/auditplan")
 }
 
+export async function bulkDeleteAuditItems(ids: string[]) {
+  const userId = await requirePermission("delete")
+  const items = await db.auditItem.findMany({ where: { id: { in: ids } } })
+  for (const item of items) await assertAuditPlanScope(userId, item.auditPlanId)
+  await db.auditItem.deleteMany({ where: { id: { in: ids } } })
+  revalidatePath("/auditplan")
+}
+
 /**
  * Seeds a brand-new AuditPlan with the original app's ISO 17025 accreditation
  * roadmap (AP_SEED_DATA: 16 phase groups, ~50 tasks with real plan/actual dates

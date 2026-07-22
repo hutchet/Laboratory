@@ -9,7 +9,7 @@ import { AvatarInitials } from "@/shared/ui/avatar-initials"
 import { StatusBadge } from "@/shared/ui/status-badge"
 import { CustomSelect } from "@/shared/ui/custom-select"
 import { Perm } from "@/shared/lib/rbac-client"
-import { saveMember, deleteMember, resetMemberPassword } from "../actions"
+import { saveMember, deleteMember, resetMemberPassword, bulkDeleteMembers } from "../actions"
 import { ACCESS_ROLE_LABEL, NEW_ACCESS_ROLE_OPTIONS, type MemberRow } from "../types"
 import type { CurrentMemberInfo } from "../queries"
 import type { Option } from "@/features/projects/types"
@@ -38,6 +38,9 @@ export function MembersView({
   const [mGender, setMGender] = useState<string>("")
   const [mAccessRole, setMAccessRole] = useState<string>("")
   const [pending, startTransition] = useTransition()
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [bulkConfirm, setBulkConfirm] = useState(false)
+  const [editMode, setEditMode] = useState(false)
   // Additive — đặt lại mật khẩu đăng nhập cho thành viên (yêu cầu: admin có quyền
   // reset mật khẩu của user). Chỉ hiện với Perm minPerm="dept_head" ở cột hành động.
   const [resetPasswordFor, setResetPasswordFor] = useState<MemberRow | null>(null)
@@ -71,6 +74,21 @@ export function MembersView({
     const id = confirmDeleteId
     startTransition(async () => { await deleteMember(id); setConfirmDeleteId(null) })
   }
+  function toggleSelect(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+  function toggleEditMode() {
+    setEditMode((v) => { if (v) setSelected(new Set()); return !v })
+  }
+  function confirmBulkDelete() {
+    const ids = Array.from(selected)
+    startTransition(async () => { await bulkDeleteMembers(ids); setSelected(new Set()); setBulkConfirm(false) })
+  }
   function closeResetPassword() { setResetPasswordFor(null); setResetPasswordValue(""); setResetPasswordError(null) }
   function submitResetPassword() {
     if (!resetPasswordFor) return
@@ -88,6 +106,12 @@ export function MembersView({
   }
 
   const columns: Array<DataTableColumn<MemberRow>> = [
+    ...(editMode
+      ? [{
+          key: "sel", header: "", defaultWidth: 44,
+          render: (m: MemberRow) => <input type="checkbox" checked={selected.has(m.id)} onChange={() => toggleSelect(m.id)} />,
+        } as DataTableColumn<MemberRow>]
+      : []),
     {
       key: "name", header: "Thành viên",
       render: (m) => (
@@ -135,7 +159,17 @@ export function MembersView({
   return (
     <PageShell
       title="Thành viên"
-      actions={<Perm minPerm="director"><button type="button" onClick={openNew} style={{ padding: "8px 14px", borderRadius: 8, border: "none", background: "#1d5fd6", color: "#fff" }}>+ Thêm thành viên</button></Perm>}
+      actions={
+        <Perm minPerm="director">
+          <span style={{ display: "flex", gap: 8 }}>
+            {editMode && (
+              <button type="button" disabled={!selected.size} onClick={() => setBulkConfirm(true)} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #c62828", background: "#fff", color: "#c62828", opacity: selected.size ? 1 : 0.5 }}>Xoá mục đã chọn</button>
+            )}
+            <button type="button" onClick={toggleEditMode} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #1d5fd6", background: editMode ? "#1d5fd6" : "#fff", color: editMode ? "#fff" : "#1d5fd6" }}>{editMode ? "Xong" : "Chỉnh sửa"}</button>
+            <button type="button" onClick={openNew} style={{ padding: "8px 14px", borderRadius: 8, border: "none", background: "#1d5fd6", color: "#fff" }}>+ Thêm thành viên</button>
+          </span>
+        </Perm>
+      }
       filters={<FilterBar search={{ value: q, onChange: setQ, placeholder: "Tìm thành viên..." }} />}
     >
       {currentMember && (
@@ -165,6 +199,7 @@ export function MembersView({
           if (form) handleSubmit(new FormData(form))
         }}
         submitting={pending}
+        width={640}
       >
         <form key={editing?.id ?? "new"} id="tf-member-form" onSubmit={(e) => e.preventDefault()} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <label style={{ fontSize: 12, fontWeight: 600 }}>Tên *
@@ -256,6 +291,7 @@ export function MembersView({
       </FormModal>
 
       <ConfirmDialog open={!!confirmDeleteId} title="Xoá thành viên?" description="Hành động này không thể hoàn tác." danger onConfirm={confirmDelete} onCancel={() => setConfirmDeleteId(null)} />
+      <ConfirmDialog open={bulkConfirm} title="Xoá các thành viên đã chọn?" description={`Sẽ xoá ${selected.size} thành viên đã chọn. Hành động này không thể hoàn tác.`} danger onConfirm={confirmBulkDelete} onCancel={() => setBulkConfirm(false)} />
     </PageShell>
   )
 }

@@ -11,7 +11,7 @@ import { KpiCard } from "@/shared/ui/kpi-card"
 import { IconButton } from "@/shared/ui/icon-button"
 import { CustomSelect } from "@/shared/ui/custom-select"
 import { Perm } from "@/shared/lib/rbac-client"
-import { saveSample, deleteSample } from "../actions"
+import { saveSample, deleteSample, bulkDeleteSamples } from "../actions"
 import { SAMPLE_STATUS_LABEL, SAMPLE_STATUS_ORDER, groupSamplesByProject, type SampleRow, type Option } from "../types"
 
 function statusTone(status: string): "neutral" | "info" | "success" | "warning" {
@@ -28,6 +28,9 @@ export function SamplesView({ samples, customers, projects }: { samples: SampleR
   const [showForm, setShowForm] = useState(false)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [bulkConfirm, setBulkConfirm] = useState(false)
+  const [editMode, setEditMode] = useState(false)
 
   // CustomSelect dieu khien bang state, khong tu sinh input "name" nhu <select>
   // goc - dong bo lai moi khi mo form (cung mau sua nhu PlanView ban ba).
@@ -86,8 +89,29 @@ export function SamplesView({ samples, customers, projects }: { samples: SampleR
     const id = confirmDeleteId
     startTransition(async () => { await deleteSample(id); setConfirmDeleteId(null) })
   }
+  function toggleSelect(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+  function toggleEditMode() {
+    setEditMode((v) => { if (v) setSelected(new Set()); return !v })
+  }
+  function confirmBulkDelete() {
+    const ids = Array.from(selected)
+    startTransition(async () => { await bulkDeleteSamples(ids); setSelected(new Set()); setBulkConfirm(false) })
+  }
 
   const columns: Array<DataTableColumn<SampleRow>> = [
+    ...(editMode
+      ? [{
+          key: "sel", header: "", defaultWidth: 44,
+          render: (s: SampleRow) => <input type="checkbox" checked={selected.has(s.id)} onChange={() => toggleSelect(s.id)} />,
+        } as DataTableColumn<SampleRow>]
+      : []),
     { key: "code", header: "Mã mẫu", render: (s) => <span style={{ fontWeight: 600 }}>{s.code ?? s.name}</span> },
     { key: "serial", header: "Số seri", render: (s) => s.serialNumber ?? "—" },
     { key: "qty", header: "SL", align: "right", render: (s) => s.qty ?? 1 },
@@ -124,7 +148,13 @@ export function SamplesView({ samples, customers, projects }: { samples: SampleR
         <h3>Tất cả mẫu</h3>
         <div className="tools">
           <FilterBar search={{ value: q, onChange: setQ, placeholder: "Tìm mã mẫu, seri, dự án..." }} />
-          <Perm minPerm="technician"><AddButton label="Thêm mẫu" onClick={openNew} /></Perm>
+          <Perm minPerm="technician">
+            {editMode && (
+              <button type="button" disabled={!selected.size} onClick={() => setBulkConfirm(true)} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #c62828", background: "#fff", color: "#c62828", opacity: selected.size ? 1 : 0.5 }}>Xoá mục đã chọn</button>
+            )}
+            <button type="button" onClick={toggleEditMode} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #1d5fd6", background: editMode ? "#1d5fd6" : "#fff", color: editMode ? "#fff" : "#1d5fd6" }}>{editMode ? "Xong" : "Chỉnh sửa"}</button>
+            <AddButton label="Thêm mẫu" onClick={openNew} />
+          </Perm>
         </div>
       </div>
 
@@ -177,6 +207,7 @@ export function SamplesView({ samples, customers, projects }: { samples: SampleR
           if (form) handleSubmit(new FormData(form))
         }}
         submitting={pending}
+        width={640}
       >
         <form key={editing?.id ?? "new"} id="tf-sample-form" onSubmit={(e) => e.preventDefault()} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <input type="hidden" name="projectId" value={sProjectId} />
@@ -225,6 +256,7 @@ export function SamplesView({ samples, customers, projects }: { samples: SampleR
       </FormModal>
 
       <ConfirmDialog open={!!confirmDeleteId} title="Xoá mẫu?" description="Hành động này không thể hoàn tác." danger onConfirm={confirmDelete} onCancel={() => setConfirmDeleteId(null)} />
+      <ConfirmDialog open={bulkConfirm} title="Xoá các mẫu đã chọn?" description={`Sẽ xoá ${selected.size} mẫu đã chọn. Hành động này không thể hoàn tác.`} danger onConfirm={confirmBulkDelete} onCancel={() => setBulkConfirm(false)} />
       </div>
     </PageShell>
   )
