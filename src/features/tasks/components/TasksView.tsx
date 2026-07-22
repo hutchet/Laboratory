@@ -142,6 +142,7 @@ export function TasksView({ tasks, projects, members, centers, initialQuery }: T
   const hubKpis = useMemo(() => ({
     totalCenters: centerCards.length,
     totalTasks: tasks.length,
+    doing: tasks.filter((t) => t.status !== "done").length,
     overdue: tasks.filter((t) => taskState(t) === "over").length,
     done: tasks.filter((t) => t.status === "done").length,
   }), [tasks, centerCards])
@@ -156,6 +157,7 @@ export function TasksView({ tasks, projects, members, centers, initialQuery }: T
       const list = tasks.filter((t) => new Date(t.createdAt).getTime() <= asOfMs)
       return {
         total: list.length,
+        doing: list.filter((t) => t.status !== "done").length,
         overdue: list.filter((t) => taskState(t) === "over").length,
         done: list.filter((t) => t.status === "done").length,
       }
@@ -164,7 +166,7 @@ export function TasksView({ tasks, projects, members, centers, initialQuery }: T
       if (prev === 0) return { pct: curr > 0 ? 100 : 0, up: curr >= prev }
       return { pct: Math.round((Math.abs(curr - prev) / prev) * 100), up: curr >= prev }
     }
-    function sparklineFor(key: "total" | "overdue" | "done") {
+    function sparklineFor(key: "total" | "doing" | "overdue" | "done") {
       const pts: number[] = []
       for (let i = 6; i >= 0; i--) pts.push(snapshot(now - i * day)[key])
       return pts
@@ -173,6 +175,7 @@ export function TasksView({ tasks, projects, members, centers, initialQuery }: T
     const prev = snapshot(now - 7 * day)
     return {
       totalTasks: { ...pctChg(curr.total, prev.total), sparkline: sparklineFor("total") },
+      doing: { ...pctChg(curr.doing, prev.doing), sparkline: sparklineFor("doing") },
       overdue: { ...pctChg(curr.overdue, prev.overdue), sparkline: sparklineFor("overdue") },
       done: { ...pctChg(curr.done, prev.done), sparkline: sparklineFor("done") },
       totalCenters: { pct: 0, up: null, sparkline: [] },
@@ -405,7 +408,7 @@ export function TasksView({ tasks, projects, members, centers, initialQuery }: T
       {!openCenterId && (
         <>
           <div className="kpis-tier" style={{ marginBottom: 20 }}>
-            <KpiCard label="Tổng trung tâm" value={hubKpis.totalCenters} trend={hubTrends.totalCenters} />
+            <KpiCard label="Đang thực hiện" value={hubKpis.doing} tone="blue" trend={hubTrends.doing} />
             <KpiCard label="Tổng công việc" value={hubKpis.totalTasks} tone="warning" trend={hubTrends.totalTasks} />
             <KpiCard label="Quá hạn" value={hubKpis.overdue} tone="danger" trend={hubTrends.overdue} />
             <KpiCard label="Hoàn thành" value={hubKpis.done} tone="success" trend={hubTrends.done} />

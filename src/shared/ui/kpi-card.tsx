@@ -67,8 +67,8 @@ function KpiTrendPill({ pct, up }: { pct: number; up: boolean | null }) {
 // Nền danger (đỏ) → stroke red-700 (#b91c1c)
 // Nền neutral (xám) → stroke gray-600 (#4b5563)
 const TONE_SPARK_COLOR: Record<KpiCardTone, string> = {
-  neutral: "#4b5563",
-  blue:    "#1d4ed8",
+  neutral: "#2563eb",
+  blue:    "#2563eb",
   success: "#15803d",
   warning: "#c2410c",
   danger:  "#b91c1c",
