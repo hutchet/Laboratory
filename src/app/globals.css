@@ -1876,7 +1876,11 @@ html[data-viewport="tablet"] .side{width:86px!important;padding:14px 10px!import
 /* v104 exact KPI contrast and compact quote portal */
 #dash-top-grid .kcard-hero.kg .kcard-trend,#dash-top-grid .kcard-hero.kr .kcard-trend{background:transparent!important;border:0!important;box-shadow:none!important;color:inherit!important}
 #dash-top-grid .kcard-hero.kg .kcard-trend{color:#067258!important}#dash-top-grid .kcard-hero.kr .kcard-trend{color:#b42318!important}
-#dash-top-grid .kcard-hero.kg .s .wk-chg,#dash-top-grid .kcard-hero.kg .s{color:#067258!important}#dash-top-grid .kcard-hero.kr .s .wk-chg,#dash-top-grid .kcard-hero.kr .s{color:#b42318!important}
+/* Dash KPI hero: wk-chg colors per tone + up/dn */
+#dash-top-grid .kcard-hero.kg .s .wk-chg.up{color:#067258!important}#dash-top-grid .kcard-hero.kg .s .wk-chg.dn{color:var(--red)!important}
+#dash-top-grid .kcard-hero.kr .s .wk-chg.up{color:var(--green)!important}#dash-top-grid .kcard-hero.kr .s .wk-chg.dn{color:#b42318!important}
+#dash-top-grid .kcard-hero.kb .s .wk-chg.up{color:var(--green)!important}#dash-top-grid .kcard-hero.kb .s .wk-chg.dn{color:var(--red)!important}
+#dash-top-grid .kcard-hero.kn .s .wk-chg.up{color:var(--green)!important}#dash-top-grid .kcard-hero.kn .s .wk-chg.dn{color:var(--red)!important}
 
 /* v105 item9: remove title/top background wrapper */
 .top,.material-3 .top{background:transparent!important;box-shadow:none!important;border:0!important;border-bottom:0!important}
