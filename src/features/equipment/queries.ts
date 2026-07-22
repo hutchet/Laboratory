@@ -23,6 +23,7 @@ export async function listEquipment(): Promise<EquipmentRow[]> {
     power: e.power,
     spec: e.spec,
     center: e.center ? { id: e.center.id, name: e.center.name } : null,
+    createdAt: e.createdAt,
   }))
 }
 

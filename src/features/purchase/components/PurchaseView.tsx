@@ -5,6 +5,7 @@ import { PageShell } from "@/shared/ui/page-shell"
 import { FilterBar } from "@/shared/ui/filter-bar"
 import { DataTable, type DataTableColumn } from "@/shared/ui/data-table"
 import { KpiCard } from "@/shared/ui/kpi-card"
+import { computeSimpleTrend } from "@/shared/lib/trend"
 import { FormModal } from "@/shared/ui/form-modal"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { StatusBadge } from "@/shared/ui/status-badge"
@@ -106,6 +107,11 @@ export function PurchaseView({
   const totalValue = useMemo(() => items.reduce((s, it) => s + purchaseParseAmount(it.amount), 0), [items])
   const ongoingCount = items.filter((it) => it.status === "On-going").length
   const doneCount = items.filter((it) => it.status === "Done").length
+
+  // ---- KPI trends ----
+  const trendTotal = useMemo(() => computeSimpleTrend(items, () => true, (it) => it.createdAt), [items])
+  const trendOngoing = useMemo(() => computeSimpleTrend(items, (it) => it.status === "On-going", (it) => it.createdAt), [items])
+  const trendDone = useMemo(() => computeSimpleTrend(items, (it) => it.status === "Done", (it) => it.createdAt), [items])
 
   // ---- group map (ported from renderPurchase's map/keys build) ----
   const groups = useMemo(() => {
@@ -243,10 +249,10 @@ export function PurchaseView({
         </span>}
       >
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 16 }}>
-          <KpiCard label="Tổng hạng mục" value={items.length} tone="neutral" />
+          <KpiCard label="Tổng hạng mục" value={items.length} tone="neutral" trend={trendTotal} />
           <KpiCard label="Tổng giá trị" value={`${purchaseFormatAmount(totalValue)} đ`} tone="neutral" />
-          <KpiCard label="Đang triển khai" value={ongoingCount} tone="warning" />
-          <KpiCard label="Hoàn thành" value={doneCount} tone="success" />
+          <KpiCard label="Đang triển khai" value={ongoingCount} tone="warning" trend={trendOngoing} />
+          <KpiCard label="Hoàn thành" value={doneCount} tone="success" trend={trendDone} />
         </div>
 
         {!items.length ? (

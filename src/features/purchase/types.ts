@@ -5,6 +5,7 @@ export type PurchaseItemRow = {
   cost: number | null
   status: string | null
   note: string | null
+  createdAt: Date
 
   // Ported from the original app's 19-column purchase detail table (openPmForm / renderPurchase).
   amount: string | null // Giá trị (VNĐ), free-text formatted like the original

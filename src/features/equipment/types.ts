@@ -18,6 +18,7 @@ export type EquipmentRow = {
   calCert: string | null
   calVendor: string | null
   center: { id: string; name: string } | null
+  createdAt: Date
 }
 
 // Ported from the original app's calStatus(e): due = calLast + calInterval*30 days.

@@ -274,6 +274,7 @@ model Equipment {
   calVendor    String?
   centerId     String?
   hourlyRate   Float?
+  createdAt    DateTime @default(now())
 
   center    Center?            @relation(fields: [centerId], references: [id])
   testItems TestItem[]
@@ -534,6 +535,10 @@ model PurchaseItem {
   cost      Float?
   status    String?
   note      String?
+
+  // Additive — cần cho trend KPI (so sánh 7 ngày, sparkline). @default(now()) để
+  // các hàng cũ tự nhận giá trị hợp lệ.
+  createdAt DateTime @default(now())
 
   // Ported from the original app's purchaseItems fields (openPmForm / renderPurchase,
   // 19-column detail table). amount/price kept as free-text like the original (formatted

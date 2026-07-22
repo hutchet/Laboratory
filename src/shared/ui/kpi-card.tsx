@@ -8,7 +8,7 @@ export type KpiCardTone = "neutral" | "blue" | "success" | "warning" | "danger"
 // trong DashboardView.tsx + computeKpiTrend/computeKpiSparklines trong
 // features/dashboard/compute.ts). sparkline la 7 diem gan nhat (cu->moi), neu
 // khong co du lieu lich su thi chi hien pill mui-ten+% thay cho bieu do.
-export type KpiCardTrend = { pct: number; up: boolean; sparkline?: number[] }
+export type KpiCardTrend = { pct: number; up: boolean | null; sparkline?: number[] }
 
 export type KpiCardProps = {
   label: string
@@ -24,7 +24,7 @@ export type KpiCardProps = {
 
 // Bieu do duong nho (mini sparkline) ben phai gia tri - ban rut gon, tu-chua
 // (khong phu thuoc closure cua DashboardView) de dung chung duoc moi noi.
-function KpiSparkline({ values, up, hero }: { values: number[]; up: boolean; hero?: boolean }) {
+function KpiSparkline({ values, up, hero, tone }: { values: number[]; up: boolean | null; hero?: boolean; tone?: KpiCardTone }) {
   if (!values || values.length < 2) return null
   const W = hero ? 72 : 46, H = hero ? 30 : 22, PAD = 3
   const max = Math.max(...values)
@@ -32,7 +32,7 @@ function KpiSparkline({ values, up, hero }: { values: number[]; up: boolean; her
   const range = max - min || 1
   const xs = values.map((_, i) => PAD + (i / (values.length - 1)) * (W - PAD * 2))
   const ys = values.map((v) => H - PAD - ((v - min) / range) * (H - PAD * 2))
-  const color = up ? "var(--green, #16a34a)" : "var(--red, #dc2626)"
+  const color = trendColor(tone ?? "neutral", up)
   const d = xs.reduce((acc, x, i) => acc + (i === 0 ? `M${x.toFixed(1)},${ys[i].toFixed(1)}` : ` L${x.toFixed(1)},${ys[i].toFixed(1)}`), "")
   return (
     <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="kcard-spark">
@@ -42,7 +42,8 @@ function KpiSparkline({ values, up, hero }: { values: number[]; up: boolean; her
   )
 }
 
-function KpiTrendPill({ pct, up }: { pct: number; up: boolean }) {
+function KpiTrendPill({ pct, up }: { pct: number; up: boolean | null }) {
+  if (up === null) return null
   return (
     <span className={cn("kcard-trend", up ? undefined : "dn")}>
       <span className="tri">{up ? "▲" : "▼"}</span>{pct}%
@@ -50,7 +51,26 @@ function KpiTrendPill({ pct, up }: { pct: number; up: boolean }) {
   )
 }
 
-// Tone -> CSS class: .kb (blue/neutral), .kg (green/success), .kp (warning), .kr (red/danger)
+// Tone → màu sparkline stroke (đậm hơn nền)
+// Nền success (xanh lá nhạt) → stroke green-700 (#15803d)
+// Nền warning (cam) → stroke orange-700 (#c2410c)
+// Nền blue (xanh dương) → stroke blue-700 (#1d4ed8)
+// Nền danger (đỏ) → stroke red-700 (#b91c1c)
+// Nền neutral (xám) → stroke gray-600 (#4b5563)
+const TONE_SPARK_COLOR: Record<KpiCardTone, string> = {
+  neutral: "#4b5563",
+  blue:    "#1d4ed8",
+  success: "#15803d",
+  warning: "#c2410c",
+  danger:  "#b91c1c",
+}
+
+// Up = xanh lá, Down = đỏ, Flat = không đổi màu (giữ nguyên tone)
+function trendColor(tone: KpiCardTone, up: boolean | null): string {
+  if (up === true) return "#16a34a"   // up → green-600
+  if (up === false) return "#dc2626"  // down → red-600
+  return TONE_SPARK_COLOR[tone]       // flat → tone color
+}
 // Material-3 CSS (globals.css line 1065-1068) applies md-sys-color-*-container backgrounds
 // via these classes with !important, overriding any inline background
 const TONE_CLASS: Record<KpiCardTone, string> = {
@@ -79,7 +99,7 @@ export function KpiCard({
         <div className="kcard-val-row">
           <div className="v">{value}</div>
           {hasSparkline ? (
-            <KpiSparkline values={trend.sparkline as number[]} up={trend.up} hero={size === "hero"} />
+            <KpiSparkline values={trend.sparkline as number[]} up={trend.up} hero={size === "hero"} tone={tone} />
           ) : (
             <KpiTrendPill pct={trend.pct} up={trend.up} />
           )}
@@ -91,7 +111,11 @@ export function KpiCard({
       {hint ? <div className="s">{hint}</div> : null}
       {trend ? (
         <div className="s">
-          <span className={cn("wk-chg", trend.up ? "up" : "dn")}>{trend.up ? "▲" : "▼"} {trend.pct}%</span> so với tuần trước
+          {trend.up !== null ? (
+            <span className={cn("wk-chg", trend.up ? "up" : "dn")}>{trend.up ? "▲" : "▼"} {trend.pct}%</span>
+          ) : (
+            <span className="wk-chg flat">— 0%</span>
+          )} so với tuần trước
         </div>
       ) : null}
     </div>
