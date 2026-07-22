@@ -288,7 +288,7 @@ export function DashboardView({ data }: { data: DashboardRawData }) {
           </div>
         </div>
 
-        <div className="grid" style={{ gridTemplateColumns: "repeat(3,1fr)", marginBottom: 18, alignItems: "stretch" }}>
+        <div className="grid" id="dash-info-grid" style={{ gridTemplateColumns: "repeat(3,1fr)", marginBottom: 18, alignItems: "stretch" }}>
           <div className="card" style={{ marginBottom: 0, display: "flex", flexDirection: "column", cursor: "pointer" }} onClick={() => setDetailType("status")}>
             <div className="ch">
               <div className="ch-l">
