@@ -41,7 +41,8 @@ export function MobileSidebarController() {
     if (!backdrop) {
       backdrop = document.createElement("div")
       backdrop.className = "v106-side-backdrop"
-      document.body.appendChild(backdrop)
+      const app = document.querySelector(".app") || document.body
+      app.appendChild(backdrop)
       createdBackdrop = true
     }
     const backdropEl = backdrop
