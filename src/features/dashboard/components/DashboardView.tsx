@@ -256,8 +256,9 @@ export function DashboardView({ data }: { data: DashboardRawData }) {
                     <svg viewBox="0 0 24 24" {...ICON_STROKE}><line x1="12" y1="20" x2="12" y2="10" /><line x1="18" y1="20" x2="18" y2="4" /><line x1="6" y1="20" x2="6" y2="16" /></svg>
                   </div>
                   <h3>Phân bổ giá trị dự án</h3>
+                  <span style={{ flex: 1 }} />
+                  <CustomSelect value={pvdMonth} options={monthOptions} onChange={setPvdMonth} width={166} triggerStyle={{ border: "none" }} />
                 </div>
-                <CustomSelect value={pvdMonth} options={monthOptions} onChange={setPvdMonth} width={166} triggerStyle={{ border: "none" }} />
               </div>
               <div className="exp-summary clickable" id="pvd-summary" onClick={() => setDetailType("pvd")} style={{ cursor: "pointer" }}>
                 <div className="pvd-donut-wrap">

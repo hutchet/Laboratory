@@ -28,8 +28,8 @@ export function DonutSvg({ segments, size = 110 }: { segments: DonutSegment[]; s
           fill="none"
           stroke={a.color}
           strokeWidth={6}
-          strokeLinecap="round"
-          strokeDasharray={`${a.len} ${100 - a.len}`}
+          strokeLinecap="butt"
+          strokeDasharray={`${a.len} ${100 - a.len + 0.01}`}
           strokeDashoffset={a.start}
         />
       ))}
@@ -41,7 +41,7 @@ export function DonutSvg({ segments, size = 110 }: { segments: DonutSegment[]; s
           fill="none"
           stroke={arcs[0].color}
           strokeWidth={6}
-          strokeLinecap="round"
+          strokeLinecap="butt"
           strokeDasharray="0.01 99.99"
           strokeDashoffset={arcs[0].start}
         />
