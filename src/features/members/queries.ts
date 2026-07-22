@@ -41,6 +41,7 @@ export async function listGroupOptions(centerId?: string | null): Promise<Array<
 }
 
 export type CurrentMemberInfo = {
+  id: string | null
   name: string
   email: string | null
   accessRole: string | null
@@ -57,8 +58,8 @@ export async function getCurrentMemberInfo(): Promise<CurrentMemberInfo> {
   const name = session?.user?.name || email || "Người dùng"
   const matched = email ? await db.member.findUnique({ where: { email } }) : null
   if (matched) {
-    return { name: matched.name, email: matched.email, accessRole: matched.accessRole, avatar: matched.avatar }
+    return { id: matched.id, name: matched.name, email: matched.email, accessRole: matched.accessRole, avatar: matched.avatar }
   }
   const admin = await db.member.findFirst({ where: { accessRole: "admin" } })
-  return { name, email, accessRole: admin?.accessRole ?? "admin", avatar: null }
+  return { id: admin?.id ?? null, name, email, accessRole: admin?.accessRole ?? "admin", avatar: null }
 }

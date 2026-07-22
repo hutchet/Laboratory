@@ -145,9 +145,6 @@ export function DashboardView({ data }: { data: DashboardRawData }) {
   }
 
   // Port .kcard-trend (so voi tuan truoc) - xem computeKpiTrend trong compute.ts.
-  // Fix 2026-07-20 (ban ae, y/c #2): thay renderTrend (pill, chua bao gio duoc
-  // goi) bang renderWkChg - chen dong "so voi tuan truoc" mau xanh/do vao ngay
-  // trong .s cua tung the KPI hero, dung class .wk-chg da co san trong CSS.
   const renderWkChg = (t: KpiTrend) => {
     if (!t) return null
     return (

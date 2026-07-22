@@ -263,6 +263,7 @@ export function MembersView({
         // Ported from the original's .adminbar block (#page-members): shows the
         // currently logged-in account with avatar initials, name, email, and role badge.
         // Additive: khi thành viên đã gắn ảnh avatar thì hiện ảnh đó thay cho initials.
+        // Additive: thêm nút "Chỉnh sửa" để thành viên tự sửa thông tin của mình (kể cả admin).
         <div style={{ display: "flex", alignItems: "center", gap: 13, background: "linear-gradient(135deg,#eef2ff,#e7ecff)", border: "1px solid #e0e7ff", borderRadius: 14, padding: "14px 16px", marginBottom: 18 }}>
           <AvatarInitials name={currentMember.name} size={44} src={currentMember.avatar} />
           <div>
@@ -272,6 +273,10 @@ export function MembersView({
           <span style={{ fontSize: 11, fontWeight: 600, color: "#1d5fd6", background: "#fff", borderRadius: 20, padding: "4px 11px", marginLeft: "auto" }}>
             {currentMember.accessRole === "admin" ? "★ " : ""}{ACCESS_ROLE_LABEL[currentMember.accessRole ?? "viewer"] ?? currentMember.accessRole ?? "—"}
           </span>
+          <button type="button" className="txt-act pri" onClick={() => {
+            const m = members.find(m => m.id === currentMember.id)
+            if (m) openEdit(m)
+          }} style={{ fontSize: 12, fontWeight: 600 }}>Chỉnh sửa</button>
         </div>
       )}
       <DataTable columns={columns} rows={filtered} rowKey={(m) => m.id} loading={pending} emptyTitle="Chưa có thành viên nào" onRowClick={(m) => openEdit(m)} resizable maxBodyHeight={560} />
