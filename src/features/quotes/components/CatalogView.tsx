@@ -115,6 +115,16 @@ export function CatalogView({ items, personnelConfig, routing, centers = [] }: {
     return { total: items.length, missingPrice: items.length - withPrice.length, avgPrice, totalValue }
   }, [items, centers])
 
+  // y/c item3 (bo sung the KPI cho trang chi tiet trung tam): tinh rieng cho
+  // nhom (trung tam) dang mo, khong dung so lieu toan cuc cua overview.
+  const groupOverview = useMemo(() => {
+    const groupItems = openGroup ? openGroup.items : []
+    const withPrice = groupItems.filter((it) => it.price != null)
+    const avgPrice = withPrice.length ? withPrice.reduce((a, it) => a + (it.price || 0), 0) / withPrice.length : 0
+    const totalValue = groupItems.reduce((a, it) => a + (it.price || 0), 0)
+    return { total: groupItems.length, missingPrice: groupItems.length - withPrice.length, avgPrice, totalValue }
+  }, [openGroup])
+
   const filtered = useMemo(() => {
     const list = openGroup ? openGroup.items : []
     return list.filter((it) => !q || it.name.toLowerCase().includes(q.toLowerCase()))
@@ -232,6 +242,12 @@ export function CatalogView({ items, personnelConfig, routing, centers = [] }: {
 
       {openGroup && (
         <>
+          <div className="kpis-tier" style={{ marginBottom: 16 }}>
+            <KpiCard label="Bài thử trong trung tâm" value={groupOverview.total} tone="blue" />
+            <KpiCard label="Chưa có đơn giá" value={groupOverview.missingPrice} tone="danger" />
+            <KpiCard label="Đơn giá trung bình" value={fmtVND(groupOverview.avgPrice)} tone="warning" />
+            <KpiCard label="Tổng giá trị nhóm" value={fmtVND(groupOverview.totalValue)} tone="success" />
+          </div>
           <div className="section-head">
             <h3>{openGroup.name}</h3>
             <div className="tools">
@@ -312,7 +328,7 @@ export function CatalogView({ items, personnelConfig, routing, centers = [] }: {
             style={{ position: "fixed", inset: 0, background: "rgba(15,18,22,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }}
             onClick={() => setBreakdownItem(null)}
           >
-            <div onClick={(e) => e.stopPropagation()} style={{ background: "#fff", borderRadius: 12, padding: 20, width: 460, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 12px 40px rgba(0,0,0,0.2)" }}>
+            <div onClick={(e) => e.stopPropagation()} style={{ background: "var(--card, var(--surface-large, #fff))", color: "var(--ink)", borderRadius: 12, padding: 20, width: 460, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 12px 40px rgba(0,0,0,0.35)", border: "1px solid var(--line)" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 4 }}>
                 <div style={{ fontSize: 16, fontWeight: 700 }}>Cấu thành giá: {breakdownItem.name}</div>
                 <button type="button" className="modal-x" onClick={() => setBreakdownItem(null)} aria-label="Đóng">✕</button>
@@ -323,18 +339,18 @@ export function CatalogView({ items, personnelConfig, routing, centers = [] }: {
               <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse" }}>
                 <tbody>
                   {rows.map(([label, val]) => (
-                    <tr key={label} style={{ borderBottom: "1px solid #f0f1f3" }}>
+                    <tr key={label} style={{ borderBottom: "1px solid var(--line)" }}>
                       <td style={{ padding: "6px 0", opacity: 0.75 }}>{label}</td>
                       <td style={{ padding: "6px 0", textAlign: "right", fontWeight: 600 }}>{val}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              <div style={{ marginTop: 12, padding: 10, borderRadius: 8, background: "#fff7e6", fontSize: 12, color: "#7a5c00" }}>
+              <div style={{ marginTop: 12, padding: 10, borderRadius: 8, background: "color-mix(in srgb, var(--amber, #e8932a) 18%, var(--card, #fff))", fontSize: 12, color: "var(--ink)" }}>
                 Chú ý: chi phí khấu hao thiết bị, điện và nhà xưởng (qtMachineKH/qtMachineElec/qtMachineNX trong bản gốc) chưa được tính vào đây vì cần cấu hình ma trận thiết bị theo mã bài thử (đợt sau).
               </div>
               <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
-                <button type="button" onClick={() => setBreakdownItem(null)} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #dfe3e8", background: "#fff" }}>Đóng</button>
+                <button type="button" onClick={() => setBreakdownItem(null)} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid var(--line)", background: "var(--surface-control, #fff)", color: "var(--ink)" }}>Đóng</button>
               </div>
             </div>
           </div>

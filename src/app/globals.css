@@ -112,7 +112,12 @@
   #page-dash .spotlight-avatars .av{width:30px;height:30px;font-size:11px;font-weight:600;color:#fff;border:2px solid #1c2033;margin-left:-8px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none}
   #page-dash .spotlight-avatars .av:first-child{margin-left:0}
   #page-dash .spotlight-avatars .av-more{width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.16);color:#fff;font-size:10.5px;display:flex;align-items:center;justify-content:center;margin-left:-8px;border:2px solid #1c2033}
-  #page-dash .exp-summary{display:flex;align-items:center;gap:24px;flex-wrap:wrap;justify-content:center;min-height:150px}
+  #page-dash .exp-summary{display:flex;align-items:center;gap:56px;flex-wrap:wrap;justify-content:center;min-height:150px;padding:0 10px}
+html[data-viewport="mobile"] #page-dash .exp-summary{flex-wrap:nowrap!important;gap:16px!important;justify-content:space-between!important;padding:0 6px!important;min-height:0!important}
+html[data-viewport="mobile"] #page-dash .exp-summary>svg{flex:0 0 auto!important;width:92px!important;height:92px!important;max-width:92px!important}
+html[data-viewport="mobile"] #page-dash .exp-summary .exp-legend{flex:1 1 auto!important;min-width:0!important;gap:6px!important}
+html[data-viewport="mobile"] #page-dash .exp-summary .exp-legend .exp-row{font-size:11px!important}
+
   #page-dash .exp-legend{display:flex;flex-direction:column;gap:10px;min-width:150px}
   #page-dash .exp-row{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:var(--ink)}
   #page-dash .exp-row .exp-lab{flex:1;color:var(--muted);font-weight:600}
@@ -1263,10 +1268,10 @@
 .material-3 .rate-info,.material-3 .analytics-metric,.material-3 .plan-card-progress,.material-3 .pbox,.material-3 .note,.material-3 .center-edit-panel,.material-3 .qs-box,.material-3 .rtable-wrap{background:var(--surface-small)!important;border:0!important;border-radius:var(--radius-small)!important;box-shadow:none!important}
 /* tables: typography never leaks out of rows */
 .material-3 .qs-box{overflow:auto!important}.material-3 .qs-box table{table-layout:fixed!important;width:100%!important}
-.material-3 th{height:50px!important;background:var(--surface-control)!important;border:0!important;border-bottom:1px solid color-mix(in srgb,var(--md-sys-color-on-surface) 12%,transparent)!important;vertical-align:middle!important;text-align:center!important}
-.material-3 td{height:54px!important;background:var(--surface-large)!important;border:0!important;border-bottom:1px solid color-mix(in srgb,var(--md-sys-color-on-surface) 10%,transparent)!important;vertical-align:middle!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;line-height:1.35!important}
+.material-3 th{min-height:50px!important;background:var(--surface-control)!important;border:0!important;border-bottom:1px solid color-mix(in srgb,var(--md-sys-color-on-surface) 12%,transparent)!important;vertical-align:middle!important;text-align:center!important}
+.material-3 td{min-height:54px!important;background:var(--surface-large)!important;border:0!important;border-bottom:1px solid color-mix(in srgb,var(--md-sys-color-on-surface) 10%,transparent)!important;vertical-align:middle!important;overflow:visible!important;white-space:normal!important;word-break:break-word!important;line-height:1.35!important}
 .material-3 tbody tr:nth-child(even) td{background:var(--surface-small)!important}.material-3 tbody tr:hover td{background:var(--md-sys-color-primary-container)!important}
-.material-3 td b,.material-3 td span,.material-3 th{max-width:100%;overflow:hidden;text-overflow:ellipsis}.material-3 .eq-smart td:nth-child(4),.material-3 .eq-smart td:nth-child(6){white-space:normal!important;display:table-cell!important;line-clamp:3;-webkit-line-clamp:3;-webkit-box-orient:vertical}
+.material-3 td b,.material-3 td span,.material-3 th{max-width:100%;white-space:normal;word-break:break-word}.material-3 .eq-smart td:nth-child(4),.material-3 .eq-smart td:nth-child(6){white-space:normal!important;display:table-cell!important}
 /* Typography baseline and number alignment */
 .material-3 .kcard,.material-3 .paycard{min-height:126px!important;display:flex!important;flex-direction:column!important;justify-content:center!important}.material-3 .kcard .v,.material-3 .paycard .pc-val,.material-3 .pctbig,.material-3 .hub-stat b{font-variant-numeric:tabular-nums;line-height:1.1!important;letter-spacing:-.025em}.material-3 .kcard .l,.material-3 .kcard .s{line-height:1.35!important}
 /* Dark surface hierarchy: separate but related, no sunken cards */
@@ -1345,9 +1350,9 @@
 /* Table contract: prevent leaked text and preserve readable density */
 .material-3 .qs-box,.material-3 .rtable-wrap{border:0!important;border-radius:var(--ds-sub-radius)!important;overflow:auto!important}
 .material-3 .qs-box table,.material-3 .rtable{table-layout:fixed!important;width:100%!important}
-.material-3 th{height:50px!important;padding:0 12px!important;text-align:left!important;vertical-align:middle!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;font-size:11px!important;line-height:1.2!important;letter-spacing:.04em!important}
-.material-3 td{height:52px!important;padding:0 12px!important;vertical-align:middle!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;font-size:13px!important;line-height:1.35!important}
-.material-3 td :is(div,span,b,p){max-width:100%;overflow:hidden;text-overflow:ellipsis}.material-3 td .acts{overflow:visible!important}
+.material-3 th{min-height:50px!important;padding:10px 12px!important;text-align:left!important;vertical-align:middle!important;white-space:normal!important;word-break:break-word!important;font-size:11px!important;line-height:1.2!important;letter-spacing:.04em!important}
+.material-3 td{min-height:52px!important;padding:10px 12px!important;vertical-align:middle!important;white-space:normal!important;word-break:break-word!important;font-size:13px!important;line-height:1.35!important}
+.material-3 td :is(div,span,b,p){max-width:100%;white-space:normal;word-break:break-word}.material-3 td .acts{overflow:visible!important}
 .material-3 td :is(input,select){height:36px!important;min-height:36px!important;border:0!important;border-radius:8px!important;padding:0 10px!important}
 /* Typography contract */
 .material-3 :is(.kcard,.paycard,.hub-card,.pcard,.cucard,.qlcard){font-variant-numeric:tabular-nums}
@@ -3357,3 +3362,6 @@ html body .center-detail-card > .qs-box, html body .center-detail-card #pm-detai
 
 /* h-agent: equipment overview always 4 cols */
 #eq-analytics-metrics{grid-template-columns:repeat(4,1fr)!important}
+
+/* v-df item2: tam thoi bo het footer so trang (Pagination component) */
+[data-tf-kit="pagination"]{display:none!important}

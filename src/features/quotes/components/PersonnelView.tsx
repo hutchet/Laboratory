@@ -102,6 +102,15 @@ export function PersonnelView({ config, routing, centers = [] }: { config: Perso
     return { total: routing.length, missingHours, avgHours, totalCost }
   }, [routing, centers, config])
 
+  const groupOverview = useMemo(() => {
+    const groupItems = openGroup ? openGroup.items : []
+    const totalHours = groupItems.reduce((a, it) => a + computeRoutingCost(it, config).totalHours, 0)
+    const totalCost = groupItems.reduce((a, it) => a + computeRoutingCost(it, config).withOverhead, 0)
+    const avgHours = groupItems.length ? totalHours / groupItems.length : 0
+    const missingHours = groupItems.filter((it) => computeRoutingCost(it, config).totalHours === 0).length
+    return { total: groupItems.length, missingHours, avgHours, totalCost }
+  }, [openGroup, config])
+
   // Trend theo data thuc (rule KPI global) — dua tren PersonnelRouting.createdAt.
   const personnelTrends = useMemo(() => ({
     total: computeSimpleTrend(routing, () => true, (it) => it.createdAt),
@@ -254,6 +263,12 @@ export function PersonnelView({ config, routing, centers = [] }: { config: Perso
 
       {openGroup && (
         <>
+          <div className="kpis-tier" style={{ marginBottom: 16 }}>
+            <KpiCard label="Bài thử trong trung tâm" value={groupOverview.total} tone="blue" />
+            <KpiCard label="Chưa khai báo giờ" value={groupOverview.missingHours} tone="danger" />
+            <KpiCard label="Giờ TB / bài thử" value={groupOverview.avgHours.toFixed(1)} tone="warning" />
+            <KpiCard label="Tổng CP nhân sự" value={fmtVND(groupOverview.totalCost)} tone="success" />
+          </div>
           <div className="section-head">
             <h3>{openGroup.name}</h3>
             <div className="tools">

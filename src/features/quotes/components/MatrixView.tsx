@@ -74,6 +74,14 @@ export function MatrixView({ items, centers = [] }: { items: EquipmentPricingRow
     return { total: items.length, missingRate: items.length - withRate.length, totalRate, avgRate }
   }, [items, centers])
 
+  const groupOverview = useMemo(() => {
+    const groupItems = openGroup ? openGroup.items : []
+    const withRate = groupItems.filter((it) => it.hourlyRate != null)
+    const totalRate = groupItems.reduce((a, it) => a + (it.hourlyRate || 0), 0)
+    const avgRate = withRate.length ? totalRate / withRate.length : 0
+    return { total: groupItems.length, missingRate: groupItems.length - withRate.length, totalRate, avgRate }
+  }, [openGroup])
+
   // Trend theo data thuc (rule KPI global) — dua tren Equipment.createdAt.
   const matrixTrends = useMemo(() => ({
     total: computeSimpleTrend(items, () => true, (it) => it.createdAt),
@@ -138,7 +146,15 @@ export function MatrixView({ items, centers = [] }: { items: EquipmentPricingRow
       )}
 
       {openGroup && (
-        <DataTable columns={columns} rows={openGroup.items} rowKey={(it) => it.id} loading={pending} emptyTitle="Chưa có thiết bị nào" resizable maxBodyHeight={480} fillHeight />
+        <>
+          <div className="kpis-tier" style={{ marginBottom: 16 }}>
+            <KpiCard label="Thiết bị trong trung tâm" value={groupOverview.total} tone="blue" />
+            <KpiCard label="Chưa có đơn giá" value={groupOverview.missingRate} tone="danger" />
+            <KpiCard label="Tổng đơn giá/giờ" value={fmtVND(groupOverview.totalRate)} tone="warning" />
+            <KpiCard label="Đơn giá TB/giờ" value={fmtVND(groupOverview.avgRate)} tone="success" />
+          </div>
+          <DataTable columns={columns} rows={openGroup.items} rowKey={(it) => it.id} loading={pending} emptyTitle="Chưa có thiết bị nào" resizable maxBodyHeight={480} fillHeight />
+        </>
       )}
     </PageShell>
   )

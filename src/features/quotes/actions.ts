@@ -197,3 +197,30 @@ export async function updateEquipmentRate(id: string, hourlyRate: number | null)
   revalidatePath("/quote")
   revalidatePath("/equipment")
 }
+
+// ---- Xuat Excel Bao gia (item6, 10:03PM: dung file excel mau lam template) ----
+export async function exportQuoteOverviewExcel(quoteId: string): Promise<{ base64: string; filename: string }> {
+  const { buildQuoteOverviewWorkbook } = await import("./lib/quoteExcelTemplate")
+  const q = await db.quote.findUnique({ where: { id: quoteId }, include: { customer: true, project: true, catalogItems: true } })
+  if (!q) throw new Error("Không tìm thấy báo giá")
+  const row = {
+    id: q.id,
+    title: q.title,
+    code: q.code,
+    quoteDate: q.quoteDate ? q.quoteDate.toISOString() : null,
+    vatPercent: q.vatPercent,
+    status: q.status,
+    totalAmount: q.totalAmount,
+    customerId: q.customerId,
+    projectId: q.projectId,
+    creator: q.creator,
+    notes: q.notes,
+    createdAt: q.createdAt.toISOString(),
+    customer: q.customer ? { id: q.customer.id, name: q.customer.name } : null,
+    project: q.project ? { id: q.project.id, name: q.project.name } : null,
+    items: q.catalogItems.map((it) => ({ id: it.id, quoteId: it.quoteId, name: it.name, standard: it.standard, price: it.price, quantity: it.quantity })),
+  }
+  const buffer = buildQuoteOverviewWorkbook(row)
+  const safeCode = (q.code || q.title || "bao-gia").replace(/[^a-zA-Z0-9_\-]+/g, "_")
+  return { base64: buffer.toString("base64"), filename: `BaoGia_${safeCode}.xlsx` }
+}

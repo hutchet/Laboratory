@@ -84,6 +84,14 @@ export function VariableView({ items, centers = [] }: { items: VariableCostRow[]
     return { total: items.length, missingAmount: items.length - withAmount.length, totalCost, avgCost }
   }, [items, centers])
 
+  const groupOverview = useMemo(() => {
+    const groupItems = openGroup ? openGroup.items : []
+    const withAmount = groupItems.filter((it) => it.amount != null)
+    const totalCost = groupItems.reduce((a, it) => a + (it.amount || 0), 0)
+    const avgCost = withAmount.length ? totalCost / withAmount.length : 0
+    return { total: groupItems.length, missingAmount: groupItems.length - withAmount.length, totalCost, avgCost }
+  }, [openGroup])
+
   // Trend theo data thuc (rule KPI global) — dua tren VariableCost.createdAt.
   const variableTrends = useMemo(() => ({
     total: computeSimpleTrend(items, () => true, (it) => it.createdAt),
@@ -197,6 +205,12 @@ export function VariableView({ items, centers = [] }: { items: VariableCostRow[]
 
       {openGroup && (
         <>
+          <div className="kpis-tier" style={{ marginBottom: 16 }}>
+            <KpiCard label="Khoản mục trong trung tâm" value={groupOverview.total} tone="blue" />
+            <KpiCard label="Chưa có chi phí" value={groupOverview.missingAmount} tone="danger" />
+            <KpiCard label="Tổng chi phí" value={fmtVND(groupOverview.totalCost)} tone="warning" />
+            <KpiCard label="Chi phí trung bình" value={fmtVND(groupOverview.avgCost)} tone="success" />
+          </div>
           <div className="section-head">
             <h3>{openGroup.name}</h3>
             <div className="tools">

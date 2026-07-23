@@ -11,7 +11,7 @@ import { KpiCard } from "@/shared/ui/kpi-card"
 import { computeSimpleTrend } from "@/shared/lib/trend"
 import { DirectionIcon } from "@/shared/ui/icons"
 import { Perm } from "@/shared/lib/rbac-client"
-import { saveQuote, deleteQuote, addQuoteItem, updateQuoteItemQty, removeQuoteItem } from "../actions"
+import { saveQuote, deleteQuote, addQuoteItem, updateQuoteItemQty, removeQuoteItem, exportQuoteOverviewExcel } from "../actions"
 import { QUOTE_STATUS_LABEL, type QuoteRow, type Option, type TestCatalogRow } from "../types"
 import { useCurrency } from "@/shared/ui/currency-provider"
 
@@ -169,6 +169,23 @@ export function OverviewView({
           <span style={{ display: "flex", gap: 8 }}>
             <button type="button" className="btn-line" onClick={() => window.print()}>Xuất PDF</button>
             {editing && (
+              <button
+                type="button"
+                className="btn-line"
+                onClick={() => {
+                  startTransition(async () => {
+                    const { base64, filename } = await exportQuoteOverviewExcel(editing.id)
+                    const link = document.createElement("a")
+                    link.href = `data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,${base64}`
+                    link.download = filename
+                    link.click()
+                  })
+                }}
+              >
+                Xuất Excel
+              </button>
+            )}
+            {editing && (
               <Perm minPerm="dept_head">
                 <button type="button" className="btn-danger" onClick={() => setConfirmDeleteId(editing.id)}>Xoá báo giá</button>
               </Perm>
@@ -257,9 +274,7 @@ export function OverviewView({
         <KpiCard label="Đã duyệt" value={kpis.approved} tone="success" trend={trends.approved} />
         <KpiCard label="Bản nháp" value={kpis.draft} tone="warning" trend={trends.draft} />
       </div>
-      <PageShell
-        title="Tổng quan báo giá"
-      >
+      <PageShell title="Tổng quan báo giá">
         <div className="section-head">
           <h3>Tất cả báo giá</h3>
           <div style={{ display: "flex", gap: 10, alignItems: "center", marginLeft: "auto" }}>

@@ -39,7 +39,7 @@ export function FormModal({ open, title, children, onClose, onSubmit, submitLabe
           e.preventDefault()
           onSubmit?.()
         }}
-        style={{ background: "#fff", borderRadius: 12, padding: 20, width, maxWidth: "95vw", maxHeight: "85vh", overflowY: "auto", boxShadow: "0 12px 40px rgba(0,0,0,0.2)" }}
+        style={{ background: "var(--card, var(--surface-large, #fff))", color: "var(--ink)", borderRadius: 12, padding: 20, width, maxWidth: "95vw", maxHeight: "85vh", overflowY: "auto", boxShadow: "0 12px 40px rgba(0,0,0,0.35)", border: "1px solid var(--line)" }}
       >
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 14 }}>
           <div style={{ fontSize: 16, fontWeight: 700 }}>{title}</div>
@@ -49,7 +49,7 @@ export function FormModal({ open, title, children, onClose, onSubmit, submitLabe
         </div>
         <div className="fm-wide-grid" style={{ display: "flex", flexDirection: "column", gap: 12 }}>{children}</div>
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 20 }}>
-          <button type="button" onClick={onClose} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #dfe3e8", background: "#fff" }}>
+          <button type="button" onClick={onClose} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid var(--line)", background: "var(--surface-control, #fff)", color: "var(--ink)" }}>
             {cancelLabel}
           </button>
           <button type="submit" disabled={submitting} style={{ padding: "8px 14px", borderRadius: 8, border: "none", color: "#fff", background: "#1d5fd6", opacity: submitting ? 0.6 : 1 }}>
