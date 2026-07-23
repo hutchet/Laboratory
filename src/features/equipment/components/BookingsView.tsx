@@ -271,8 +271,8 @@ export function BookingsView({
     >
       {!openGroup && (
         <>
-          <div className="grid kpis" style={{ marginBottom: 16 }}>
-            <KpiCard label="Tổng thiết bị" value={overviewTotal} hint="Toàn hệ thống" trend={overviewTrends.total} />
+          <div className="kpis-tier" style={{ marginBottom: 16 }}>
+            <KpiCard label="Tổng thiết bị" value={overviewTotal} hint="Toàn hệ thống" tone="blue" trend={overviewTrends.total} />
             <KpiCard label="Sẵn sàng" value={overviewReady} hint="Có thể đặt lịch" tone="success" trend={overviewTrends.ready} />
             <KpiCard label="Đang bảo trì" value={overviewMaint} hint="Tạm ngưng đặt lịch" tone="danger" trend={overviewTrends.maint} />
             <KpiCard label="Lượt đặt hôm nay" value={overviewBookingsToday} hint={fmtVN(todayIso())} tone="warning" trend={overviewTrends.bookings} />
@@ -313,8 +313,8 @@ export function BookingsView({
 
       {openGroup && (
       <>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(160px, 1fr))", gap: 12, marginBottom: 18 }}>
-        <KpiCard label="Tổng thiết bị" value={totalCount} hint={openGroup.name} trend={bkTrends.total} />
+      <div className="kpis-tier" style={{ marginBottom: 18 }}>
+        <KpiCard label="Tổng thiết bị" value={totalCount} hint={openGroup.name} tone="blue" trend={bkTrends.total} />
         <KpiCard label="Sẵn sàng" value={readyCount} hint="Có thể đặt lịch" tone="success" trend={bkTrends.ready} />
         <KpiCard label="Đang bảo trì" value={maintCount} hint="Tạm ngưng đặt lịch" tone="danger" trend={bkTrends.maint} />
         <KpiCard label="Lượt đặt trong ngày" value={todaysBookings.length} hint={fmtVN(selectedDate)} tone="warning" trend={bkTrends.bookings} />

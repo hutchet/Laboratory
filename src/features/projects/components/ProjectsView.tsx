@@ -84,7 +84,7 @@ export function ProjectsView({ projects, customers, centers }:{ projects:Project
     <PageShell title="Dự án">
       <div id="page-projects" style={{display:"flex",flexDirection:"column",minHeight:"calc(100vh - 108px)"}}>
       <div className="kpis-tier" style={{marginBottom:20}}>
-        <KpiCard label="Dự án đang hoạt động" value={kpis.active} trend={trends.active} />
+        <KpiCard label="Dự án đang hoạt động" value={kpis.active} tone="blue" trend={trends.active} />
         <KpiCard label="Đang thực hiện" value={kpis.doing} tone="warning" trend={trends.doing} />
         <KpiCard label="Đã hoàn thành" value={kpis.done} tone="success" trend={trends.done} />
         <KpiCard label="Dự án rủi ro" value={kpis.risk} tone="danger" trend={trends.risk} />

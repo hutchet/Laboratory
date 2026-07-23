@@ -146,7 +146,7 @@ export function SamplesView({ samples, customers, projects }: { samples: SampleR
     <PageShell title="Quản lý Mẫu">
       <div id="page-samples">
       <div className="kpis-tier" style={{ marginBottom: 20 }}>
-        <KpiCard label="Tổng số mẫu" value={kpis.total} trend={trends.total} />
+        <KpiCard label="Tổng số mẫu" value={kpis.total} tone="blue" trend={trends.total} />
         <KpiCard label="Đang thử nghiệm" value={kpis.testing} tone="warning" trend={trends.testing} />
         <KpiCard label="Hoàn thành" value={kpis.done} tone="success" trend={trends.done} />
         <KpiCard label="Mới nhận, chưa xếp lịch" value={kpis.received} tone="danger" trend={trends.received} />

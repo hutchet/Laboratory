@@ -33,7 +33,7 @@ export function CustomersView({ customers }:{ customers:CustomerRow[] }) {
   return (
     <PageShell title="Khách hàng">
       <div className="kpis-tier" style={{marginBottom:20}}>
-        <KpiCard label="Tổng khách hàng" value={kpis.total} trend={trends.total} />
+        <KpiCard label="Tổng khách hàng" value={kpis.total} tone="blue" trend={trends.total} />
         <KpiCard label="Đang có dự án" value={kpis.withProj} tone="warning" trend={trends.withProj} />
         <KpiCard label="Tổng dự án liên quan" value={kpis.totalProjects} tone="success" trend={trends.projects} />
         <KpiCard label="Tổng giá trị hợp đồng" value={fmtVal(kpis.totalValue)} tone="danger" trend={trends.value} />

@@ -51,26 +51,36 @@ function KpiSparkline({ values, up, hero, tone }: { values: number[]; up: boolea
   )
 }
 
-function KpiTrendPill({ pct, up }: { pct: number; up: boolean | null }) {
+function KpiTrendPill({ pct, up, tone }: { pct: number; up: boolean | null; tone: KpiCardTone }) {
   if (up === null) return null
+  // Fix 2026-07-23 (hệ thống hoá thẻ KPI, y/c #1): pill hiển thị khi không có
+  // sparkline phải theo đúng nguyên tắc "màu trend cùng màu nền thẻ nhưng đậm
+  // hơn" (đồng bộ với KpiSparkline bên dưới dùng trendColor(tone)), thay vì
+  // màu trắng cố định trước đây. Mũi tên up/down riêng vẫn giữ xanh/đỏ theo
+  // hướng xu hướng — chỉ số % kèm theo dùng chung màu tone đậm.
+  const color = trendColor(tone)
   return (
-    <span className={cn("kcard-trend", up ? undefined : "dn")}>
-      <span className="tri">{up ? "▲" : "▼"}</span>{pct}%
+    <span className="kcard-trend" style={{ color, background: `${color}1f` }}>
+      <span className="tri" style={{ color: up ? "var(--green)" : "var(--red)" }}>{up ? "▲" : "▼"}</span>{pct}%
     </span>
   )
 }
 
-// Tone → màu sparkline stroke (đậm hơn nền)
-// Nền success (xanh lá nhạt) → stroke green-700 (#15803d)
-// Nền warning (cam) → stroke orange-700 (#c2410c)
+// Tone → màu trend/sparkline (đậm hơn nền thẻ, cùng tông với border/value
+// của .kcard.k{b,p,g,r} trong globals.css — xem --blue/--purple/--green/--red).
+// Fix 2026-07-23: "warning" (class kp) hiển thị bằng --purple (#8b5cf6) chứ
+// KHÔNG phải cam như trước — trước đây trend dùng cam trong khi thẻ dùng tím,
+// sai nguyên tắc "trend cùng màu nền thẻ nhưng đậm hơn".
+// Nền success (xanh lá) → stroke green-700 (#15803d)
+// Nền warning (tím) → stroke purple-700 (#6d28d9)
 // Nền blue (xanh dương) → stroke blue-700 (#1d4ed8)
 // Nền danger (đỏ) → stroke red-700 (#b91c1c)
 // Nền neutral (xám) → stroke gray-600 (#4b5563)
 const TONE_SPARK_COLOR: Record<KpiCardTone, string> = {
   neutral: "#2563eb",
-  blue:    "#2563eb",
+  blue:    "#1d4ed8",
   success: "#15803d",
-  warning: "#c2410c",
+  warning: "#6d28d9",
   danger:  "#b91c1c",
 }
 
@@ -109,7 +119,7 @@ export function KpiCard({
           {hasSparkline ? (
             <KpiSparkline values={trend.sparkline as number[]} up={trend.up} hero={size === "hero"} tone={tone} />
           ) : (
-            <KpiTrendPill pct={trend.pct} up={trend.up} />
+            <KpiTrendPill pct={trend.pct} up={trend.up} tone={tone} />
           )}
         </div>
       ) : (

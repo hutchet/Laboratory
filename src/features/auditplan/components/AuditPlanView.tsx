@@ -229,7 +229,7 @@ export function AuditPlanView({
     // Sua loi header/du lieu bi lech cot: header cu ghi "No" nhung gia tri
     // thuc te la ten Giai doan; bo sung cot T.luong (ngay) cho khop voi bang
     // chi tiet/popup (dung 10 cot nhu renderAuditPlan/openApTaskForm ban goc).
-    const header = ["Giai đoạn", "Hạng mục", "Phụ trách", "Bắt đầu KH", "Kết thúc KH", "Bắt đầu TT", "Kết thúc TT", "T.lượng (ngày)", "Trạng thái", "Ghi chú"]
+    const header = ["Giai đoạn", "Hạng m��c", "Phụ trách", "Bắt đầu KH", "Kết thúc KH", "Bắt đầu TT", "Kết thúc TT", "T.lượng (ngày)", "Trạng thái", "Ghi chú"]
     const rows = scopedItems.map((it) => [
       it.phase?.name ?? "",
       it.name,
@@ -339,7 +339,7 @@ export function AuditPlanView({
             <div><h3 style={{ margin: 0 }}>{currentPlan.title}</h3><span>{currentPlan.scheduledAt ? new Date(currentPlan.scheduledAt).toLocaleDateString("vi-VN") : "Chưa có ngày dự kiến"}</span></div>
           </div>
           <div className="kpis-tier" style={{ marginBottom: 20 }}>
-            <KpiCard label="Tổng hạng mục" value={kpi.total} tone="neutral" trend={kpiTrends.total} />
+            <KpiCard label="Tổng hạng mục" value={kpi.total} tone="blue" trend={kpiTrends.total} />
             <KpiCard label="Hoàn thành" value={kpi.done} tone="success" trend={kpiTrends.done} />
             <KpiCard label="Đang triển khai" value={kpi.doing} tone="warning" trend={kpiTrends.doing} />
             <KpiCard label="Quá hạn" value={kpi.overdue} tone="danger" trend={kpiTrends.overdue} />

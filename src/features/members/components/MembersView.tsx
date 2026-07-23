@@ -254,8 +254,8 @@ export function MembersView({
       filters={<FilterBar search={{ value: q, onChange: setQ, placeholder: "Tìm thành viên..." }} />}
     >
       <div className="kpis-tier" style={{ marginBottom: 20 }}>
-        <KpiCard label="Tổng thành viên" value={kpi.total} tone="neutral" trend={kpiTrends.total} />
-        <KpiCard label="Quản lý" value={kpi.managers} tone="blue" trend={kpiTrends.managers} />
+        <KpiCard label="Tổng thành viên" value={kpi.total} tone="blue" trend={kpiTrends.total} />
+        <KpiCard label="Quản lý" value={kpi.managers} tone="danger" trend={kpiTrends.managers} />
         <KpiCard label="Đã gán trung tâm" value={kpi.assigned} tone="success" trend={kpiTrends.assigned} />
         <KpiCard label="Chưa gán trung tâm" value={kpi.unassigned} tone="warning" trend={kpiTrends.unassigned} />
       </div>

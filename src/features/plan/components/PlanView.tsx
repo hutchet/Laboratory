@@ -348,7 +348,7 @@ export function PlanView({
       ) : (
         <>
           <div className="kpis-tier" style={{ marginBottom: 18 }}>
-            <KpiCard label="Tổng bài thử" value={kpi.total} hint="Trong kế hoạch" tone="neutral" trend={planTrends.total} />
+            <KpiCard label="Tổng bài thử" value={kpi.total} hint="Trong kế hoạch" tone="blue" trend={planTrends.total} />
             <KpiCard label="Đạt" value={kpi.pass} hint="Số bài đạt" tone="success" trend={planTrends.pass} />
             <KpiCard label="Không đạt" value={kpi.fail} hint="Số bài không đạt" tone="danger" trend={planTrends.fail} />
             <KpiCard label="Đang thực hiện" value={kpi.ongoing} hint="Đang triển khai" tone="warning" trend={planTrends.ongoing} />

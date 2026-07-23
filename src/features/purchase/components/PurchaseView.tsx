@@ -273,8 +273,8 @@ export function PurchaseView({
         </span>}
       >
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 16 }}>
-          <KpiCard label="Tổng hạng mục" value={items.length} tone="neutral" trend={trendTotal} />
-          <KpiCard label="Tổng giá trị" value={`${purchaseFormatAmount(totalValue)} đ`} tone="neutral" trend={trendValue} />
+          <KpiCard label="Tổng hạng mục" value={items.length} tone="blue" trend={trendTotal} />
+          <KpiCard label="Tổng giá trị" value={`${purchaseFormatAmount(totalValue)} đ`} tone="danger" trend={trendValue} />
           <KpiCard label="Đang triển khai" value={ongoingCount} tone="warning" trend={trendOngoing} />
           <KpiCard label="Hoàn thành" value={doneCount} tone="success" trend={trendDone} />
         </div>

@@ -55,7 +55,7 @@ export function CentersView({ centers, groups = [], memberOptions = [], viewerCa
   return (
     <PageShell title="Trung tâm thử nghiệm">
       <div className="kpis-tier" style={{marginBottom:20}}>
-        <KpiCard label="Tổng trung tâm" value={kpis.total} trend={trends.total} />
+        <KpiCard label="Tổng trung tâm" value={kpis.total} tone="blue" trend={trends.total} />
         <KpiCard label="Tổng dự án liên kết" value={kpis.totalProjects} tone="warning" trend={trends.projects} />
         <KpiCard label="Tổng giá trị dự án" value={fmtVal(kpis.totalValue)} tone="success" trend={trends.value} />
         <KpiCard label="Khách hàng liên quan" value={kpis.totalCustomerLinks} tone="danger" trend={trends.customers} />

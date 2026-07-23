@@ -180,7 +180,7 @@ export function DepreciationView({ items, centers = [] }: { items: DepreciationA
       {!openGroup && (
         <>
           <div className="grid kpis" style={{ marginBottom: 16 }}>
-            <KpiCard label="Tổng tài sản" value={overview.total} hint="Theo danh sách thiết bị" trend={dvTrendTotal} />
+            <KpiCard label="Tổng tài sản" value={overview.total} hint="Theo danh sách thiết bị" tone="blue" trend={dvTrendTotal} />
             <KpiCard label="Tổng giá trị (VNĐ)" value={overview.totalValue.toLocaleString("vi-VN")} hint="Toàn bộ tài sản" tone="success" trend={dvTrendValue} />
             <KpiCard label="Tổng khấu hao/giờ" value={overview.totalPerHour.toLocaleString("vi-VN")} hint="VNĐ/giờ" tone="warning" trend={dvTrendPerHour} />
             <KpiCard label="Thiếu dữ liệu" value={overview.missing} hint="Chưa nhập giá trị/số năm" tone="danger" trend={dvTrendMissing} />
