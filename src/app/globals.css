@@ -416,6 +416,10 @@
   #page-projects{display:flex;flex-direction:column;min-height:calc(100vh - 108px)}
   #page-projects .proj-list-wrap{flex:1}
   #page-projects #proj-pager{margin-top:auto}
+  #page-customers{display:flex;flex-direction:column;min-height:calc(100vh - 108px)}
+  #page-customers #cu-pager{margin-top:auto}
+  #page-centers{display:flex;flex-direction:column;min-height:calc(100vh - 108px)}
+  #page-centers #ct-pager{margin-top:auto}
   .pager .info{font-size:13px;color:var(--muted)}
   .pager .pages{display:flex;gap:6px}
   .pg{min-width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:#fff;color:#5b637a;font-size:13px;font-weight:600;cursor:pointer;display:grid;place-items:center}

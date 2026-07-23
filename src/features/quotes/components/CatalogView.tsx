@@ -9,6 +9,7 @@ import { CustomSelect } from "@/shared/ui/custom-select"
 import { KpiCard } from "@/shared/ui/kpi-card"
 import { Perm } from "@/shared/lib/rbac-client"
 import { DirectionIcon } from "@/shared/ui/icons"
+import { computeSimpleTrend } from "@/shared/lib/trend"
 import { saveTestCatalogItem, deleteTestCatalogItem, bulkDeleteTestCatalogItems } from "../actions"
 import type { TestCatalogRow, PersonnelRateConfigRow, PersonnelRoutingRow, Option } from "../types"
 
@@ -64,6 +65,12 @@ export function CatalogView({ items, personnelConfig, routing, centers = [] }: {
   useEffect(() => {
     if (showForm) setFCenterId(editing?.centerId ?? (openCenterKey && openCenterKey !== NO_CENTER_KEY ? openCenterKey : ""))
   }, [showForm, editing, openCenterKey])
+
+  // Trend theo data thuc — dua tren TestCatalogItem.createdAt
+  const catalogTrends = useMemo(() => ({
+    total: computeSimpleTrend(items, () => true, (it) => it.createdAt),
+    withPrice: computeSimpleTrend(items, (it) => it.price != null, (it) => it.createdAt),
+  }), [items])
 
   const groups: CenterGroup[] = useMemo(() => {
     const byCenter = new Map<string, TestCatalogRow[]>()
@@ -188,9 +195,9 @@ export function CatalogView({ items, personnelConfig, routing, centers = [] }: {
       {!openGroup && (
         <>
           <div className="kpis-tier" style={{ marginBottom: 16 }}>
-            <KpiCard label="Tổng bài thử" value={overview.total} tone="blue" />
+            <KpiCard label="Tổng bài thử" value={overview.total} tone="blue" trend={catalogTrends.total} />
             <KpiCard label="Trung tâm" value={overview.centerCount} tone="blue" />
-            <KpiCard label="Đơn giá trung bình" value={`${fmtVND(overview.avgPrice)} đ`} tone="warning" />
+            <KpiCard label="Đơn giá trung bình" value={`${fmtVND(overview.avgPrice)} đ`} tone="warning" trend={catalogTrends.withPrice} />
             <KpiCard label="Tổng giá trị danh mục" value={`${fmtVND(overview.totalValue)} đ`} tone="success" />
           </div>
           {groups.length === 0 ? (
@@ -200,6 +207,7 @@ export function CatalogView({ items, personnelConfig, routing, centers = [] }: {
               {groups.map((g) => {
                 const withPrice = g.items.filter((it) => it.price != null)
                 const val = withPrice.reduce((a, it) => a + (it.price || 0), 0)
+                const avgVal = withPrice.length ? val / withPrice.length : 0
                 const initial = g.name.replace(/Trung tâm|thử nghiệm/gi, "").trim().slice(0, 2).toUpperCase() || "TT"
                 return (
                   <div key={g.key} className="hub-card" onClick={() => openCenter(g.key)} style={{ cursor: "pointer" }}>
@@ -207,6 +215,11 @@ export function CatalogView({ items, personnelConfig, routing, centers = [] }: {
                       <div className="hub-icon">{initial}</div>
                       <div className="hub-title"><h4>{g.name}</h4><p>{g.items.length} bài thử · {fmtVND(val)} đ</p></div>
                       <span className="hub-arrow sys-arrow-glyph"><DirectionIcon name="chevronRight" size={20} /></span>
+                    </div>
+                    <div className="hub-stats">
+                      <div className="hub-stat"><b>{g.items.length}</b><span>Bài thử</span></div>
+                      <div className="hub-stat"><b>{withPrice.length}</b><span>Có giá</span></div>
+                      <div className="hub-stat"><b>{fmtVND(avgVal)} đ</b><span>Đơn giá TB</span></div>
                     </div>
                   </div>
                 )

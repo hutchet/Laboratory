@@ -60,6 +60,7 @@ export function CentersView({ centers, groups = [], memberOptions = [], viewerCa
   function confirmDelete(){ if(!confirmDeleteId) return; const id=confirmDeleteId; startTransition(async()=>{ await deleteCenter(id); setConfirmDeleteId(null) }) }
   return (
     <PageShell title="Trung tâm thử nghiệm">
+      <div id="page-centers" style={{display:"flex",flexDirection:"column",minHeight:"calc(100vh - 108px)"}}>
       <div className="kpis-tier" style={{marginBottom:20}}>
         <KpiCard label="Tổng trung tâm" value={kpis.total} tone="blue" trend={trends.total} />
         <KpiCard label="Tổng dự án liên kết" value={kpis.totalProjects} tone="warning" trend={trends.projects} />
@@ -233,6 +234,7 @@ export function CentersView({ centers, groups = [], memberOptions = [], viewerCa
         </div>
       )}
 
+      </div>
       <ConfirmDialog open={!!confirmDeleteId} title="Xoá trung tâm?" description="Hành động này không thể hoàn tác." danger onConfirm={confirmDelete} onCancel={()=>setConfirmDeleteId(null)} />
       <ConfirmDialog open={!!confirmDeleteGroupId} title="Xoá nhóm vận hành?" description="Các thành viên thuộc nhóm này sẽ mất liên kết nhóm (vẫn giữ liên kết Trung tâm). Hành động này không thể hoàn tác." danger onConfirm={confirmDeleteGroup} onCancel={()=>setConfirmDeleteGroupId(null)} />
       <ConfirmDialog open={!!confirmRevokeId} title="Thu hồi quyền xem?" description="Tài khoản này sẽ không còn xem được dữ liệu của trung tâm này nữa." danger onConfirm={confirmRevoke} onCancel={()=>setConfirmRevokeId(null)} />

@@ -10,6 +10,7 @@ import { AvatarInitials } from "@/shared/ui/avatar-initials"
 import { ChipFilterDropdown, type ChipFilterOption } from "@/shared/ui/chip-filter"
 import { CustomSelect } from "@/shared/ui/custom-select"
 import { KpiCard } from "@/shared/ui/kpi-card"
+import { DirectionIcon } from "@/shared/ui/icons"
 import { saveTask, deleteTask, bulkDeleteTasks } from "../actions"
 import { STATUS_LABEL, PRIORITY_LABEL, type TaskRow, type Option, type CenterOption } from "../types"
 
@@ -64,6 +65,7 @@ function initials(name: string) {
 }
 
 const NO_CENTER = "__none__"
+const NO_CENTER_LABEL = "Không thuộc trung tâm"
 
 export type TasksViewProps = { tasks: TaskRow[]; projects: Option[]; members: Option[]; centers: CenterOption[]; initialQuery?: string }
 
@@ -85,6 +87,11 @@ const PRIORITY_RANK: Record<string, number> = { high: 3, med: 2, low: 1 }
 export function TasksView({ tasks, projects, members, centers, initialQuery }: TasksViewProps) {
   const [chip, setChip] = useState("all")
   const [q, setQ] = useState(initialQuery || "")
+  // Muc 4: khoi phuc lop the danh sach trung tam (rule cu: trang the -> trong the la
+  // chi tiet) da bi go nham o vong sua truoc — giong khuon mau NO_CENTER_KEY/groups/
+  // openGroup cua DepreciationView.tsx.
+  const [openCenterKey, setOpenCenterKey] = useState("")
+  const [centerSearch, setCenterSearch] = useState("")
   const [sortKey, setSortKey] = useState<SortKey>("dueDate")
   const [sortDir, setSortDir] = useState<1 | -1>(1)
   const [editing, setEditing] = useState<TaskRow | null>(null)
@@ -113,7 +120,43 @@ export function TasksView({ tasks, projects, members, centers, initialQuery }: T
   }, [showForm, editing])
 
   const memberName = (id: string | null) => members.find((m) => m.id === id)?.name ?? "—"
-  const centerName = (id: string) => (id === NO_CENTER ? "Không thuộc trung tâm" : centers.find((c) => c.id === id)?.name ?? "—")
+  const centerName = (id: string) => (id === NO_CENTER ? NO_CENTER_LABEL : centers.find((c) => c.id === id)?.name ?? "—")
+
+  // Port cua #page-title.title-back (giong DepreciationView/PersonnelView...): khi da mo
+  // 1 trung tam cu the, tieu de trang tro thanh nut "back" ve lai luoi the trung tam.
+  useEffect(() => {
+    const el = document.getElementById("page-title")
+    if (!el) return
+    if (openCenterKey) {
+      el.classList.add("title-back")
+      el.title = "Quay lại danh sách trung tâm"
+      const handler = () => setOpenCenterKey("")
+      el.addEventListener("click", handler)
+      return () => {
+        el.classList.remove("title-back")
+        el.removeAttribute("title")
+        el.removeEventListener("click", handler)
+      }
+    }
+    el.classList.remove("title-back")
+    el.removeAttribute("title")
+  }, [openCenterKey])
+
+  type CenterGroup = { key: string; name: string; items: TaskRow[] }
+  const groups = useMemo<CenterGroup[]>(() => {
+    const map = new Map<string, CenterGroup>()
+    for (const c of centers) map.set(c.id, { key: c.id, name: c.name, items: [] })
+    map.set(NO_CENTER, { key: NO_CENTER, name: NO_CENTER_LABEL, items: [] })
+    for (const t of tasks) {
+      const key = t.centerId || NO_CENTER
+      if (!map.has(key)) map.set(key, { key, name: centerName(key), items: [] })
+      map.get(key)!.items.push(t)
+    }
+    return Array.from(map.values()).filter((g) => !centerSearch || g.name.toLowerCase().includes(centerSearch.toLowerCase()))
+  }, [tasks, centers, centerSearch])
+  const openGroup = groups.find((g) => g.key === openCenterKey) ?? null
+
+  function openCenter(key: string) { setOpenCenterKey(key); setQ(""); setChip("all") }
 
   const hubKpis = useMemo(() => ({
     totalTasks: tasks.length,
@@ -171,7 +214,8 @@ export function TasksView({ tasks, projects, members, centers, initialQuery }: T
   }
 
   const filtered = useMemo(() => {
-    const list = tasks.filter((t) => {
+    const base = openGroup ? openGroup.items : []
+    const list = base.filter((t) => {
       if (chip === "over" && taskState(t) !== "over") return false
       if (chip === "soon" && taskState(t) !== "soon") return false
       if (chip === "done" && t.status !== "done") return false
@@ -193,7 +237,7 @@ export function TasksView({ tasks, projects, members, centers, initialQuery }: T
       return 0
     })
     return sorted
-  }, [tasks, chip, q, sortKey, sortDir, members])
+  }, [openGroup, chip, q, sortKey, sortDir, members])
 
   function exportExcel() {
     const header = ["Tên", "Dự án", "Phụ trách", "Hạn chốt", "Còn lại", "Ưu tiên", "Trạng thái"]
@@ -309,45 +353,84 @@ export function TasksView({ tasks, projects, members, centers, initialQuery }: T
   ]
 
   return (
-    <PageShell title="Công việc" subtitle="Theo dõi và phân công công việc">
-      <div className="kpis-tier" style={{ marginBottom: 20 }}>
-        <KpiCard label="Đang thực hiện" value={hubKpis.doing} tone="blue" trend={hubTrends.doing} />
-        <KpiCard label="Tổng công việc" value={hubKpis.totalTasks} tone="warning" trend={hubTrends.totalTasks} />
-        <KpiCard label="Quá hạn" value={hubKpis.overdue} tone="danger" trend={hubTrends.overdue} />
-        <KpiCard label="Hoàn thành" value={hubKpis.done} tone="success" trend={hubTrends.done} />
-      </div>
-      <div className="section-head">
-        <h3>Danh sách công việc</h3>
-        <div className="tools">
-          <FilterBar search={{ value: q, onChange: setQ, placeholder: "Tìm công việc..." }}>
-            <ChipFilterDropdown value={chip} options={CHIPS} onChange={setChip} />
-          </FilterBar>
-          <span style={{ display: "flex", gap: 8 }}>
-            {editMode && (
-              <button type="button" className="btn-danger" disabled={!selected.size} onClick={() => setBulkConfirm(true)} style={{ opacity: selected.size ? 1 : 0.5 }}>Xoá tất cả</button>
-            )}
-            <button type="button" className={editMode ? "btn-success" : "btn-line"} onClick={toggleEditMode}>{editMode ? "Xong" : "Chỉnh sửa"}</button>
-            <button type="button" className="btn-pri" onClick={openNew}>
-              + Thêm công việc
-            </button>
-          </span>
-        </div>
-      </div>
-      <DataTable
-        columns={columns}
-        rows={filtered}
-        rowKey={(t) => t.id}
-        loading={pending}
-        emptyTitle="Chưa có công việc nào"
-        emptyDescription="Nhấn “Thêm công việc” để tạo mới."
-        onRowClick={(t) => openEdit(t)}
-        resizable
-        maxBodyHeight={520}
-      />
+    <PageShell title="Công việc" subtitle={openGroup ? undefined : "Theo dõi và phân công công việc"}>
+      {!openGroup && (
+        <>
+          <div className="kpis-tier" style={{ marginBottom: 20 }}>
+            <KpiCard label="Đang thực hiện" value={hubKpis.doing} tone="blue" trend={hubTrends.doing} />
+            <KpiCard label="Tổng công việc" value={hubKpis.totalTasks} tone="warning" trend={hubTrends.totalTasks} />
+            <KpiCard label="Quá hạn" value={hubKpis.overdue} tone="danger" trend={hubTrends.overdue} />
+            <KpiCard label="Hoàn thành" value={hubKpis.done} tone="success" trend={hubTrends.done} />
+          </div>
+          <div className="section-head">
+            <h3>Trung tâm</h3>
+            <div className="tools">
+              <FilterBar search={{ value: centerSearch, onChange: setCenterSearch, placeholder: "Tìm trung tâm..." }} />
+            </div>
+          </div>
+          {groups.length === 0 ? (
+            <div className="empty">Chưa có trung tâm nào.</div>
+          ) : (
+            <div className="cu-grid">
+              {groups.map((g) => {
+                const doing = g.items.filter((t) => t.status !== "done").length
+                const overdue = g.items.filter((t) => taskState(t) === "over").length
+                const done = g.items.filter((t) => t.status === "done").length
+                return (
+                  <div key={g.key} className="hub-card" onClick={() => openCenter(g.key)} style={{ cursor: "pointer" }}>
+                    <div className="hub-top">
+                      <div className="hub-icon">{initials(g.name)}</div>
+                      <div className="hub-title"><h4>{g.name}</h4><p>{g.items.length} công việc · {overdue} quá hạn</p></div>
+                      <span className="hub-arrow sys-arrow-glyph"><DirectionIcon name="chevronRight" size={20} /></span>
+                    </div>
+                    <div className="hub-stats">
+                      <div className="hub-stat"><b>{doing}</b><span>Đang làm</span></div>
+                      <div className="hub-stat"><b style={{ color: "var(--red)" }}>{overdue}</b><span>Quá hạn</span></div>
+                      <div className="hub-stat"><b style={{ color: "var(--green)" }}>{done}</b><span>Hoàn thành</span></div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </>
+      )}
+
+      {openGroup && (
+        <>
+          <div className="section-head" style={{ flexDirection: "column", alignItems: "stretch" }}>
+            <h3>Danh sách công việc</h3>
+            <div className="tools" style={{ justifyContent: "space-between", width: "100%" }}>
+              <ChipFilterDropdown value={chip} options={CHIPS} onChange={setChip} />
+              <span style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <FilterBar search={{ value: q, onChange: setQ, placeholder: "Tìm công việc..." }} />
+                {editMode && (
+                  <button type="button" className="btn-danger" disabled={!selected.size} onClick={() => setBulkConfirm(true)} style={{ opacity: selected.size ? 1 : 0.5 }}>Xoá tất cả</button>
+                )}
+                <button type="button" className={editMode ? "btn-success" : "btn-line"} onClick={toggleEditMode}>{editMode ? "Xong" : "Chỉnh sửa"}</button>
+                <button type="button" className="btn-pri" onClick={openNew}>
+                  + Thêm công việc
+                </button>
+              </span>
+            </div>
+          </div>
+          <DataTable
+            columns={columns}
+            rows={filtered}
+            rowKey={(t) => t.id}
+            loading={pending}
+            emptyTitle="Chưa có công việc nào"
+            emptyDescription="Nhấn “Thêm công việc” để tạo mới."
+            onRowClick={(t) => openEdit(t)}
+            resizable
+            maxBodyHeight={520}
+          />
+        </>
+      )}
 
       <FormModal
         open={showForm}
-        title={editing ? "Sửa công việc" : "Thêm công việc"}
+        title={editing ? "Sửa công việc" : "Thêm công vi��c"}
         onClose={() => { setShowForm(false); setEditing(null) }}
         onSubmit={() => {
           const form = document.getElementById("tf-task-form") as HTMLFormElement | null

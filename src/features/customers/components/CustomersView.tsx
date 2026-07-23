@@ -38,6 +38,7 @@ export function CustomersView({ customers }:{ customers:CustomerRow[] }) {
   function confirmDelete(){ if(!confirmDeleteId) return; const id=confirmDeleteId; startTransition(async()=>{ await deleteCustomer(id); setConfirmDeleteId(null) }) }
   return (
     <PageShell title="Khách hàng">
+      <div id="page-customers" style={{display:"flex",flexDirection:"column",minHeight:"calc(100vh - 108px)"}}>
       <div className="kpis-tier" style={{marginBottom:20}}>
         <KpiCard label="Tổng khách hàng" value={kpis.total} tone="blue" trend={trends.total} />
         <KpiCard label="Đang có dự án" value={kpis.withProj} tone="warning" trend={trends.withProj} />
@@ -133,6 +134,7 @@ export function CustomersView({ customers }:{ customers:CustomerRow[] }) {
         </div>
       )}
 
+      </div>
       <ConfirmDialog open={!!confirmDeleteId} title="Xoá khách hàng?" description="Hành động này không thể hoàn tác." danger onConfirm={confirmDelete} onCancel={()=>setConfirmDeleteId(null)} />
     </PageShell>
   )

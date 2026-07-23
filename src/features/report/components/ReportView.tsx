@@ -6,6 +6,9 @@ import { StatusBadge } from "@/shared/ui/status-badge"
 import { FormModal } from "@/shared/ui/form-modal"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { EmptyState } from "@/shared/ui/empty-state"
+import { KpiCard } from "@/shared/ui/kpi-card"
+import { DirectionIcon } from "@/shared/ui/icons"
+import { computeSimpleTrend } from "@/shared/lib/trend"
 import { createReportProject, renameReportProject, deleteReportProject, saveReportRows } from "../actions"
 import { REPORT_COLUMNS, emptyReportRow } from "../types"
 import type { ReportProjectCard, ReportRowRecord, ReportRowData } from "../types"
@@ -32,6 +35,20 @@ export function ReportView({
     () => projects.filter((p) => !q || p.name.toLowerCase().includes(q.toLowerCase())),
     [projects, q]
   )
+
+  // Muc 3: bo sung khoi KPI + hub-card dung nguyen tac giong cac trang khac
+  // (Quote hub, AuditPlan, Customers...) — tong quan + trend theo Project.createdAt.
+  const overview = useMemo(() => {
+    const withData = projects.filter((p) => p.rowCount > 0)
+    const totalRows = projects.reduce((a, p) => a + p.rowCount, 0)
+    const avgRows = projects.length ? totalRows / projects.length : 0
+    return { total: projects.length, withData: withData.length, totalRows, avgRows }
+  }, [projects])
+
+  const reportTrends = useMemo(() => ({
+    total: computeSimpleTrend(projects, () => true, (p) => p.createdAt),
+    withData: computeSimpleTrend(projects, (p) => p.rowCount > 0, (p) => p.createdAt),
+  }), [projects])
 
   function openNewProjectForm() { setEditingProject(null); setShowProjectForm(true) }
   function openRenameForm(p: ReportProjectCard) { setEditingProject(p); setShowProjectForm(true) }
@@ -96,25 +113,41 @@ export function ReportView({
       actions={<button type="button" onClick={openNewProjectForm} style={{ padding: "8px 14px", borderRadius: 8, border: "none", background: "#1d5fd6", color: "#fff" }}>+ Thêm dự án</button>}
       filters={<FilterBar search={{ value: q, onChange: setQ, placeholder: "Tìm dự án..." }} />}
     >
+      <div className="kpis-tier" style={{ marginBottom: 16 }}>
+        <KpiCard label="Tổng dự án" value={overview.total} tone="blue" trend={reportTrends.total} />
+        <KpiCard label="Có dữ liệu" value={overview.withData} tone="success" trend={reportTrends.withData} />
+        <KpiCard label="Tổng dòng dữ liệu" value={overview.totalRows} tone="blue" />
+        <KpiCard label="TB dòng / dự án" value={overview.avgRows.toFixed(1)} tone="warning" />
+      </div>
+
       {filtered.length === 0 ? (
         <EmptyState title="Chưa có dự án nào" />
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 14 }}>
-          {filtered.map((p) => (
-            <div key={p.id} style={{ border: "1px solid #e2e5e9", borderRadius: 12, padding: 14, cursor: "pointer" }} onClick={() => openSpreadsheet(p)}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
-                <h4 style={{ margin: 0, fontSize: 14, fontWeight: 700 }}>{p.name}</h4>
-                <span style={{ display: "flex", gap: 6 }} onClick={(e) => e.stopPropagation()}>
-                  <button type="button" onClick={() => openRenameForm(p)} style={{ border: "none", background: "none", color: "#1d5fd6", cursor: "pointer", fontSize: 12 }}>Sửa</button>
-                  <button type="button" onClick={() => setConfirmDeleteId(p.id)} style={{ border: "none", background: "none", color: "#c62828", cursor: "pointer", fontSize: 12 }}>Xoá</button>
-                </span>
+        <div id="rp-project-cards" className="cu-grid">
+          {filtered.map((p) => {
+            const initial = p.name.trim().slice(0, 2).toUpperCase() || "DA"
+            return (
+              <div key={p.id} className="hub-card" onClick={() => openSpreadsheet(p)} style={{ cursor: "pointer" }}>
+                <div className="hub-top">
+                  <div className="hub-icon">{initial}</div>
+                  <div className="hub-title"><h4>{p.name}</h4><p>{p.rowCount ? `${p.rowCount} dòng dữ liệu` : "Chưa có dữ liệu"}</p></div>
+                  <span className="hub-arrow sys-arrow-glyph"><DirectionIcon name="chevronRight" size={20} /></span>
+                </div>
+                <div className="hub-tags">
+                  <StatusBadge label={p.rowCount ? "Có dữ liệu" : "Chưa có dữ liệu"} tone={p.rowCount ? "success" : "neutral"} />
+                </div>
+                <div className="hub-stats">
+                  <div className="hub-stat"><b>{p.rowCount}</b><span>Dòng dữ liệu</span></div>
+                  <div className="hub-stat"><b>{REPORT_COLUMNS.length}</b><span>Cột báo cáo</span></div>
+                </div>
+                <div onClick={(e) => e.stopPropagation()} style={{ display: "flex", gap: 8, borderTop: "1px solid var(--line)", paddingTop: 12, marginTop: 12 }}>
+                  <button type="button" className="btn-line" style={{ flex: 1 }} onClick={() => openSpreadsheet(p)}>Xem chi tiết</button>
+                  <button type="button" className="btn-line" onClick={() => openRenameForm(p)}>Sửa</button>
+                  <button type="button" className="btn-line" onClick={() => setConfirmDeleteId(p.id)}>Xoá</button>
+                </div>
               </div>
-              <div style={{ marginTop: 10 }}>
-                <StatusBadge label={p.rowCount ? `${p.rowCount} dòng dữ liệu` : "Chưa có dữ liệu"} tone={p.rowCount ? "success" : "neutral"} />
-                <div style={{ fontSize: 11.5, opacity: 0.6, marginTop: 8 }}>Nhấn để mở bảng nhập báo cáo thử nghiệm</div>
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
 

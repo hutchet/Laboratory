@@ -15,7 +15,7 @@ export type ReportRowData = Record<ReportColumnKey, string>
 
 export type ReportRowRecord = { id: string; position: number } & ReportRowData
 
-export type ReportProjectCard = { id: string; name: string; rowCount: number }
+export type ReportProjectCard = { id: string; name: string; rowCount: number; createdAt: string }
 
 export function emptyReportRow(): ReportRowData {
   return { testName: "", standard: "", steps: "", criteria: "", equipment: "", calibration: "" }

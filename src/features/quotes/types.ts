@@ -44,6 +44,7 @@ export type TestCatalogRow = {
   price: number | null
   centerId: string | null
   center: { id: string; name: string } | null
+  createdAt: string
 }
 
 export type PersonnelRateConfigRow = {
@@ -65,6 +66,7 @@ export type PersonnelRoutingRow = {
   reportHours: string | null
   centerId: string | null
   center: { id: string; name: string } | null
+  createdAt: string
 }
 
 // y/c 116.1: Tai san khau hao gio anh xa 1:1 tu Equipment (equipmentId) - assetName
@@ -88,4 +90,5 @@ export type VariableCostRow = {
   amount: number | null
   centerId: string | null
   center: { id: string; name: string } | null
+  createdAt: string
 }

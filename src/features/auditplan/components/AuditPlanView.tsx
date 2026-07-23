@@ -168,6 +168,48 @@ export function AuditPlanView({
     return Object.fromEntries(keys.map((k) => [k, { ...pctChg(curr[k], prev[k]), sparkline: sparklineFor(k) }])) as Record<typeof keys[number], { pct: number; up: boolean; sparkline: number[] }>
   }, [scopedItems])
 
+  // Muc 5: trang danh sach ke hoach (chua mo ke hoach nao) dang thieu 4 the KPI
+  // tong quan toan bo cac ke hoach — bo sung dua tren TOAN BO items/plans (khong
+  // loc theo 1 ke hoach), cung cong thuc auditAutoStatus + trend nhu kpi/kpiTrends o tren.
+  const planListKpi = useMemo(() => {
+    const statuses = items.map((it) => auditAutoStatus(it))
+    return {
+      totalPlans: plans.length,
+      done: statuses.filter((s) => s === "done").length,
+      doing: statuses.filter((s) => s === "doing").length,
+      overdue: statuses.filter((s) => s === "overdue").length,
+    }
+  }, [items, plans])
+
+  const planListTrends = useMemo(() => {
+    const now = Date.now()
+    const day = 86400000
+    function snapshot(asOfMs: number) {
+      const visiblePlans = plans.filter((p) => true)
+      const list = items.filter((it) => new Date(it.createdAt).getTime() <= asOfMs)
+      const statuses = list.map((it) => auditAutoStatus(it))
+      return {
+        totalPlans: visiblePlans.length,
+        done: statuses.filter((s) => s === "done").length,
+        doing: statuses.filter((s) => s === "doing").length,
+        overdue: statuses.filter((s) => s === "overdue").length,
+      }
+    }
+    function pctChg(curr: number, prev: number) {
+      if (prev === 0) return { pct: curr > 0 ? 100 : 0, up: curr >= prev }
+      return { pct: Math.round((Math.abs(curr - prev) / prev) * 100), up: curr >= prev }
+    }
+    function sparklineFor(key: "totalPlans" | "done" | "doing" | "overdue") {
+      const pts: number[] = []
+      for (let i = 6; i >= 0; i--) pts.push(snapshot(now - i * day)[key])
+      return pts
+    }
+    const curr = snapshot(now)
+    const prev = snapshot(now - 7 * day)
+    const keys = ["totalPlans", "done", "doing", "overdue"] as const
+    return Object.fromEntries(keys.map((k) => [k, { ...pctChg(curr[k], prev[k]), sparkline: sparklineFor(k) }])) as Record<typeof keys[number], { pct: number; up: boolean; sparkline: number[] }>
+  }, [items, plans])
+
   const workload = useMemo(() => {
     const map = new Map<string, number>()
     scopedItems.forEach((it) => {
@@ -289,6 +331,12 @@ export function AuditPlanView({
     <PageShell title="Kế hoạch kiểm toán nội bộ">
       {!openPlanId && (
       <>
+      <div className="kpis-tier" style={{ marginBottom: 16 }}>
+        <KpiCard label="Tổng kế hoạch" value={planListKpi.totalPlans} tone="blue" trend={planListTrends.totalPlans} />
+        <KpiCard label="Đang triển khai" value={planListKpi.doing} tone="blue" trend={planListTrends.doing} />
+        <KpiCard label="Hoàn thành" value={planListKpi.done} tone="success" trend={planListTrends.done} />
+        <KpiCard label="Quá hạn" value={planListKpi.overdue} tone="danger" trend={planListTrends.overdue} />
+      </div>
       <div className="section-head">
         <h3 style={{ fontSize: 14, margin: 0 }}>Kế hoạch</h3>
         <div className="tools">

@@ -9,6 +9,7 @@ import { CustomSelect } from "@/shared/ui/custom-select"
 import { KpiCard } from "@/shared/ui/kpi-card"
 import { Perm } from "@/shared/lib/rbac-client"
 import { DirectionIcon } from "@/shared/ui/icons"
+import { computeSimpleTrend } from "@/shared/lib/trend"
 import { saveVariableCost, deleteVariableCost, bulkDeleteVariableCosts } from "../actions"
 import type { VariableCostRow, Option } from "../types"
 
@@ -85,6 +86,11 @@ export function VariableView({ items, centers = [] }: { items: VariableCostRow[]
     return { total: items.length, centerCount: centers.length, totalCost, avgCost }
   }, [items, centers])
 
+  // Trend theo data thuc (rule KPI global) — dua tren VariableCost.createdAt.
+  const variableTrends = useMemo(() => ({
+    total: computeSimpleTrend(items, () => true, (it) => it.createdAt),
+  }), [items])
+
   const filtered = useMemo(() => {
     const list = openGroup ? openGroup.items : []
     return list.filter((it) => !q || it.costType.toLowerCase().includes(q.toLowerCase()))
@@ -156,7 +162,7 @@ export function VariableView({ items, centers = [] }: { items: VariableCostRow[]
       {!openGroup && (
         <>
           <div className="kpis-tier" style={{ marginBottom: 16 }}>
-            <KpiCard label="Tổng khoản mục" value={overview.total} tone="blue" />
+            <KpiCard label="Tổng khoản mục" value={overview.total} tone="blue" trend={variableTrends.total} />
             <KpiCard label="Trung tâm" value={overview.centerCount} tone="blue" />
             <KpiCard label="Tổng chi phí" value={`${fmtVND(overview.totalCost)} đ`} tone="warning" />
             <KpiCard label="Chi phí trung bình" value={`${fmtVND(overview.avgCost)} đ`} tone="success" />
@@ -167,6 +173,8 @@ export function VariableView({ items, centers = [] }: { items: VariableCostRow[]
             <div className="cu-grid">
               {groups.map((g) => {
                 const val = g.items.reduce((a, it) => a + (it.amount || 0), 0)
+                const withAmount = g.items.filter((it) => it.amount != null)
+                const avgVal = withAmount.length ? val / withAmount.length : 0
                 const initial = g.name.replace(/Trung tâm|thử nghiệm/gi, "").trim().slice(0, 2).toUpperCase() || "TT"
                 return (
                   <div key={g.key} className="hub-card" onClick={() => openCenter(g.key)} style={{ cursor: "pointer" }}>
@@ -174,6 +182,11 @@ export function VariableView({ items, centers = [] }: { items: VariableCostRow[]
                       <div className="hub-icon">{initial}</div>
                       <div className="hub-title"><h4>{g.name}</h4><p>{g.items.length} khoản mục · {fmtVND(val)} đ</p></div>
                       <span className="hub-arrow sys-arrow-glyph"><DirectionIcon name="chevronRight" size={20} /></span>
+                    </div>
+                    <div className="hub-stats">
+                      <div className="hub-stat"><b>{g.items.length}</b><span>Khoản mục</span></div>
+                      <div className="hub-stat"><b>{withAmount.length}</b><span>Có giá trị</span></div>
+                      <div className="hub-stat"><b>{fmtVND(avgVal)} đ</b><span>CP TB</span></div>
                     </div>
                   </div>
                 )

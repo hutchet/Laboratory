@@ -4,6 +4,7 @@ import { PageShell } from "@/shared/ui/page-shell"
 import { KpiCard } from "@/shared/ui/kpi-card"
 import { DataTable, type DataTableColumn } from "@/shared/ui/data-table"
 import { DirectionIcon } from "@/shared/ui/icons"
+import { computeSimpleTrend } from "@/shared/lib/trend"
 import { updateEquipmentRate } from "../actions"
 import type { EquipmentPricingRow } from "../queries"
 import type { Option } from "../types"
@@ -75,6 +76,12 @@ export function MatrixView({ items, centers = [] }: { items: EquipmentPricingRow
     return { total: items.length, centerCount: centers.length, totalRate, avgRate }
   }, [items, centers])
 
+  // Trend theo data thuc (rule KPI global) — dua tren Equipment.createdAt.
+  const matrixTrends = useMemo(() => ({
+    total: computeSimpleTrend(items, () => true, (it) => it.createdAt),
+    withRate: computeSimpleTrend(items, (it) => it.hourlyRate != null, (it) => it.createdAt),
+  }), [items])
+
   const columns: Array<DataTableColumn<EquipmentPricingRow>> = [
     { key: "code", header: "Mã", render: (it) => it.code ?? "—" },
     { key: "name", header: "Thiết bị", render: (it) => <span style={{ fontWeight: 600 }}>{it.name}</span> },
@@ -97,9 +104,9 @@ export function MatrixView({ items, centers = [] }: { items: EquipmentPricingRow
       {!openGroup && (
         <>
           <div className="kpis-tier" style={{ marginBottom: 16 }}>
-            <KpiCard label="Tổng thiết bị" value={overview.total} tone="blue" />
+            <KpiCard label="Tổng thiết bị" value={overview.total} tone="blue" trend={matrixTrends.total} />
             <KpiCard label="Trung tâm" value={overview.centerCount} tone="blue" />
-            <KpiCard label="Tổng đơn giá/giờ" value={`${fmtVND(overview.totalRate)} đ`} tone="warning" />
+            <KpiCard label="Tổng đơn giá/giờ" value={`${fmtVND(overview.totalRate)} đ`} tone="warning" trend={matrixTrends.withRate} />
             <KpiCard label="Đơn giá TB/giờ" value={`${fmtVND(overview.avgRate)} đ`} tone="success" />
           </div>
           {groups.length === 0 ? (
@@ -108,6 +115,8 @@ export function MatrixView({ items, centers = [] }: { items: EquipmentPricingRow
             <div className="cu-grid">
               {groups.map((g) => {
                 const total = g.items.reduce((s, it) => s + (it.hourlyRate ?? 0), 0)
+                const withRate = g.items.filter((it) => it.hourlyRate != null)
+                const avgRate = withRate.length ? total / withRate.length : 0
                 const initial = g.name.replace(/Trung tâm|thử nghiệm/gi, "").trim().slice(0, 2).toUpperCase() || "TT"
                 return (
                   <div key={g.key} className="hub-card" onClick={() => openCenter(g.key)} style={{ cursor: "pointer" }}>
@@ -115,6 +124,11 @@ export function MatrixView({ items, centers = [] }: { items: EquipmentPricingRow
                       <div className="hub-icon">{initial}</div>
                       <div className="hub-title"><h4>{g.name}</h4><p>{g.items.length} thiết bị · {fmtVND(total)} đ</p></div>
                       <span className="hub-arrow sys-arrow-glyph"><DirectionIcon name="chevronRight" size={20} /></span>
+                    </div>
+                    <div className="hub-stats">
+                      <div className="hub-stat"><b>{g.items.length}</b><span>Thiết bị</span></div>
+                      <div className="hub-stat"><b>{withRate.length}</b><span>Có đơn giá</span></div>
+                      <div className="hub-stat"><b>{fmtVND(avgRate)} đ</b><span>Đơn giá TB</span></div>
                     </div>
                   </div>
                 )

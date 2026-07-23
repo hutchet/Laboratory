@@ -9,6 +9,7 @@ import { CustomSelect } from "@/shared/ui/custom-select"
 import { KpiCard } from "@/shared/ui/kpi-card"
 import { Perm } from "@/shared/lib/rbac-client"
 import { DirectionIcon } from "@/shared/ui/icons"
+import { computeSimpleTrend } from "@/shared/lib/trend"
 import { savePersonnelRateConfig, savePersonnelRouting, deletePersonnelRouting, bulkDeletePersonnelRouting } from "../actions"
 import type { PersonnelRateConfigRow, PersonnelRoutingRow, Option } from "../types"
 
@@ -102,6 +103,11 @@ export function PersonnelView({ config, routing, centers = [] }: { config: Perso
     return { total: routing.length, centerCount: centers.length, avgHours, totalCost }
   }, [routing, centers, config])
 
+  // Trend theo data thuc (rule KPI global) — dua tren PersonnelRouting.createdAt.
+  const personnelTrends = useMemo(() => ({
+    total: computeSimpleTrend(routing, () => true, (it) => it.createdAt),
+  }), [routing])
+
   const filtered = useMemo(() => {
     const list = openGroup ? openGroup.items : []
     return list.filter((it) => !q || it.testName.toLowerCase().includes(q.toLowerCase()))
@@ -192,7 +198,7 @@ export function PersonnelView({ config, routing, centers = [] }: { config: Perso
       {!openGroup && (
         <>
           <div className="kpis-tier" style={{ marginBottom: 16 }}>
-            <KpiCard label="Tổng bài thử" value={overview.total} tone="blue" />
+            <KpiCard label="Tổng bài thử" value={overview.total} tone="blue" trend={personnelTrends.total} />
             <KpiCard label="Trung tâm" value={overview.centerCount} tone="blue" />
             <KpiCard label="Giờ TB / bài thử" value={overview.avgHours.toFixed(1)} tone="warning" />
             <KpiCard label="Tổng CP nhân sự" value={`${fmtVND(overview.totalCost)} đ`} tone="success" />
@@ -224,6 +230,7 @@ export function PersonnelView({ config, routing, centers = [] }: { config: Perso
             <div className="cu-grid">
               {groups.map((g) => {
                 const totalCost = g.items.reduce((a, it) => a + computeRoutingCost(it, config).withOverhead, 0)
+                const totalHours = g.items.reduce((a, it) => a + computeRoutingCost(it, config).totalHours, 0)
                 const initial = g.name.replace(/Trung tâm|thử nghiệm/gi, "").trim().slice(0, 2).toUpperCase() || "TT"
                 return (
                   <div key={g.key} className="hub-card" onClick={() => openCenter(g.key)} style={{ cursor: "pointer" }}>
@@ -231,6 +238,11 @@ export function PersonnelView({ config, routing, centers = [] }: { config: Perso
                       <div className="hub-icon">{initial}</div>
                       <div className="hub-title"><h4>{g.name}</h4><p>{g.items.length} bài thử · {fmtVND(totalCost)} đ</p></div>
                       <span className="hub-arrow sys-arrow-glyph"><DirectionIcon name="chevronRight" size={20} /></span>
+                    </div>
+                    <div className="hub-stats">
+                      <div className="hub-stat"><b>{g.items.length}</b><span>Bài thử</span></div>
+                      <div className="hub-stat"><b>{totalHours.toFixed(1)}</b><span>Tổng giờ</span></div>
+                      <div className="hub-stat"><b>{fmtVND(totalCost)} đ</b><span>CP nhân sự</span></div>
                     </div>
                   </div>
                 )

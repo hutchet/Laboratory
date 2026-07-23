@@ -40,7 +40,7 @@ export async function listTestCatalog(): Promise<TestCatalogRow[]> {
     db.center.findMany({ select: { id: true, name: true } }),
   ])
   const centerMap = new Map(centers.map((c) => [c.id, c]))
-  return items.map((it) => ({ ...it, center: it.centerId ? centerMap.get(it.centerId) ?? null : null }))
+  return items.map((it) => ({ ...it, createdAt: it.createdAt.toISOString(), center: it.centerId ? centerMap.get(it.centerId) ?? null : null }))
 }
 
 export async function getPersonnelRateConfig(): Promise<PersonnelRateConfigRow> {
@@ -55,7 +55,7 @@ export async function listPersonnelRouting(): Promise<PersonnelRoutingRow[]> {
     db.center.findMany({ select: { id: true, name: true } }),
   ])
   const centerMap = new Map(centers.map((c) => [c.id, c]))
-  return items.map((it) => ({ ...it, center: it.centerId ? centerMap.get(it.centerId) ?? null : null }))
+  return items.map((it) => ({ ...it, createdAt: it.createdAt.toISOString(), center: it.centerId ? centerMap.get(it.centerId) ?? null : null }))
 }
 
 // y/c 116.1: Danh sach thiet bi nhap trong trang Thiet bi PHAI tu dong anh xa sang
@@ -102,7 +102,7 @@ export async function listVariableCosts(): Promise<VariableCostRow[]> {
     db.center.findMany({ select: { id: true, name: true } }),
   ])
   const centerMap = new Map(centers.map((c) => [c.id, c]))
-  return items.map((it) => ({ ...it, center: it.centerId ? centerMap.get(it.centerId) ?? null : null }))
+  return items.map((it) => ({ ...it, createdAt: it.createdAt.toISOString(), center: it.centerId ? centerMap.get(it.centerId) ?? null : null }))
 }
 
 export type EquipmentPricingRow = {
@@ -112,12 +112,13 @@ export type EquipmentPricingRow = {
   hourlyRate: number | null
   centerId: string | null
   center: { id: string; name: string; elecPrice: number | null; rentPrice: number | null } | null
+  createdAt: string
 }
 
 export async function listEquipmentPricing(): Promise<EquipmentPricingRow[]> {
   const rows = await db.equipment.findMany({
-    select: { id: true, name: true, code: true, hourlyRate: true, centerId: true, center: { select: { id: true, name: true, elecPrice: true, rentPrice: true } } },
+    select: { id: true, name: true, code: true, hourlyRate: true, centerId: true, createdAt: true, center: { select: { id: true, name: true, elecPrice: true, rentPrice: true } } },
     orderBy: { name: "asc" },
   })
-  return rows.map((r) => ({ ...r, center: r.center ? { id: r.center.id, name: r.center.name, elecPrice: r.center.elecPrice, rentPrice: r.center.rentPrice } : null }))
+  return rows.map((r) => ({ ...r, createdAt: r.createdAt.toISOString(), center: r.center ? { id: r.center.id, name: r.center.name, elecPrice: r.center.elecPrice, rentPrice: r.center.rentPrice } : null }))
 }

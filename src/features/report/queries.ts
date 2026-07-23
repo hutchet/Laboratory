@@ -6,7 +6,7 @@ export async function listReportProjects(): Promise<ReportProjectCard[]> {
     include: { _count: { select: { reportRows: true } } },
     orderBy: { createdAt: "desc" },
   })
-  return projects.map((p) => ({ id: p.id, name: p.name, rowCount: p._count.reportRows }))
+  return projects.map((p) => ({ id: p.id, name: p.name, rowCount: p._count.reportRows, createdAt: p.createdAt.toISOString() }))
 }
 
 // Tra ve toan bo dong bao cao, gom nhom theo projectId, de truyen mot lan cho client
