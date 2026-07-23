@@ -270,8 +270,8 @@ export function DashboardView({ data }: { data: DashboardRawData }) {
                     <div className="empty" style={{ padding: "6px 0" }}>Chưa có dữ liệu.</div>
                   ) : (
                     pvd.segments.map((s) => (
-                      <div key={s.name} className="pvd-leg-item">
-                        <div className="pvd-leg-lab"><span className="dot" style={{ background: s.color }} />{s.name}</div>
+                      <div key={s.fullName} className="pvd-leg-item" title={s.fullName}>
+                        <div className="pvd-leg-lab"><span className="dot" style={{ background: s.color }} /><span className="pvd-leg-name">{s.name}</span></div>
                         <div className="pvd-leg-val">{s.value >= 1000000 ? `${(Math.round(s.value / 100000) / 10).toLocaleString("vi-VN")} Trđ` : `${s.value.toLocaleString("vi-VN")}đ`}</div>
                       </div>
                     ))

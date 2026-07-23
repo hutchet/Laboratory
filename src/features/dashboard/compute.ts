@@ -344,7 +344,7 @@ export function computeTeam(
 
 const PVD_PALETTE = ["#2c3652", "#9aa4b2", "#e8932a", "#27ae84", "#bf8eda", "#df84a8"]
 
-export type PvdSegment = { name: string; value: number; pct: number; color: string }
+export type PvdSegment = { name: string; fullName: string; value: number; pct: number; color: string }
 
 // Sua loi khong co data (b/c cu p.endDate cua Project thuong trong/khong khop thang
 // duoc chon): doi lai dung logic ban goc renderProjValueDist() (dong ~5028-5050) -
@@ -368,8 +368,13 @@ export function computePvd(projects: DashProjectRaw[], tasks: DashTaskRaw[], sel
     .slice(0, 6)
   const total = rows.reduce((a, r) => a + r.value, 0)
   if (!rows.length) return { segments: [], total: 0, topPct: 0 }
+  // Fix bao cao 3:46 PM muc 2: ten du an qua dai lam tran chu thich the "Phan bo gia
+  // tri du an" ra ngoai nen the. Rut ngan ten qua dai truoc khi hien thi (CSS ellipsis
+  // la lop bao ve thu 2, xem globals.css .pvd-leg-lab .pvd-leg-name).
+  const shortenName = (name: string): string => (name.length > 18 ? `${name.slice(0, 17).trimEnd()}…` : name)
   const segments = rows.map((r, i) => ({
-    name: r.name,
+    name: shortenName(r.name),
+    fullName: r.name,
     value: r.value,
     pct: Math.round((r.value / total) * 100),
     color: PVD_PALETTE[i % PVD_PALETTE.length],

@@ -127,8 +127,12 @@
   #page-dash .pvd-donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;text-align:center;padding:0 6px}
   #page-dash .pvd-donut-lab{font-size:9.5px;color:var(--muted);font-weight:600}
   #page-dash .pvd-donut-val{font-size:12.5px;font-weight:600;color:var(--ink);line-height:1.2;max-width:76px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  #page-dash .exp-legend .pvd-leg-item{display:flex;flex-direction:column;gap:3px}
-  #page-dash .exp-legend .pvd-leg-lab{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted);font-weight:600}
+  /* Fix bao cao 3:46 PM muc 2: chu thich the "Phan bo gia tri du an" tran ra ngoai
+     nen the khi ten du an dai. Rang buoc min-width:0 + overflow ellipsis tren toan
+     bo chuoi cha-con de text khong con day rong ra ngoai khung the. */
+  #page-dash .exp-legend .pvd-leg-item{display:flex;flex-direction:column;gap:3px;min-width:0;max-width:100%}
+  #page-dash .exp-legend .pvd-leg-lab{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted);font-weight:600;min-width:0;max-width:100%}
+  #page-dash .exp-legend .pvd-leg-lab .pvd-leg-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   #page-dash .exp-legend .pvd-leg-val{font-size:13.5px;font-weight:600;color:var(--ink);margin-left:17px}
   .proj-list{display:flex;flex-direction:column;gap:0}
   .proj-row{display:grid;grid-template-columns:180px 1fr 100px;gap:14px;align-items:center;padding:13px 4px;border-radius:0;background:transparent;border-bottom:1px solid var(--line)}
@@ -411,7 +415,9 @@
   .avstack .a:first-child{margin-left:0}
   .due{font-size:12px;color:var(--muted)}
   .pcard .pacts{display:flex;gap:6px}
-  .pager{display:flex;align-items:center;justify-content:space-between;margin-top:8px;flex-wrap:wrap;gap:10px;padding:6px 0;border-top:1px solid var(--line)}
+  /* Fix bao cao 3:46 PM muc 1: footer/pager qua sat khoi the danh sach phia tren, doi
+     margin-top 8px -> 20px de tao khoang cach ro rang va "day" footer xuong thap hon. */
+  .pager{display:flex;align-items:center;justify-content:space-between;margin-top:20px;flex-wrap:wrap;gap:10px;padding:6px 0;border-top:1px solid var(--line)}
   #proj-pager{position:static;width:100%}
   #page-projects{display:flex;flex-direction:column;min-height:calc(100vh - 108px)}
   #page-projects .proj-list-wrap{flex:1}
@@ -432,8 +438,9 @@
   .teamtag{font-size:12px;font-weight:600;padding:4px 10px;border-radius:8px;background:var(--pri-soft);color:var(--pri)}
   @media(max-width:480px){
   #page-dash .exp-legend{display:grid!important;grid-template-columns:repeat(2,1fr)!important;gap:6px 10px!important;min-width:0!important}
-  #page-dash .exp-legend .pvd-leg-item{gap:1px!important}
-  #page-dash .exp-legend .pvd-leg-lab{font-size:10.5px!important;white-space:normal!important}
+  #page-dash .exp-legend .pvd-leg-item{gap:1px!important;min-width:0!important;overflow:hidden!important}
+  #page-dash .exp-legend .pvd-leg-lab{font-size:10.5px!important;white-space:nowrap!important;min-width:0!important;overflow:hidden!important}
+  #page-dash .exp-legend .pvd-leg-lab .pvd-leg-name{white-space:nowrap!important}
   #page-dash .exp-legend .pvd-leg-val{font-size:12px!important;margin-left:0!important}
   #page-dash .pvd-legend{display:grid!important;grid-template-columns:repeat(2,1fr)!important;gap:6px 10px!important}
   #page-dash .nest-legend{display:grid!important;grid-template-columns:repeat(2,1fr)!important;gap:6px 10px!important}
@@ -775,7 +782,7 @@
   .cu-info-row{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted)}
   .cu-info-row svg{flex:none;opacity:.55}
   .cu-info-row span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .cucard-footer{border-top:1px solid var(--line);padding-top:12px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+  .cucard-footer{border-top:1px solid var(--line);margin-top:20px;padding-top:12px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
   .cu-stat{display:flex;flex-direction:column;align-items:center;gap:2px;flex:1}
   .cu-stat-v{font-size:18px;font-weight:700;color:var(--ink)}
   .cu-stat-l{font-size:11px;color:var(--muted);font-weight:500;text-align:center;white-space:nowrap}
