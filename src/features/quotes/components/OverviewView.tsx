@@ -251,11 +251,7 @@ export function OverviewView({
 
   // ---- Trang danh sách: 4 thẻ KPI + lưới thẻ báo giá (cu-grid, hệ thống hoá phần 3) ----
   return (
-    <PageShell
-      title="Tổng quan báo giá"
-      actions={<AddButton label="Thêm báo giá" onClick={openNew} />}
-      filters={<SearchInput value={q} onChange={setQ} placeholder="Tìm báo giá..." width={240} />}
-    >
+    <PageShell title="Tổng quan báo giá">
       <div className="kpis-tier" style={{ marginBottom: 20 }}>
         <KpiCard label="Tổng số báo giá" value={kpis.total} tone="blue" trend={trends.total} />
         <KpiCard label="Tổng giá trị" value={`${fmtVND(kpis.value)} đ`} tone="neutral" />
@@ -264,6 +260,10 @@ export function OverviewView({
       </div>
       <div className="section-head">
         <h3>Tất cả báo giá</h3>
+        <div className="tools">
+          <SearchInput value={q} onChange={setQ} placeholder="Tìm báo giá..." width={240} />
+          <AddButton label="Thêm báo giá" onClick={openNew} />
+        </div>
       </div>
       {filtered.length === 0 ? (
         <div className="empty-state">Chưa có báo giá nào</div>
