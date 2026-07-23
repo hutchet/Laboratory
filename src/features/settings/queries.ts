@@ -4,6 +4,7 @@ import { can, getUserRbacContext, type RankName } from "@/shared/lib/rbac"
 import { PERM_LABELS } from "@/shared/lib/rbac-client"
 import { getSimRole } from "./role-sim"
 import { LANG_COOKIE } from "@/shared/lib/i18n"
+import { CURRENCY_COOKIE, isCurrency, type Currency } from "@/shared/lib/currency"
 import type { AppSettings, AppTheme, FontKey, Language, ThemeMode } from "./types"
 
 const THEME_MODE_COOKIE = "tf_theme_v1_mode"
@@ -28,11 +29,20 @@ export async function getLanguage(): Promise<Language> {
   return jar.get(LANG_COOKIE)?.value === "en" ? "en" : "vi"
 }
 
+// Đơn vị tiền tệ hiển thị (yêu cầu 23/07, 5:36 chiều) — lưu cookie, mặc định VND (không đổi
+// hành vi cũ nếu người dùng chưa từng chọn).
+export async function getCurrency(): Promise<Currency> {
+  const jar = await cookies()
+  const raw = jar.get(CURRENCY_COOKIE)?.value
+  return isCurrency(raw) ? raw : "VND"
+}
+
 export async function getSettings(): Promise<AppSettings> {
   const session = await auth()
   const jar = await cookies()
   const theme = await getTheme()
   const language = await getLanguage()
+  const currency = await getCurrency()
   const simRole = await getSimRole()
 
   let activeRoleLabel = PERM_LABELS.admin
@@ -58,6 +68,7 @@ export async function getSettings(): Promise<AppSettings> {
   return {
     theme,
     language,
+    currency,
     simRole,
     activeRoleLabel,
     lastBackupAt: jar.get(LAST_BACKUP_COOKIE)?.value || null,

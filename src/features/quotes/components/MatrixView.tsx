@@ -8,10 +8,7 @@ import { computeSimpleTrend } from "@/shared/lib/trend"
 import { updateEquipmentRate } from "../actions"
 import type { EquipmentPricingRow } from "../queries"
 import type { Option } from "../types"
-
-function fmtVND(n: number) {
-  return n.toLocaleString("vi-VN")
-}
+import { useCurrency } from "@/shared/ui/currency-provider"
 
 const NO_CENTER_KEY = "__none__"
 const NO_CENTER_LABEL = "Chưa gán trung tâm"
@@ -22,6 +19,7 @@ type CenterGroup = { key: string; name: string; centerId: string | null; items: 
 // trang Trung tâm (kể cả trung tâm chưa có thiết bị nào), không chỉ những
 // trung tâm đang có dữ liệu thiết bị. Trang danh sách thẻ có 4 KPI.
 export function MatrixView({ items, centers = [] }: { items: EquipmentPricingRow[]; centers?: Option[] }) {
+  const { format: fmtVND } = useCurrency()
   const [pending, startTransition] = useTransition()
   const [drafts, setDrafts] = useState<Record<string, string>>({})
   const [openCenterKey, setOpenCenterKey] = useState("")
@@ -106,8 +104,8 @@ export function MatrixView({ items, centers = [] }: { items: EquipmentPricingRow
           <div className="kpis-tier" style={{ marginBottom: 16 }}>
             <KpiCard label="Tổng thiết bị" value={overview.total} tone="blue" trend={matrixTrends.total} />
             <KpiCard label="Trung tâm" value={overview.centerCount} tone="blue" />
-            <KpiCard label="Tổng đơn giá/giờ" value={`${fmtVND(overview.totalRate)} đ`} tone="warning" trend={matrixTrends.withRate} />
-            <KpiCard label="Đơn giá TB/giờ" value={`${fmtVND(overview.avgRate)} đ`} tone="success" />
+            <KpiCard label="Tổng đơn giá/giờ" value={fmtVND(overview.totalRate)} tone="warning" trend={matrixTrends.withRate} />
+            <KpiCard label="Đơn giá TB/giờ" value={fmtVND(overview.avgRate)} tone="success" />
           </div>
           {groups.length === 0 ? (
             <div className="empty">Chưa có trung tâm nào — thêm trung tâm ở trang Trung tâm để tạo ma trận theo từng trung tâm.</div>
@@ -122,13 +120,13 @@ export function MatrixView({ items, centers = [] }: { items: EquipmentPricingRow
                   <div key={g.key} className="hub-card" onClick={() => openCenter(g.key)} style={{ cursor: "pointer" }}>
                     <div className="hub-top">
                       <div className="hub-icon">{initial}</div>
-                      <div className="hub-title"><h4>{g.name}</h4><p>{g.items.length} thiết bị · {fmtVND(total)} đ</p></div>
+                      <div className="hub-title"><h4>{g.name}</h4><p>{g.items.length} thiết bị · {fmtVND(total)}</p></div>
                       <span className="hub-arrow sys-arrow-glyph"><DirectionIcon name="chevronRight" size={20} /></span>
                     </div>
                     <div className="hub-stats">
                       <div className="hub-stat"><b>{g.items.length}</b><span>Thiết bị</span></div>
                       <div className="hub-stat"><b>{withRate.length}</b><span>Có đơn giá</span></div>
-                      <div className="hub-stat"><b>{fmtVND(avgRate)} đ</b><span>Đơn giá TB</span></div>
+                      <div className="hub-stat"><b>{fmtVND(avgRate)}</b><span>Đơn giá TB</span></div>
                     </div>
                   </div>
                 )

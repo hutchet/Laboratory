@@ -13,10 +13,8 @@ import { DirectionIcon } from "@/shared/ui/icons"
 import { Perm } from "@/shared/lib/rbac-client"
 import { saveQuote, deleteQuote, addQuoteItem, updateQuoteItemQty, removeQuoteItem } from "../actions"
 import { QUOTE_STATUS_LABEL, type QuoteRow, type Option, type TestCatalogRow } from "../types"
+import { useCurrency } from "@/shared/ui/currency-provider"
 
-function fmtVND(n: number) {
-  return Math.round(n || 0).toLocaleString("vi-VN")
-}
 // Khớp đúng hàm fmtDate() bản gốc (dd-mm-yyyy)
 function fmtDate(s?: string | null) {
   if (!s) return "—"
@@ -50,6 +48,7 @@ export function OverviewView({
   projects: Option[]
   testCatalog: TestCatalogRow[]
 }) {
+  const { format: fmtVND } = useCurrency()
   const [q, setQ] = useState("")
   const [openId, setOpenId] = useState<string | null>(null) // "new" hoặc id báo giá đang mở
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
@@ -206,7 +205,7 @@ export function OverviewView({
                   value={addSelect}
                   onChange={setAddSelect}
                   width={320}
-                  options={[{ value: "", label: "— Chọn mã bài thử để thêm —" }, ...testCatalog.map((c, i) => ({ value: String(i), label: `${c.code ?? "—"} — ${c.name} (${fmtVND(c.price ?? 0)} đ)` }))]}
+                  options={[{ value: "", label: "— Chọn mã bài thử để thêm —" }, ...testCatalog.map((c, i) => ({ value: String(i), label: `${c.code ?? "—"} — ${c.name} (${fmtVND(c.price ?? 0)})` }))]}
                 />
                 <input type="number" min={1} value={addQty} onChange={(e) => setAddQty(e.target.value)} style={{ width: 80 }} />
                 <button type="button" className="btn-line" onClick={handleAddItem} disabled={!addSelect}>+ Thêm hạng mục</button>
@@ -230,9 +229,9 @@ export function OverviewView({
               </table>
               <div className="row" style={{ justifyContent: "flex-end", marginTop: 14 }}>
                 <div style={{ minWidth: 260, display: "flex", flexDirection: "column", gap: 6, fontSize: 13 }}>
-                  <div className="prow"><span>Tạm tính hạng mục</span><b>{fmtVND(itemsSubtotal)} đ</b></div>
-                  <div className="prow"><span>VAT ({vatPct}%)</span><b>{fmtVND(vatAmt)} đ</b></div>
-                  <div className="prow" style={{ fontSize: 15 }}><span>Tổng cộng</span><b style={{ color: "var(--pri)" }}>{fmtVND(grand)} đ</b></div>
+                  <div className="prow"><span>Tạm tính hạng mục</span><b>{fmtVND(itemsSubtotal)}</b></div>
+                  <div className="prow"><span>VAT ({vatPct}%)</span><b>{fmtVND(vatAmt)}</b></div>
+                  <div className="prow" style={{ fontSize: 15 }}><span>Tổng cộng</span><b style={{ color: "var(--pri)" }}>{fmtVND(grand)}</b></div>
                 </div>
               </div>
             </div>
@@ -254,7 +253,7 @@ export function OverviewView({
     <PageShell title="Tổng quan báo giá">
       <div className="kpis-tier" style={{ marginBottom: 20 }}>
         <KpiCard label="Tổng số báo giá" value={kpis.total} tone="blue" trend={trends.total} />
-        <KpiCard label="Tổng giá trị" value={`${fmtVND(kpis.value)} đ`} tone="neutral" />
+        <KpiCard label="Tổng giá trị" value={fmtVND(kpis.value)} tone="neutral" />
         <KpiCard label="Đã duyệt" value={kpis.approved} tone="success" trend={trends.approved} />
         <KpiCard label="Bản nháp" value={kpis.draft} tone="warning" trend={trends.draft} />
       </div>
@@ -287,7 +286,7 @@ export function OverviewView({
                 <div className="hub-stats">
                   <div className="hub-stat"><b>{it.customer?.name ?? "—"}</b><span>Khách hàng</span></div>
                   <div className="hub-stat"><b>{it.project?.name ?? "—"}</b><span>Dự án</span></div>
-                  <div className="hub-stat"><b>{fmtVND(total)} đ</b><span>Tổng tiền</span></div>
+                  <div className="hub-stat"><b>{fmtVND(total)}</b><span>Tổng tiền</span></div>
                 </div>
               </div>
             )

@@ -6,6 +6,8 @@ import type { FontKey, Language, ThemeMode } from "@/features/settings/types"
 import { LANG_COOKIE } from "@/shared/lib/i18n"
 import { I18nApplier } from "@/shared/ui/i18n-applier"
 import { ThemeDeviceApplier } from "@/shared/ui/theme-device-applier"
+import { CurrencyProvider } from "@/shared/ui/currency-provider"
+import { CURRENCY_COOKIE, isCurrency, type Currency } from "@/shared/lib/currency"
 
 export const metadata = { title: "VinFast", description: "Trung tâm thử nghiệm VinFast" }
 
@@ -40,6 +42,8 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   const fontRaw = jar.get("tf_theme_v1_font")?.value as FontKey | undefined
   const font: FontKey = fontRaw === "roboto" || fontRaw === "serif" || fontRaw === "mono" ? fontRaw : "default"
   const lang: Language = jar.get(LANG_COOKIE)?.value === "en" ? "en" : "vi"
+  const currencyRaw = jar.get(CURRENCY_COOKIE)?.value
+  const currency: Currency = isCurrency(currencyRaw) ? currencyRaw : "VND"
   const initialTheme = mode === "device" ? undefined : mode
 
   return (
@@ -51,7 +55,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: DEVICE_THEME_SCRIPT }} />
       </head>
       <body className="material-3" style={{ fontFamily: fontStackFor(font) }}>
-        {children}
+        <CurrencyProvider initialCurrency={currency}>{children}</CurrencyProvider>
         <I18nApplier lang={lang} />
         <ThemeDeviceApplier mode={mode} />
       </body>

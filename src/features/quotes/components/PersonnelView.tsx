@@ -12,14 +12,11 @@ import { DirectionIcon } from "@/shared/ui/icons"
 import { computeSimpleTrend } from "@/shared/lib/trend"
 import { savePersonnelRateConfig, savePersonnelRouting, deletePersonnelRouting, bulkDeletePersonnelRouting } from "../actions"
 import type { PersonnelRateConfigRow, PersonnelRoutingRow, Option } from "../types"
+import { useCurrency } from "@/shared/ui/currency-provider"
 
 function parseHours(v: string | null | undefined): number {
   const n = Number(v)
   return Number.isFinite(n) ? n : 0
-}
-
-function fmtVND(n: number) {
-  return Math.round(n || 0).toLocaleString("vi-VN")
 }
 
 // Bản gốc (renderQuotePersonnel) tách giờ công theo 3 vai trò (T/E/L) cho mỗi
@@ -44,6 +41,7 @@ type CenterGroup = { key: string; name: string; centerId: string | null; items: 
 // định tuyến nào), định tuyến chưa gán Trung tâm gộp vào thẻ riêng. Trang
 // danh sách thẻ có 4 KPI.
 export function PersonnelView({ config, routing, centers = [] }: { config: PersonnelRateConfigRow; routing: PersonnelRoutingRow[]; centers?: Option[] }) {
+  const { format: fmtVND } = useCurrency()
   const [q, setQ] = useState("")
   const [editing, setEditing] = useState<PersonnelRoutingRow | null>(null)
   const [showForm, setShowForm] = useState(false)
@@ -178,7 +176,7 @@ export function PersonnelView({ config, routing, centers = [] }: { config: Perso
     { key: "testHours", header: "Giờ thử", render: (it) => it.testHours ?? "—" },
     { key: "reportHours", header: "Giờ báo cáo", render: (it) => it.reportHours ?? "—" },
     { key: "totalHours", header: "Tổng giờ", align: "right", render: (it) => computeRoutingCost(it, config).totalHours || "—" },
-    { key: "laborCost", header: "CP nhân sự (VNĐ)", align: "right", render: (it) => `${fmtVND(computeRoutingCost(it, config).withOverhead)} đ` },
+    { key: "laborCost", header: "CP nhân sự", align: "right", render: (it) => fmtVND(computeRoutingCost(it, config).withOverhead) },
     {
       key: "actions", header: "", align: "right",
       render: (it) =>
@@ -201,7 +199,7 @@ export function PersonnelView({ config, routing, centers = [] }: { config: Perso
             <KpiCard label="Tổng bài thử" value={overview.total} tone="blue" trend={personnelTrends.total} />
             <KpiCard label="Trung tâm" value={overview.centerCount} tone="blue" />
             <KpiCard label="Giờ TB / bài thử" value={overview.avgHours.toFixed(1)} tone="warning" />
-            <KpiCard label="Tổng CP nhân sự" value={`${fmtVND(overview.totalCost)} đ`} tone="success" />
+            <KpiCard label="Tổng CP nhân sự" value={fmtVND(overview.totalCost)} tone="success" />
           </div>
           <form
             onSubmit={(e) => { e.preventDefault(); saveRates(new FormData(e.currentTarget)) }}
@@ -236,13 +234,13 @@ export function PersonnelView({ config, routing, centers = [] }: { config: Perso
                   <div key={g.key} className="hub-card" onClick={() => openCenter(g.key)} style={{ cursor: "pointer" }}>
                     <div className="hub-top">
                       <div className="hub-icon">{initial}</div>
-                      <div className="hub-title"><h4>{g.name}</h4><p>{g.items.length} bài thử · {fmtVND(totalCost)} đ</p></div>
+                      <div className="hub-title"><h4>{g.name}</h4><p>{g.items.length} bài thử · {fmtVND(totalCost)}</p></div>
                       <span className="hub-arrow sys-arrow-glyph"><DirectionIcon name="chevronRight" size={20} /></span>
                     </div>
                     <div className="hub-stats">
                       <div className="hub-stat"><b>{g.items.length}</b><span>Bài thử</span></div>
                       <div className="hub-stat"><b>{totalHours.toFixed(1)}</b><span>Tổng giờ</span></div>
-                      <div className="hub-stat"><b>{fmtVND(totalCost)} đ</b><span>CP nhân sự</span></div>
+                      <div className="hub-stat"><b>{fmtVND(totalCost)}</b><span>CP nhân sự</span></div>
                     </div>
                   </div>
                 )

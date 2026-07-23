@@ -16,6 +16,7 @@
 import { useMemo, useState } from "react"
 import { PageShell } from "@/shared/ui/page-shell"
 import { AvatarInitials } from "@/shared/ui/avatar-initials"
+import { useCurrency } from "@/shared/ui/currency-provider"
 import type { DashboardRawData } from "../types"
 import {
   bannerDate,
@@ -54,6 +55,7 @@ const DUE_BARS_MODES: [DueBarsMode, string][] = [
 const ICON_STROKE = { fill: "none" as const, stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round" as const, strokeLinejoin: "round" as const }
 
 export function DashboardView({ data }: { data: DashboardRawData }) {
+  const { format: fmtMoney } = useCurrency()
   const [dueBarsMode, setDueBarsMode] = useState<DueBarsMode>("day")
   const [pvdMonth, setPvdMonth] = useState(currentMonthValue())
   const [showTeamList, setShowTeamList] = useState(false)
@@ -262,7 +264,7 @@ export function DashboardView({ data }: { data: DashboardRawData }) {
                   <DonutSvg segments={pvd.segments.map((s) => ({ value: s.value, color: s.color }))} />
                   <div className="pvd-donut-center">
                     <div className="pvd-donut-lab">Tổng</div>
-                    <div className="pvd-donut-val">{pvd.total >= 1000000 ? `${(Math.round(pvd.total / 100000) / 10).toLocaleString("vi-VN")} Trđ` : `${pvd.total.toLocaleString("vi-VN")}đ`}</div>
+                    <div className="pvd-donut-val">{fmtMoney(pvd.total)}</div>
                   </div>
                 </div>
                 <div className="exp-legend">
@@ -272,7 +274,7 @@ export function DashboardView({ data }: { data: DashboardRawData }) {
                     pvd.segments.map((s) => (
                       <div key={s.fullName} className="pvd-leg-item" title={s.fullName}>
                         <div className="pvd-leg-lab"><span className="dot" style={{ background: s.color }} /><span className="pvd-leg-name">{s.name}</span></div>
-                        <div className="pvd-leg-val">{s.value >= 1000000 ? `${(Math.round(s.value / 100000) / 10).toLocaleString("vi-VN")} Trđ` : `${s.value.toLocaleString("vi-VN")}đ`}</div>
+                        <div className="pvd-leg-val">{fmtMoney(s.value)}</div>
                       </div>
                     ))
                   )}

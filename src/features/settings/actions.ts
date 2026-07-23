@@ -8,6 +8,7 @@ import { logAudit } from "@/shared/lib/audit"
 import { exportFullBackup, importFullBackup, wipeAllBusinessData, type FullBackup } from "./backup"
 import { SIM_ROLE_COOKIE } from "./role-sim"
 import { LANG_COOKIE } from "@/shared/lib/i18n"
+import { CURRENCY_COOKIE, isCurrency, type Currency } from "@/shared/lib/currency"
 import type { FontKey, Language, SimRole, ThemeMode } from "./types"
 
 const YEAR = 60 * 60 * 24 * 365
@@ -54,6 +55,16 @@ export async function saveLanguage(lang: Language) {
   await requireLogin()
   const jar = await cookies()
   jar.set(LANG_COOKIE, lang, { path: "/", maxAge: YEAR })
+  revalidatePath("/", "layout")
+}
+
+// Trường đổi đơn vị tiền tệ hiển thị (yêu cầu 23/07, 5:36 chiều) — lưu cookie, áp dụng qua
+// CurrencyProvider (shared/ui/currency-provider.tsx) tương tự saveLanguage/I18nApplier ở trên.
+export async function saveCurrency(currency: Currency) {
+  await requireLogin()
+  if (!isCurrency(currency)) throw new Error("Đơn vị tiền tệ không hợp lệ")
+  const jar = await cookies()
+  jar.set(CURRENCY_COOKIE, currency, { path: "/", maxAge: YEAR })
   revalidatePath("/", "layout")
 }
 

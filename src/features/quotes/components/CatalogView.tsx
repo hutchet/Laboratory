@@ -12,10 +12,7 @@ import { DirectionIcon } from "@/shared/ui/icons"
 import { computeSimpleTrend } from "@/shared/lib/trend"
 import { saveTestCatalogItem, deleteTestCatalogItem, bulkDeleteTestCatalogItems } from "../actions"
 import type { TestCatalogRow, PersonnelRateConfigRow, PersonnelRoutingRow, Option } from "../types"
-
-function fmtVND(n: number) {
-  return Math.round(n || 0).toLocaleString("vi-VN")
-}
+import { useCurrency } from "@/shared/ui/currency-provider"
 
 function parseHours(v: string | null | undefined): number {
   const n = Number(v)
@@ -50,6 +47,7 @@ type CenterGroup = { key: string; name: string; centerId: string | null; items: 
 // trong trang Trung tâm luôn có 1 thẻ (kể cả chưa có bài thử nào), bài thử chưa
 // gán Trung tâm gộp vào thẻ "Chưa gán trung tâm". Trang danh sách thẻ có 4 KPI.
 export function CatalogView({ items, personnelConfig, routing, centers = [] }: { items: TestCatalogRow[]; personnelConfig: PersonnelRateConfigRow; routing: PersonnelRoutingRow[]; centers?: Option[] }) {
+  const { format: fmtVND } = useCurrency()
   const [q, setQ] = useState("")
   const [editing, setEditing] = useState<TestCatalogRow | null>(null)
   const [showForm, setShowForm] = useState(false)
@@ -173,7 +171,7 @@ export function CatalogView({ items, personnelConfig, routing, centers = [] }: {
     { key: "standard", header: "Tiêu chuẩn", render: (it) => it.standard ?? "—" },
     { key: "sampleQty", header: "Cấp mẫu", render: (it) => it.sampleQty ?? "—" },
     { key: "leadTime", header: "Thời gian xử lý", render: (it) => it.leadTime ?? "—" },
-    { key: "price", header: "Đơn giá", align: "right", render: (it) => (it.price != null ? it.price.toLocaleString("vi-VN") : "—") },
+    { key: "price", header: "Đơn giá", align: "right", render: (it) => (it.price != null ? fmtVND(it.price) : "—") },
     {
       key: "actions", header: "", align: "right",
       render: (it) => (
@@ -197,8 +195,8 @@ export function CatalogView({ items, personnelConfig, routing, centers = [] }: {
           <div className="kpis-tier" style={{ marginBottom: 16 }}>
             <KpiCard label="Tổng bài thử" value={overview.total} tone="blue" trend={catalogTrends.total} />
             <KpiCard label="Trung tâm" value={overview.centerCount} tone="blue" />
-            <KpiCard label="Đơn giá trung bình" value={`${fmtVND(overview.avgPrice)} đ`} tone="warning" trend={catalogTrends.withPrice} />
-            <KpiCard label="Tổng giá trị danh mục" value={`${fmtVND(overview.totalValue)} đ`} tone="success" />
+            <KpiCard label="Đơn giá trung bình" value={fmtVND(overview.avgPrice)} tone="warning" trend={catalogTrends.withPrice} />
+            <KpiCard label="Tổng giá trị danh mục" value={fmtVND(overview.totalValue)} tone="success" />
           </div>
           {groups.length === 0 ? (
             <div className="empty">Chưa có trung tâm nào — thêm trung tâm ở trang Trung tâm để tạo danh mục theo từng trung tâm.</div>
@@ -213,13 +211,13 @@ export function CatalogView({ items, personnelConfig, routing, centers = [] }: {
                   <div key={g.key} className="hub-card" onClick={() => openCenter(g.key)} style={{ cursor: "pointer" }}>
                     <div className="hub-top">
                       <div className="hub-icon">{initial}</div>
-                      <div className="hub-title"><h4>{g.name}</h4><p>{g.items.length} bài thử · {fmtVND(val)} đ</p></div>
+                      <div className="hub-title"><h4>{g.name}</h4><p>{g.items.length} bài thử · {fmtVND(val)}</p></div>
                       <span className="hub-arrow sys-arrow-glyph"><DirectionIcon name="chevronRight" size={20} /></span>
                     </div>
                     <div className="hub-stats">
                       <div className="hub-stat"><b>{g.items.length}</b><span>Bài thử</span></div>
                       <div className="hub-stat"><b>{withPrice.length}</b><span>Có giá</span></div>
-                      <div className="hub-stat"><b>{fmtVND(avgVal)} đ</b><span>Đơn giá TB</span></div>
+                      <div className="hub-stat"><b>{fmtVND(avgVal)}</b><span>Đơn giá TB</span></div>
                     </div>
                   </div>
                 )
@@ -297,11 +295,11 @@ export function CatalogView({ items, personnelConfig, routing, centers = [] }: {
           ["Giờ thử nghiệm (test)", `${b.testHours} giờ`],
           ["Giờ báo cáo (report)", `${b.reportHours} giờ`],
           ["Tổng giờ công", `${b.totalHours} giờ`],
-          ["Định mức KTV", `${fmtVND(personnelConfig.techRate)} đ/giờ`],
-          ["Chi phí nhân công", `${fmtVND(b.laborCost)} đ`],
-          ["Phụ phí chung", `${personnelConfig.overheadPct}% = ${fmtVND(b.overhead)} đ`],
-          ["Tổng chi phí tính toán (nhân công)", `${fmtVND(b.computedTotal)} đ`],
-          ["Đơn giá đã nhập", breakdownItem.price != null ? `${fmtVND(breakdownItem.price)} đ` : "—"],
+          ["Định mức KTV", `${fmtVND(personnelConfig.techRate)}/giờ`],
+          ["Chi phí nhân công", fmtVND(b.laborCost)],
+          ["Phụ phí chung", `${personnelConfig.overheadPct}% = ${fmtVND(b.overhead)}`],
+          ["Tổng chi phí tính toán (nhân công)", fmtVND(b.computedTotal)],
+          ["Đơn giá đã nhập", breakdownItem.price != null ? fmtVND(breakdownItem.price) : "—"],
         ]
         return (
           <div

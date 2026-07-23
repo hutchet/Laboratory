@@ -5,10 +5,11 @@ import { PageShell } from "@/shared/ui/page-shell"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { ActionIcon } from "@/shared/ui/icons"
 import { CustomSelect } from "@/shared/ui/custom-select"
-import { saveTheme, resetTheme, setSimRole, saveLanguage, requestFullBackup, restoreFullBackup, clearAllData } from "../actions"
-import { FONT_OPTIONS, SIM_ROLE_OPTIONS, LANGUAGE_OPTIONS } from "../types"
-import type { AppSettings, FontKey, Language, SimRole, ThemeMode } from "../types"
+import { saveTheme, resetTheme, setSimRole, saveLanguage, saveCurrency, requestFullBackup, restoreFullBackup, clearAllData } from "../actions"
+import { FONT_OPTIONS, SIM_ROLE_OPTIONS, LANGUAGE_OPTIONS, CURRENCY_OPTIONS } from "../types"
+import type { AppSettings, Currency, FontKey, Language, SimRole, ThemeMode } from "../types"
 import type { FullBackup } from "../backup"
+import { useCurrency } from "@/shared/ui/currency-provider"
 
 function formatStamp(iso: string): string {
   const d = new Date(iso)
@@ -34,7 +35,9 @@ export function SettingsView({ settings }: { settings: AppSettings }) {
   const [mode, setMode] = useState<ThemeMode>(settings.theme.mode)
   const [font, setFont] = useState<FontKey>(settings.theme.font)
   const [lang, setLangState] = useState<Language>(settings.language)
+  const [currency, setCurrencyState] = useState<Currency>(settings.currency)
   const [simRole, setSimRoleState] = useState<SimRole>(settings.simRole)
+  const { setCurrency: applyCurrencyContext } = useCurrency()
   const [backupBusy, setBackupBusy] = useState(false)
   const [restoreBusy, setRestoreBusy] = useState(false)
   const [clearStep, setClearStep] = useState<0 | 1 | 2>(0)
@@ -73,6 +76,22 @@ export function SettingsView({ settings }: { settings: AppSettings }) {
     startTransition(async () => {
       try {
         await saveLanguage(next)
+        router.refresh()
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Có lỗi xảy ra")
+      }
+    })
+  }
+
+  function handleCurrencyChange(next: Currency) {
+    setCurrencyState(next)
+    // Đổi ngay ở context phía client (không cần chờ router.refresh) để mọi trang đang mở
+    // cập nhật đơn vị hiển thị ngay lập tức, đồng thời lưu cookie qua server action để lần
+    // tải trang sau (SSR) cũng dùng đúng đơn vị đã chọn.
+    applyCurrencyContext(next)
+    startTransition(async () => {
+      try {
+        await saveCurrency(next)
         router.refresh()
       } catch (e) {
         setError(e instanceof Error ? e.message : "Có lỗi xảy ra")
@@ -226,6 +245,19 @@ export function SettingsView({ settings }: { settings: AppSettings }) {
             onChange={(v) => handleLanguageChange(v as Language)}
           />
         </div>
+        <div className="th-row">
+          <label>Đơn vị tiền tệ</label>
+          <CustomSelect
+            value={currency}
+            disabled={pending}
+            width={260}
+            options={CURRENCY_OPTIONS.map((c) => ({ value: c.value, label: c.label }))}
+            onChange={(v) => handleCurrencyChange(v as Currency)}
+          />
+        </div>
+        <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 6, lineHeight: 1.6 }}>
+          Số tiền hiển thị trên các trang Báo giá và Tổng quan sẽ tự quy đổi sang đơn vị này theo tỉ giá cập nhật realtime. Dữ liệu lưu trữ trong hệ thống vẫn theo VNĐ.
+        </div>
         <div style={{ marginTop: 16 }}>
           <button type="button" className="btn-line" disabled={pending} onClick={handleReset}>↺ Khôi phục mặc định</button>
         </div>
@@ -262,7 +294,7 @@ export function SettingsView({ settings }: { settings: AppSettings }) {
       <ConfirmDialog
         open={clearStep === 1}
         title="Xóa toàn bộ dữ liệu?"
-        description="Bạn có chắc muốn xóa TOÀN BỘ dữ liệu đã nhập (công việc, dự án, thành viên, thiết bị, báo giá, kế hoạch...)? Nên Sao lưu trước khi xóa."
+        description="Bạn có chắc muốn xóa TOÀN BỘ dữ liệu đã nhập (công việc, dự án, thành viên, thiết bị, báo giá, kế hoạch...)? Nên Sao lưu trư��c khi xóa."
         confirmLabel="Tiếp tục"
         danger
         onConfirm={() => setClearStep(2)}

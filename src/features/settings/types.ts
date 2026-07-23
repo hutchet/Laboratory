@@ -9,6 +9,13 @@ export type ThemeMode = "light" | "dark" | "device"
 export type FontKey = "default" | "roboto" | "serif" | "mono"
 export type Language = "vi" | "en"
 
+// Đơn vị tiền tệ hiển thị (yêu cầu 23/07, 5:36 chiều) — re-export từ shared/lib/currency để
+// AppSettings dùng chung 1 nguồn duy nhất, tránh khai báo trùng "VND"|"USD"|... ở 2 nơi.
+import type { Currency } from "@/shared/lib/currency"
+import { CURRENCY_OPTIONS } from "@/shared/lib/currency"
+export type { Currency }
+export { CURRENCY_OPTIONS }
+
 export type FontOption = { key: FontKey; label: string; stack: string }
 
 // Giữ nguyên 4 lựa chọn + font-family stack đúng ý bản gốc (FONT_OPTIONS, dòng 7524-7529).
@@ -49,6 +56,7 @@ export const LANGUAGE_OPTIONS: Array<{ value: Language; label: string }> = [
 export type AppSettings = {
   theme: AppTheme
   language: Language
+  currency: Currency
   simRole: SimRole
   activeRoleLabel: string
   lastBackupAt: string | null
