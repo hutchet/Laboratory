@@ -504,6 +504,7 @@ html[data-viewport="mobile"] #page-dash .exp-summary .exp-legend .exp-row{font-s
     --ink:#e8ecf6;--muted:#9aa3b8;
     --line:rgba(255,255,255,.13);
     --bg:rgba(255,255,255,.05);
+    --card:#242a33;
     --card-rgb:30,36,50;--card-alpha:.5;
     --glass-strong:rgba(var(--card-rgb),.8);
     --field-bg:rgba(255,255,255,.06);
@@ -713,6 +714,30 @@ html[data-viewport="mobile"] #page-dash .exp-summary .exp-legend .exp-row{font-s
     body.printing-plan-report .main{padding:0}
     body.printing-plan-report .card{box-shadow:none;border:1px solid #ddd;break-inside:avoid}
     body.printing-plan-report table{font-size:10px}
+  }
+  /* Y/c 23/07, 11:10 toi, muc 6: xuat PDF Bao gia - Tong quan dang chi in nguyen
+     form nhap lieu (khong theo bo cuc bang bao gia mau). Them 1 khoi "chi de in"
+     (.quote-print-doc) mo phong dung bo cuc file Excel mau (header cong ty, thong
+     tin bao gia, I. thong tin khach hang, bang chi phi dich vu, VAT + tong tien).
+     Khoi nay an tren man hinh, chi hien khi bam "Xuat PDF" (body them class
+     printing-quote-report ngay truoc khi goi window.print()). */
+  .quote-print-doc{display:none}
+  @media print{
+    body.printing-quote-report .side,body.printing-quote-report .top,
+    body.printing-quote-report .tf-page-head,body.printing-quote-report #tf-quote-form,
+    body.printing-quote-report [data-perm]{display:none!important}
+    body.printing-quote-report .app{display:block}
+    body.printing-quote-report .main{padding:0}
+    body.printing-quote-report .quote-print-doc{display:block!important}
+    body.printing-quote-report .quote-print-doc,body.printing-quote-report .quote-print-doc *{color:#111!important;background:#fff!important;box-shadow:none!important}
+    body.printing-quote-report .quote-print-doc table{width:100%;border-collapse:collapse;font-size:11px;margin:10px 0}
+    body.printing-quote-report .quote-print-doc th,body.printing-quote-report .quote-print-doc td{border:1px solid #333!important;padding:6px 8px}
+    body.printing-quote-report .quote-print-doc .qpd-section{font-weight:700;background:#e8ecf3!important;padding:6px 8px;border:1px solid #333!important;margin-top:12px}
+    body.printing-quote-report .quote-print-doc .qpd-row{display:flex;border:1px solid #333;border-top:none}
+    body.printing-quote-report .quote-print-doc .qpd-row:first-of-type{border-top:1px solid #333}
+    body.printing-quote-report .quote-print-doc .qpd-row .qpd-label{flex:0 0 260px;padding:5px 8px;font-weight:600;border-right:1px solid #333}
+    body.printing-quote-report .quote-print-doc .qpd-row .qpd-value{flex:1;padding:5px 8px}
+    body.printing-quote-report .quote-print-doc .qpd-total-row td{font-weight:700;background:#fff3d6!important}
   }
   .txt-act{border:1px solid var(--line);background:#fff;border-radius:8px;padding:5px 10px;font-size:11.5px;font-weight:600;cursor:pointer;color:#5b637a;white-space:nowrap}
   .txt-act.pri{color:var(--pri);border-color:#d4ddfc}

@@ -90,6 +90,13 @@ export function DataTable<T>({ columns, rows, rowKey, onRowClick, emptyTitle = "
     document.addEventListener("mouseup", onUp)
   }
 
+  // Y/c 23/07, 11:10 toi, muc 1: cot dau tien (nhin thay duoc) khong duoc phep
+  // chinh kich thuoc. Neu columns[0] la 1 cot chon dong/checkbox rat hep
+  // (defaultWidth/width <= 48), cot do coi nhu an hinh va cot thuc su dau tien
+  // trong mat nguoi dung la columns[1] - bo qua them 1 cot nua khoi resize.
+  const firstWidth = columns[0] ? (columns[0].defaultWidth ?? (typeof columns[0].width === 'number' ? columns[0].width : undefined)) : undefined
+  const leadingSkip = columns.length > 1 && firstWidth != null && firstWidth <= 48 ? 1 : 0
+
   const effectiveMaxHeight = fillHeight ? fillPx : maxBodyHeight
   const scrollable = !!effectiveMaxHeight
 
@@ -136,7 +143,7 @@ export function DataTable<T>({ columns, rows, rowKey, onRowClick, emptyTitle = "
                 }}
               >
                 {c.header}
-                {resizable && i > 0 && i < columns.length - 1 && (
+                {resizable && i > leadingSkip && i < columns.length - 1 && (
                   <span
                     className="col-resizer"
                     onMouseDown={(e) => onResizeStart(c.key, e)}

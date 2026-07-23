@@ -167,7 +167,17 @@ export function OverviewView({
         title={editing ? editing.title : "Thêm báo giá"}
         actions={
           <span style={{ display: "flex", gap: 8 }}>
-            <button type="button" className="btn-line" onClick={() => window.print()}>Xuất PDF</button>
+            <button
+              type="button"
+              className="btn-line"
+              onClick={() => {
+                document.body.classList.add("printing-quote-report")
+                const cleanup = () => { document.body.classList.remove("printing-quote-report"); window.removeEventListener("afterprint", cleanup) }
+                window.addEventListener("afterprint", cleanup)
+                window.print()
+                setTimeout(cleanup, 3000)
+              }}
+            >Xuất PDF</button>
             {editing && (
               <button
                 type="button"
@@ -193,6 +203,55 @@ export function OverviewView({
           </span>
         }
       >
+        {/* Y/c 23/07, 11:10 toi, muc 6: khoi "chi de in" mo phong dung bo cuc file Excel
+            mau (Bao_gia_Proposal) - chi hien khi in/xuat PDF (xem .quote-print-doc va
+            body.printing-quote-report trong globals.css), khong lam thay doi giao dien
+            nhap lieu tren man hinh. */}
+        {editing && (
+          <div className="quote-print-doc">
+            <div style={{ textAlign: "center", fontWeight: 700, fontSize: 14 }}>CÔNG TY CỔ PHẦN VINFAST VIỆT NAM / VINFAST VIETNAM JSC</div>
+            <div style={{ textAlign: "center", fontSize: 11 }}>Khu Kinh tế Đình Vũ – Cát Hải, đảo Cát Hải, Đặc khu Cát Hải, Thành phố Hải Phòng, Việt Nam</div>
+            <div style={{ textAlign: "center", fontWeight: 700, fontSize: 16, background: "#1d5fd6", color: "#fff", padding: "8px 0", margin: "12px 0" }}>BẢNG BÁO GIÁ DỊ CH VỤ / SERVICES PROPOSAL</div>
+
+            <div className="qpd-row"><div className="qpd-label">Số báo giá / Proposal No.</div><div className="qpd-value">{editing.code ?? "—"}</div></div>
+            <div className="qpd-row"><div className="qpd-label">Ngày / Date</div><div className="qpd-value">{fmtDate(editing.quoteDate)}</div></div>
+            <div className="qpd-row"><div className="qpd-label">Subject / Yêu cầu</div><div className="qpd-value">{editing.title}</div></div>
+            <div className="qpd-row"><div className="qpd-label">Project Name / Tên dự án</div><div className="qpd-value">{projects.find((p) => p.id === fProjectId)?.name ?? "—"}</div></div>
+
+            <div className="qpd-section">I. THÔNG TIN KHÁCH HÀNG (BÊN A) / CUSTOMER INFORMATION (PARTY A)</div>
+            <div className="qpd-row"><div className="qpd-label">Company / Công ty</div><div className="qpd-value">{customers.find((c) => c.id === fCustomerId)?.name ?? "—"}</div></div>
+
+            <div className="qpd-section">II. NỘI DUNG CÔNG VIỆC / WORK REQUIRED</div>
+            <div className="qpd-row"><div className="qpd-label">Ghi chú / Notes</div><div className="qpd-value">{editing.notes ?? "—"}</div></div>
+
+            <div className="qpd-section">III. CHI PHÍ DịCH VỤ / SERVICE FEES</div>
+            <table>
+              <thead>
+                <tr><th>No</th><th>Test Item</th><th>Method</th><th>Unit price (VND)</th><th>Quantity</th><th>Total (VND)</th></tr>
+              </thead>
+              <tbody>
+                {editing.items.length === 0 ? (
+                  <tr><td colSpan={6} style={{ textAlign: "center" }}>—</td></tr>
+                ) : editing.items.map((it, i) => (
+                  <tr key={it.id}>
+                    <td style={{ textAlign: "center" }}>{i + 1}</td>
+                    <td>{it.name}</td>
+                    <td>{it.standard ?? "—"}</td>
+                    <td style={{ textAlign: "right" }}>{fmtVND(it.price ?? 0)}</td>
+                    <td style={{ textAlign: "right" }}>{it.quantity ?? 1}</td>
+                    <td style={{ textAlign: "right" }}>{fmtVND(itemTotal(it))}</td>
+                  </tr>
+                ))}
+                <tr className="qpd-total-row"><td colSpan={5}>Total Value Before VAT / Tổng giá trị trước thuế GTGT</td><td style={{ textAlign: "right" }}>{fmtVND(itemsSubtotal)}</td></tr>
+                <tr className="qpd-total-row"><td colSpan={5}>VAT / Thuế GTGT ({vatPct}%)</td><td style={{ textAlign: "right" }}>{fmtVND(vatAmt)}</td></tr>
+                <tr className="qpd-total-row"><td colSpan={5}>Grand Total After VAT / Tổng giá trị bao gồm thuế GTGT</td><td style={{ textAlign: "right" }}>{fmtVND(grand)}</td></tr>
+              </tbody>
+            </table>
+
+            <div className="qpd-row" style={{ marginTop: 12 }}><div className="qpd-label">Người lập / Prepared by</div><div className="qpd-value">{editing.creator ?? "—"}</div></div>
+          </div>
+        )}
+
         <form id="tf-quote-form" onSubmit={(e) => { e.preventDefault(); handleSubmit(new FormData(e.currentTarget)) }} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <div className="card">
             <div className="row" style={{ flexWrap: "wrap", gap: 12 }}>

@@ -159,7 +159,7 @@ export function ReportView({
         submitting={pending}
       >
         <label key={editingProject?.id ?? "new"} style={{ fontSize: 12, fontWeight: 600 }}>Tên dự án *
-          <input id="tf-report-project-name" required defaultValue={editingProject?.name ?? ""} placeholder="VD: VinFast" style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+          <input id="tf-report-project-name" required defaultValue={editingProject?.name ?? ""} placeholder="VD: VinFast" style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid var(--line, #dfe3e8)", background: "var(--card, #fff)", color: "var(--ink, #1c2337)", marginTop: 4 }} />
         </label>
       </FormModal>
 
@@ -174,7 +174,7 @@ export function ReportView({
 
       {openProject ? (
         <div style={{ position: "fixed", inset: 0, background: "rgba(15,18,22,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }} onClick={closeSpreadsheet}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: "#fff", borderRadius: 12, padding: 20, width: "min(96vw, 1100px)", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 12px 40px rgba(0,0,0,0.2)" }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: "var(--card, #fff)", color: "var(--ink, #1c2337)", borderRadius: 12, padding: 20, width: "min(96vw, 1100px)", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 12px 40px rgba(0,0,0,0.2)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
               <div style={{ fontSize: 16, fontWeight: 700 }}>Báo cáo thử nghiệm · {openProject.name}</div>
               <button type="button" className="modal-x" onClick={closeSpreadsheet} aria-label="Đóng">✕</button>
@@ -182,19 +182,19 @@ export function ReportView({
 
             {!isEditingRows ? (
               <>
-                <div style={{ overflowX: "auto", border: "1px solid #e7eaee", borderRadius: 10 }}>
+                <div style={{ overflowX: "auto", border: "1px solid var(--line, #e7eaee)", borderRadius: 10 }}>
                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                     <thead>
-                      <tr style={{ background: "#f7f8fa", textAlign: "left" }}>
+                      <tr style={{ background: "var(--bg, #f7f8fa)", textAlign: "left" }}>
                         <th style={{ padding: "10px 12px", width: 38 }}>#</th>
                         {REPORT_COLUMNS.map((c) => <th key={c.key} style={{ padding: "10px 12px", fontWeight: 600 }}>{c.label}</th>)}
                       </tr>
                     </thead>
                     <tbody>
                       {displayRows.length === 0 ? (
-                        <tr><td style={{ padding: 14, color: "#8a8f98" }}>—</td><td colSpan={REPORT_COLUMNS.length} style={{ padding: 14, color: "#8a8f98" }}>Chưa có dữ liệu. Nhấn “Chỉnh sửa” để nhập.</td></tr>
+                        <tr><td style={{ padding: 14, color: "var(--muted, #8a8f98)" }}>—</td><td colSpan={REPORT_COLUMNS.length} style={{ padding: 14, color: "var(--muted, #8a8f98)" }}>Chưa có dữ liệu. Nhấn “Chỉnh sửa” để nhập.</td></tr>
                       ) : displayRows.map((r, i) => (
-                        <tr key={i} style={{ borderBottom: "1px solid #f0f1f3" }}>
+                        <tr key={i} style={{ borderBottom: "1px solid var(--line, #f0f1f3)" }}>
                           <td style={{ padding: "10px 12px" }}>{i + 1}</td>
                           {REPORT_COLUMNS.map((c) => <td key={c.key} style={{ padding: "10px 12px", whiteSpace: "pre-wrap" }}>{r[c.key] || "—"}</td>)}
                         </tr>
@@ -203,16 +203,16 @@ export function ReportView({
                   </table>
                 </div>
                 <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 16 }}>
-                  <button type="button" onClick={closeSpreadsheet} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #dfe3e8", background: "#fff" }}>Đóng</button>
+                  <button type="button" onClick={closeSpreadsheet} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid var(--line, #dfe3e8)", background: "var(--card, #fff)", color: "var(--ink, #1c2337)" }}>Đóng</button>
                   <button type="button" onClick={() => setIsEditingRows(true)} style={{ padding: "8px 14px", borderRadius: 8, border: "none", background: "#1d5fd6", color: "#fff" }}>Chỉnh sửa</button>
                 </div>
               </>
             ) : (
               <>
-                <div style={{ overflowX: "auto", border: "1px solid #e7eaee", borderRadius: 10 }}>
+                <div style={{ overflowX: "auto", border: "1px solid var(--line, #e7eaee)", borderRadius: 10 }}>
                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                     <thead>
-                      <tr style={{ background: "#f7f8fa", textAlign: "left" }}>
+                      <tr style={{ background: "var(--bg, #f7f8fa)", textAlign: "left" }}>
                         <th style={{ padding: "10px 12px", width: 38 }}>#</th>
                         {REPORT_COLUMNS.map((c) => <th key={c.key} style={{ padding: "10px 12px", fontWeight: 600 }}>{c.label}</th>)}
                         <th style={{ padding: "10px 12px", width: 40 }} />
@@ -228,7 +228,7 @@ export function ReportView({
                                 rows={3}
                                 value={r[c.key] || ""}
                                 onChange={(e) => updateCell(i, c.key, e.target.value)}
-                                style={{ width: "100%", padding: 6, borderRadius: 6, border: "1px solid #dfe3e8", fontSize: 12.5, resize: "vertical" }}
+                                style={{ width: "100%", padding: 6, borderRadius: 6, border: "1px solid var(--line, #dfe3e8)", background: "var(--card, #fff)", color: "var(--ink, #1c2337)", fontSize: 12.5, resize: "vertical" }}
                               />
                             </td>
                           ))}
@@ -241,9 +241,9 @@ export function ReportView({
                   </table>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", marginTop: 14 }}>
-                  <button type="button" onClick={addRow} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #dfe3e8", background: "#fff" }}>+ Thêm dòng</button>
+                  <button type="button" onClick={addRow} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid var(--line, #dfe3e8)", background: "var(--card, #fff)", color: "var(--ink, #1c2337)" }}>+ Thêm dòng</button>
                   <div style={{ display: "flex", gap: 8 }}>
-                    <button type="button" onClick={cancelEditRows} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #dfe3e8", background: "#fff" }}>Hủy</button>
+                    <button type="button" onClick={cancelEditRows} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid var(--line, #dfe3e8)", background: "var(--card, #fff)", color: "var(--ink, #1c2337)" }}>Hủy</button>
                     <button type="button" disabled={pending} onClick={handleSaveRows} style={{ padding: "8px 14px", borderRadius: 8, border: "none", background: "#1d5fd6", color: "#fff", opacity: pending ? 0.6 : 1 }}>{pending ? "Đang lưu..." : "Lưu báo cáo"}</button>
                   </div>
                 </div>
