@@ -381,29 +381,6 @@ export function TasksView({ tasks, projects, members, centers, initialQuery }: T
     <PageShell
       title="Công việc"
       subtitle={openCenterId ? `Trung tâm: ${centerName(openCenterId)}` : "Theo dõi và phân công công việc theo trung tâm"}
-      actions={
-        openCenterId ? (
-          <span style={{ display: "flex", gap: 8 }}>
-            <button type="button" className="btn-line" onClick={exportExcel}>
-              Xuất Excel
-            </button>
-            {editMode && (
-              <button type="button" className="btn-danger" disabled={!selected.size} onClick={() => setBulkConfirm(true)} style={{ opacity: selected.size ? 1 : 0.5 }}>Xoá tất cả</button>
-            )}
-            <button type="button" className={editMode ? "btn-success" : "btn-line"} onClick={toggleEditMode}>{editMode ? "Xong" : "Chỉnh sửa"}</button>
-            <button type="button" className="btn-pri" onClick={openNew}>
-              + Thêm công việc
-            </button>
-          </span>
-        ) : undefined
-      }
-      filters={
-        openCenterId ? (
-          <FilterBar search={{ value: q, onChange: setQ, placeholder: "Tìm công việc..." }}>
-            <ChipFilterDropdown value={chip} options={CHIPS} onChange={setChip} />
-          </FilterBar>
-        ) : undefined
-      }
     >
       {!openCenterId && (
         <>
@@ -443,6 +420,26 @@ export function TasksView({ tasks, projects, members, centers, initialQuery }: T
             <KpiCard label="Đang thực hiện" value={centerTasks.filter(t => t.status !== "done").length} tone="warning" trend={centerTrends.doing} />
             <KpiCard label="Quá hạn" value={centerTasks.filter(t => taskState(t) === "over").length} tone="danger" trend={centerTrends.overdue} />
             <KpiCard label="Hoàn thành" value={centerTasks.filter(t => t.status === "done").length} tone="success" trend={centerTrends.done} />
+          </div>
+          <div className="section-head">
+            <h3>Danh sách công việc</h3>
+            <div className="tools">
+              <FilterBar search={{ value: q, onChange: setQ, placeholder: "Tìm công việc..." }}>
+                <ChipFilterDropdown value={chip} options={CHIPS} onChange={setChip} />
+              </FilterBar>
+              <span style={{ display: "flex", gap: 8 }}>
+                <button type="button" className="btn-line" onClick={exportExcel}>
+                  Xuất Excel
+                </button>
+                {editMode && (
+                  <button type="button" className="btn-danger" disabled={!selected.size} onClick={() => setBulkConfirm(true)} style={{ opacity: selected.size ? 1 : 0.5 }}>Xoá tất cả</button>
+                )}
+                <button type="button" className={editMode ? "btn-success" : "btn-line"} onClick={toggleEditMode}>{editMode ? "Xong" : "Chỉnh sửa"}</button>
+                <button type="button" className="btn-pri" onClick={openNew}>
+                  + Thêm công việc
+                </button>
+              </span>
+            </div>
           </div>
           <DataTable
             columns={columns}

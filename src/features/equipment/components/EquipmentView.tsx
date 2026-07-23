@@ -160,6 +160,15 @@ export function EquipmentView({ equipment, centers, bookings = [] }: { equipment
   const centerMaint = openGroup ? openGroup.items.length - centerReady : 0
   const centerRooms = openGroup ? new Set(openGroup.items.map((e) => e.room).filter(Boolean)).size : 0
   const centerPower = openGroup ? openGroup.items.reduce((a, e) => a + (e.power || 0), 0) : 0
+  const centerTrends = useMemo(() => {
+    const list = openGroup ? openGroup.items : []
+    return {
+      total: computeSimpleTrend(list, () => true, (e) => e.createdAt),
+      ready: computeSimpleTrend(list, (e) => e.status !== "maintenance", (e) => e.createdAt),
+      maint: computeSimpleTrend(list, (e) => e.status === "maintenance", (e) => e.createdAt),
+      power: computeSimpleTrend(list, (e) => (e.power || 0) > 0, (e) => e.createdAt),
+    }
+  }, [openGroup])
 
   // Port cua eqOverviewAnalyticsHtml() ban goc (dong ~6688): tong quan toan bo thiet
   // bi khi CHUA mo Trung tam nao nao (vong tron ty le san sang/bao tri + top 6 thanh
@@ -296,12 +305,7 @@ export function EquipmentView({ equipment, centers, bookings = [] }: { equipment
   ]
 
   return (
-    <PageShell
-      title="Thiết bị"
-      filters={
-        <FilterBar search={{ value: q, onChange: setQ, placeholder: openGroup ? "Tìm trong trung tâm này..." : "Tìm thiết bị..." }} />
-      }
-    >
+    <PageShell title="Thiết bị">
       {!openGroup && (
         <>
           {/* Port cua eqOverviewAnalyticsHtml() ban goc: chi hien khi dang xem luoi the
@@ -384,11 +388,11 @@ export function EquipmentView({ equipment, centers, bookings = [] }: { equipment
 
       {openGroup && (
         <div className="center-detail-section">
-          <div className="grid kpis" style={{ marginBottom: 16 }}>
-            <div className="kcard kb"><div className="v">{openGroup.items.length}</div><div className="l">Tổng thiết bị</div><div className="s">{openGroup.name}</div></div>
-            <div className="kcard kg"><div className="v">{centerReady}</div><div className="l">Sẵn sàng</div><div className="s">Có thể sử dụng</div></div>
-            <div className="kcard kr"><div className="v">{centerMaint}</div><div className="l">Bảo trì</div><div className="s">Cần theo dõi</div></div>
-            <div className="kcard kp"><div className="v">{centerPower.toLocaleString("vi-VN")}</div><div className="l">Tổng công suất</div><div className="s">{centerRooms} phòng thử</div></div>
+          <div className="kpis-tier" style={{ marginBottom: 16 }}>
+            <KpiCard label="Tổng thiết bị" value={openGroup.items.length} hint={openGroup.name} tone="blue" trend={centerTrends.total} />
+            <KpiCard label="Sẵn sàng" value={centerReady} hint="Có thể sử dụng" tone="success" trend={centerTrends.ready} />
+            <KpiCard label="Bảo trì" value={centerMaint} hint="Cần theo dõi" tone="danger" trend={centerTrends.maint} />
+            <KpiCard label="Tổng công suất" value={centerPower.toLocaleString("vi-VN")} hint={`${centerRooms} phòng thử`} tone="warning" trend={centerTrends.power} />
           </div>
 
           <div className="card center-detail-card">

@@ -7,6 +7,7 @@ import { IconButton } from "@/shared/ui/icon-button"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { KpiCard } from "@/shared/ui/kpi-card"
 import { SearchInput } from "@/shared/ui/search-input"
+import { ArrowButton } from "@/shared/ui/arrow-button"
 import { PlainSelect } from "@/shared/ui/plain-select"
 import { Perm } from "@/shared/lib/rbac-client"
 import { computeSimpleTrend } from "@/shared/lib/trend"
@@ -16,9 +17,11 @@ import type { CenterRow, GroupRow, ViewerAccessGrant, ViewerCandidate } from "..
 function fmtVal(v:number){ if(v>=1e9) return `${(v/1e9).toLocaleString("vi-VN",{maximumFractionDigits:1})} tỷ đ`; if(v>=1e6) return `${Math.round(v/1e6).toLocaleString("vi-VN")} triệu đ`; if(v>0) return `${v.toLocaleString("vi-VN")} đ`; return "0 đ" }
 function initials(name:string){ return name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase() }
 const AV_COLORS=["#2e7d32","#1d5fd6","#7c3aed","#c62828","#e37c13"]
+const PAGE_SIZE = 8
 
 export function CentersView({ centers, groups = [], memberOptions = [], viewerCandidates = [], viewerGrants = [] }:{ centers:CenterRow[]; groups?: GroupRow[]; memberOptions?: Array<{ id: string; name: string }>; viewerCandidates?: ViewerCandidate[]; viewerGrants?: ViewerAccessGrant[] }) {
   const [q,setQ]=useState("")
+  const [page,setPage]=useState(1)
   const [editing,setEditing]=useState<CenterRow|null>(null)
   const [showForm,setShowForm]=useState(false)
   const [confirmDeleteId,setConfirmDeleteId]=useState<string|null>(null)
@@ -47,6 +50,9 @@ export function CentersView({ centers, groups = [], memberOptions = [], viewerCa
   const kpis=useMemo(()=>({total:centers.length,totalProjects:centers.reduce((s,c)=>s+c.projectCount,0),totalValue:centers.reduce((s,c)=>s+c.totalValue,0),totalCustomerLinks:centers.reduce((s,c)=>s+c.customerCount,0)}),[centers])
   const trends=useMemo(()=>({total:computeSimpleTrend(centers,c=>true,c=>c.createdAt),projects:computeSimpleTrend(centers,c=>c.projectCount>0,c=>c.createdAt),value:computeSimpleTrend(centers,c=>c.totalValue>0,c=>c.createdAt),customers:computeSimpleTrend(centers,c=>c.customerCount>0,c=>c.createdAt)}),[centers])
   const filtered=useMemo(()=>centers.filter(c=>!q||c.name.toLowerCase().includes(q.toLowerCase())),[centers,q])
+  const pageCount=Math.max(1,Math.ceil(filtered.length/PAGE_SIZE))
+  const safePage=Math.min(page,pageCount)
+  const pageItems=useMemo(()=>filtered.slice((safePage-1)*PAGE_SIZE,safePage*PAGE_SIZE),[filtered,safePage])
   function handleSubmit(fd:FormData){
     const input={id:editing?.id,name:String(fd.get("name")||"")||"Trung tâm",address:String(fd.get("address")||"")||null,manager:String(fd.get("manager")||"")||null,phone:String(fd.get("phone")||"")||null,notes:String(fd.get("notes")||"")||null,elecPrice:fd.get("elecPrice")?Number(fd.get("elecPrice")):null,rentPrice:fd.get("rentPrice")?Number(fd.get("rentPrice")):null}
     startTransition(async()=>{ await saveCenter(input); setShowForm(false); setEditing(null) })
@@ -63,7 +69,7 @@ export function CentersView({ centers, groups = [], memberOptions = [], viewerCa
       <div className="section-head">
         <h3>Tất cả trung tâm thử nghiệm</h3>
         <div className="tools">
-          <SearchInput value={q} onChange={setQ} placeholder="Tìm trung tâm..." width={220} />
+          <SearchInput value={q} onChange={(v)=>{setQ(v);setPage(1)}} placeholder="Tìm trung tâm..." width={220} />
           <Perm minPerm="dept_head"><AddButton label="Trung tâm mới" onClick={()=>{setEditing(null);setShowForm(v=>!v)}} /></Perm>
         </div>
       </div>
@@ -94,7 +100,7 @@ export function CentersView({ centers, groups = [], memberOptions = [], viewerCa
       </div>
       {filtered.length===0?(<div className="empty">Chưa có trung tâm nào.</div>):(
         <div className="cu-grid" id="ct-grid">
-          {filtered.map((c,i)=>(
+          {pageItems.map((c,i)=>(
             <div key={c.id} className="cucard">
               <div className="cucard-head">
                 <div className="cu-avatar" style={{background:AV_COLORS[i%AV_COLORS.length]}}>{initials(c.name)}</div>
@@ -211,6 +217,17 @@ export function CentersView({ centers, groups = [], memberOptions = [], viewerCa
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {filtered.length>0 && (
+        <div className="pager" id="ct-pager" style={{position:"sticky",bottom:0,background:"var(--bg,#f3f4f6)",zIndex:5,borderTop:"2px solid var(--line,#e4e8f0)",marginTop:"auto"}}>
+          <span className="info">Hiện thị {(safePage-1)*PAGE_SIZE+1}–{Math.min(safePage*PAGE_SIZE,filtered.length)} / {filtered.length} trung tâm</span>
+          <div className="pages">
+            <ArrowButton direction="chevronLeft" onClick={()=>setPage(p=>Math.max(1,p-1))} disabled={safePage===1} ariaLabel="Trang trước" />
+            {Array.from({length:pageCount},(_,i)=>i+1).map(n=>(<button key={n} className={`pg${n===safePage?" active":""}`} onClick={()=>setPage(n)}>{n}</button>))}
+            <ArrowButton direction="chevronRight" onClick={()=>setPage(p=>Math.min(pageCount,p+1))} disabled={safePage===pageCount} ariaLabel="Trang sau" />
+          </div>
         </div>
       )}
 

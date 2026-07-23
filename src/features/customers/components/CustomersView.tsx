@@ -6,6 +6,7 @@ import { IconButton } from "@/shared/ui/icon-button"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { KpiCard } from "@/shared/ui/kpi-card"
 import { SearchInput } from "@/shared/ui/search-input"
+import { ArrowButton } from "@/shared/ui/arrow-button"
 import { ActionIcon } from "@/shared/ui/icons"
 import { Perm } from "@/shared/lib/rbac-client"
 import { computeSimpleTrend } from "@/shared/lib/trend"
@@ -15,9 +16,11 @@ import type { CustomerRow } from "../types"
 function fmtVal(v:number){ if(v>=1e9) return `${(v/1e9).toLocaleString("vi-VN",{maximumFractionDigits:1})} tỷ đ`; if(v>=1e6) return `${Math.round(v/1e6).toLocaleString("vi-VN")} triệu đ`; if(v>0) return `${v.toLocaleString("vi-VN")} đ`; return "0 đ" }
 function initials(name:string){ const w=name.trim().split(/\s+/); return (w.length>=2?(w[0][0]+w[w.length-1][0]):name.slice(0,2)).toUpperCase() }
 const AV_COLORS=["#1d5fd6","#2e7d32","#7c3aed","#c62828","#e37c13","#0097a7"]
+const PAGE_SIZE = 8
 
 export function CustomersView({ customers }:{ customers:CustomerRow[] }) {
   const [q,setQ]=useState("")
+  const [page,setPage]=useState(1)
   const [editing,setEditing]=useState<CustomerRow|null>(null)
   const [showForm,setShowForm]=useState(false)
   const [confirmDeleteId,setConfirmDeleteId]=useState<string|null>(null)
@@ -25,6 +28,9 @@ export function CustomersView({ customers }:{ customers:CustomerRow[] }) {
   const kpis=useMemo(()=>({total:customers.length,withProj:customers.filter(c=>c.projectCount>0).length,totalProjects:customers.reduce((s,c)=>s+c.projectCount,0),totalValue:customers.reduce((s,c)=>s+c.displayValue,0)}),[customers])
   const trends=useMemo(()=>({total:computeSimpleTrend(customers,c=>true,c=>c.createdAt),withProj:computeSimpleTrend(customers,c=>c.projectCount>0,c=>c.createdAt),projects:computeSimpleTrend(customers,c=>c.projectCount>0,c=>c.createdAt),value:computeSimpleTrend(customers,c=>c.displayValue>0,c=>c.createdAt)}),[customers])
   const filtered=useMemo(()=>customers.filter(c=>!q||c.name.toLowerCase().includes(q.toLowerCase())),[customers,q])
+  const pageCount=Math.max(1,Math.ceil(filtered.length/PAGE_SIZE))
+  const safePage=Math.min(page,pageCount)
+  const pageItems=useMemo(()=>filtered.slice((safePage-1)*PAGE_SIZE,safePage*PAGE_SIZE),[filtered,safePage])
   function handleSubmit(fd:FormData){
     const input={id:editing?.id,name:String(fd.get("name")||"")||"Khách hàng",contact:String(fd.get("contact")||"")||null,email:String(fd.get("email")||"")||null,phone:String(fd.get("phone")||"")||null,address:String(fd.get("address")||"")||null,value:fd.get("value")?Number(fd.get("value")):null,notes:String(fd.get("notes")||"")||null}
     startTransition(async()=>{ await saveCustomer(input); setShowForm(false); setEditing(null) })
@@ -41,7 +47,7 @@ export function CustomersView({ customers }:{ customers:CustomerRow[] }) {
       <div className="section-head">
         <h3>Tất cả khách hàng</h3>
         <div className="tools">
-          <SearchInput value={q} onChange={setQ} placeholder="Tìm khách hàng..." width={220} />
+          <SearchInput value={q} onChange={(v)=>{setQ(v);setPage(1)}} placeholder="Tìm khách hàng..." width={220} />
           <Perm minPerm="dept_head"><AddButton label="Khách hàng mới" onClick={()=>{setEditing(null);setShowForm(v=>!v)}} /></Perm>
         </div>
       </div>
@@ -71,7 +77,7 @@ export function CustomersView({ customers }:{ customers:CustomerRow[] }) {
       </div>
       {filtered.length===0?(<div className="empty">Chưa có khách hàng nào.</div>):(
         <div className="cu-grid">
-          {filtered.map((c,i)=>(
+          {pageItems.map((c,i)=>(
             <div key={c.id} className="cucard">
               <div className="cucard-head">
                 <div className="cu-avatar" style={{background:AV_COLORS[i%AV_COLORS.length]}}>{initials(c.name)}</div>
@@ -113,6 +119,18 @@ export function CustomersView({ customers }:{ customers:CustomerRow[] }) {
           ))}
         </div>
       )}
+
+      {filtered.length>0 && (
+        <div className="pager" id="cu-pager" style={{position:"sticky",bottom:0,background:"var(--bg,#f3f4f6)",zIndex:5,borderTop:"2px solid var(--line,#e4e8f0)",marginTop:"auto"}}>
+          <span className="info">Hiện thị {(safePage-1)*PAGE_SIZE+1}–{Math.min(safePage*PAGE_SIZE,filtered.length)} / {filtered.length} khách hàng</span>
+          <div className="pages">
+            <ArrowButton direction="chevronLeft" onClick={()=>setPage(p=>Math.max(1,p-1))} disabled={safePage===1} ariaLabel="Trang trước" />
+            {Array.from({length:pageCount},(_,i)=>i+1).map(n=>(<button key={n} className={`pg${n===safePage?" active":""}`} onClick={()=>setPage(n)}>{n}</button>))}
+            <ArrowButton direction="chevronRight" onClick={()=>setPage(p=>Math.min(pageCount,p+1))} disabled={safePage===pageCount} ariaLabel="Trang sau" />
+          </div>
+        </div>
+      )}
+
       <ConfirmDialog open={!!confirmDeleteId} title="Xoá khách hàng?" description="Hành động này không thể hoàn tác." danger onConfirm={confirmDelete} onCancel={()=>setConfirmDeleteId(null)} />
     </PageShell>
   )

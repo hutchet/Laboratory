@@ -103,6 +103,15 @@ export function DepreciationView({ items, centers = [] }: { items: DepreciationA
   const centerTotalValue = openGroup ? openGroup.items.reduce((a, it) => a + (it.totalValue || 0), 0) : 0
   const centerMissing = openGroup ? openGroup.items.filter((it) => !it.totalValue || !it.years).length : 0
   const centerPerHour = openGroup ? openGroup.items.reduce((a, it) => a + khPerHour(it.totalValue, it.years), 0) : 0
+  const centerTrends = useMemo(() => {
+    const list = openGroup ? openGroup.items : []
+    return {
+      total: computeSimpleTrend(list, () => true, (it: any) => it.createdAt ?? it.id),
+      value: computeSimpleTrend(list, (it) => (it.totalValue || 0) > 0, (it: any) => it.createdAt ?? it.id),
+      perHour: computeSimpleTrend(list, (it) => khPerHour(it.totalValue, it.years) > 0, (it: any) => it.createdAt ?? it.id),
+      missing: computeSimpleTrend(list, (it) => !it.totalValue || !it.years, (it: any) => it.createdAt ?? it.id),
+    }
+  }, [openGroup])
 
   const dvTrendTotal = useMemo(() => computeSimpleTrend(items, () => true, (it) => (it as any).createdAt ?? it.id), [items])
   const dvTrendValue = useMemo(() => {
@@ -171,15 +180,10 @@ export function DepreciationView({ items, centers = [] }: { items: DepreciationA
   ]
 
   return (
-    <PageShell
-      title="Khấu hao thiết bị"
-      filters={
-        <FilterBar search={{ value: q, onChange: setQ, placeholder: openGroup ? "Tìm trong trung tâm này..." : "Tìm tài sản..." }} />
-      }
-    >
+    <PageShell title="Khấu hao thiết bị">
       {!openGroup && (
         <>
-          <div className="grid kpis" style={{ marginBottom: 16 }}>
+          <div className="kpis-tier" style={{ marginBottom: 16 }}>
             <KpiCard label="Tổng tài sản" value={overview.total} hint="Theo danh sách thiết bị" tone="blue" trend={dvTrendTotal} />
             <KpiCard label="Tổng giá trị (VNĐ)" value={overview.totalValue.toLocaleString("vi-VN")} hint="Toàn bộ tài sản" tone="success" trend={dvTrendValue} />
             <KpiCard label="Tổng khấu hao/giờ" value={overview.totalPerHour.toLocaleString("vi-VN")} hint="VNĐ/giờ" tone="warning" trend={dvTrendPerHour} />
@@ -221,16 +225,17 @@ export function DepreciationView({ items, centers = [] }: { items: DepreciationA
 
       {openGroup && (
         <div className="center-detail-section">
-          <div className="grid kpis" style={{ marginBottom: 16 }}>
-            <div className="kcard kb"><div className="v">{openGroup.items.length}</div><div className="l">Tổng tài sản</div><div className="s">{openGroup.name}</div></div>
-            <div className="kcard kg"><div className="v">{centerTotalValue.toLocaleString("vi-VN")}</div><div className="l">Tổng giá trị (VNĐ)</div><div className="s">Trong trung tâm này</div></div>
-            <div className="kcard kp"><div className="v">{centerPerHour.toLocaleString("vi-VN")}</div><div className="l">Khấu hao/giờ</div><div className="s">VNĐ/giờ</div></div>
-            <div className="kcard kr"><div className="v">{centerMissing}</div><div className="l">Thiếu dữ liệu</div><div className="s">Cần bổ sung</div></div>
+          <div className="kpis-tier" style={{ marginBottom: 16 }}>
+            <KpiCard label="Tổng tài sản" value={openGroup.items.length} hint={openGroup.name} tone="blue" trend={centerTrends.total} />
+            <KpiCard label="Tổng giá trị (VNĐ)" value={centerTotalValue.toLocaleString("vi-VN")} hint="Trong trung tâm này" tone="success" trend={centerTrends.value} />
+            <KpiCard label="Khấu hao/giờ" value={centerPerHour.toLocaleString("vi-VN")} hint="VNĐ/giờ" tone="warning" trend={centerTrends.perHour} />
+            <KpiCard label="Thiếu dữ liệu" value={centerMissing} hint="Cần bổ sung" tone="danger" trend={centerTrends.missing} />
           </div>
 
           <div className="card center-detail-card">
             <div className="ch">
               <div><h3>{openGroup.name}</h3><span>Danh sách khấu hao chi tiết — ánh xạ tự động từ thiết bị</span></div>
+              <FilterBar search={{ value: q, onChange: setQ, placeholder: "Tìm trong trung tâm này..." }} />
             </div>
             <DataTable columns={detailColumns} rows={centerFilteredItems} rowKey={(it) => it.id} onRowClick={openEdit} loading={pending} emptyTitle="Chưa có tài sản nào" resizable maxBodyHeight={560} />
           </div>

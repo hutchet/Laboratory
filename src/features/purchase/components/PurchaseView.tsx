@@ -253,30 +253,31 @@ export function PurchaseView({
   // ---- OVERVIEW (hub-card grouping, ported from renderPurchase's pm-overview-grid) ----
   if (!openGroup) {
     return (
-      <PageShell
-        title="Theo dõi mua hàng"
-        actions={<>
-          <button type="button" className="btn-line" onClick={exportCsv} style={{ marginRight: 8 }}>Xuất CSV</button>
-          <button type="button" className="btn-pri" onClick={openNew}>+ Thêm hạng mục</button>
-        </>}
-        filters={<span style={{ display: "flex", gap: 8 }}>
-          {(Object.keys(PURCHASE_GROUPBY_LABEL) as PurchaseGroupBy[]).map((g) => (
-            <button
-              key={g}
-              type="button"
-              className={groupBy === g ? "btn-pri" : "btn-line"}
-              onClick={() => setGroupBy(g)}
-            >
-              Theo {PURCHASE_GROUPBY_LABEL[g]}
-            </button>
-          ))}
-        </span>}
-      >
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 16 }}>
+      <PageShell title="Theo dõi mua hàng">
+        <div className="kpis-tier" style={{ marginBottom: 16 }}>
           <KpiCard label="Tổng hạng mục" value={items.length} tone="blue" trend={trendTotal} />
           <KpiCard label="Tổng giá trị" value={`${purchaseFormatAmount(totalValue)} đ`} tone="danger" trend={trendValue} />
           <KpiCard label="Đang triển khai" value={ongoingCount} tone="warning" trend={trendOngoing} />
           <KpiCard label="Hoàn thành" value={doneCount} tone="success" trend={trendDone} />
+        </div>
+        <div className="section-head">
+          <h3>Tất cả hạng mục</h3>
+          <div className="tools">
+            <span style={{ display: "flex", gap: 8 }}>
+              {(Object.keys(PURCHASE_GROUPBY_LABEL) as PurchaseGroupBy[]).map((g) => (
+                <button
+                  key={g}
+                  type="button"
+                  className={groupBy === g ? "btn-pri" : "btn-line"}
+                  onClick={() => setGroupBy(g)}
+                >
+                  Theo {PURCHASE_GROUPBY_LABEL[g]}
+                </button>
+              ))}
+            </span>
+            <button type="button" className="btn-line" onClick={exportCsv}>Xuất CSV</button>
+            <button type="button" className="btn-pri" onClick={openNew}>+ Thêm hạng mục</button>
+          </div>
         </div>
 
         {!items.length ? (

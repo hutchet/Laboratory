@@ -238,26 +238,27 @@ export function MembersView({
   ]
 
   return (
-    <PageShell
-      title="Thành viên"
-      actions={
-        <Perm minPerm="director">
-          <span style={{ display: "flex", gap: 8 }}>
-            {editMode && (
-              <button type="button" className="btn-danger" disabled={!selected.size} onClick={() => setBulkConfirm(true)} style={{ opacity: selected.size ? 1 : 0.5 }}>Xoá tất cả</button>
-            )}
-            <button type="button" className={editMode ? "btn-success" : "btn-line"} onClick={toggleEditMode}>{editMode ? "Xong" : "Chỉnh sửa"}</button>
-            <button type="button" className="btn-pri" onClick={openNew}>+ Thêm thành viên</button>
-          </span>
-        </Perm>
-      }
-      filters={<FilterBar search={{ value: q, onChange: setQ, placeholder: "Tìm thành viên..." }} />}
-    >
+    <PageShell title="Thành viên">
       <div className="kpis-tier" style={{ marginBottom: 20 }}>
         <KpiCard label="Tổng thành viên" value={kpi.total} tone="blue" trend={kpiTrends.total} />
         <KpiCard label="Quản lý" value={kpi.managers} tone="danger" trend={kpiTrends.managers} />
         <KpiCard label="Đã gán trung tâm" value={kpi.assigned} tone="success" trend={kpiTrends.assigned} />
         <KpiCard label="Chưa gán trung tâm" value={kpi.unassigned} tone="warning" trend={kpiTrends.unassigned} />
+      </div>
+      <div className="section-head">
+        <h3>Tất cả thành viên</h3>
+        <div className="tools">
+          <FilterBar search={{ value: q, onChange: setQ, placeholder: "Tìm thành viên..." }} />
+          <Perm minPerm="director">
+            <span style={{ display: "flex", gap: 8 }}>
+              {editMode && (
+                <button type="button" className="btn-danger" disabled={!selected.size} onClick={() => setBulkConfirm(true)} style={{ opacity: selected.size ? 1 : 0.5 }}>Xoá tất cả</button>
+              )}
+              <button type="button" className={editMode ? "btn-success" : "btn-line"} onClick={toggleEditMode}>{editMode ? "Xong" : "Chỉnh sửa"}</button>
+              <button type="button" className="btn-pri" onClick={openNew}>+ Thêm thành viên</button>
+            </span>
+          </Perm>
+        </div>
       </div>
       {currentMember && (
         // Ported from the original's .adminbar block (#page-members): shows the
