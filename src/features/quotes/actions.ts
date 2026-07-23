@@ -25,6 +25,8 @@ export type SaveQuoteInput = {
   totalAmount?: number | null
   customerId?: string | null
   projectId?: string | null
+  creator?: string | null
+  notes?: string | null
 }
 
 export async function saveQuote(input: SaveQuoteInput) {
@@ -38,6 +40,8 @@ export async function saveQuote(input: SaveQuoteInput) {
     totalAmount: input.totalAmount ?? null,
     customerId: input.customerId || null,
     projectId: input.projectId || null,
+    creator: input.creator || null,
+    notes: input.notes || null,
   }
   if (input.id) {
     await db.quote.update({ where: { id: input.id }, data })
@@ -59,6 +63,34 @@ export async function deleteQuote(id: string) {
 export async function bulkDeleteQuotes(ids: string[]) {
   await requirePermission("delete")
   await db.quote.deleteMany({ where: { id: { in: ids } } })
+  revalidatePath("/quote")
+}
+
+// ---- Quote line items (Hạng mục báo giá) ----
+// Ported from ql-add-catalog / ql-items-body in the original: user picks a
+// catalog test to copy into the quote as a priced line item, then can adjust
+// quantity or remove it. Values are snapshotted onto QuoteCatalogItem so a
+// later edit to the master catalog price does not retroactively change an
+// already-issued quote.
+export type AddQuoteItemInput = { quoteId: string; name: string; standard?: string | null; price?: number | null; quantity?: number | null }
+
+export async function addQuoteItem(input: AddQuoteItemInput) {
+  await requirePermission("edit")
+  await db.quoteCatalogItem.create({
+    data: { quoteId: input.quoteId, name: input.name, standard: input.standard || null, price: input.price ?? null, quantity: input.quantity ?? 1 },
+  })
+  revalidatePath("/quote")
+}
+
+export async function updateQuoteItemQty(id: string, quantity: number) {
+  await requirePermission("edit")
+  await db.quoteCatalogItem.update({ where: { id }, data: { quantity: Math.max(1, Math.round(quantity) || 1) } })
+  revalidatePath("/quote")
+}
+
+export async function removeQuoteItem(id: string) {
+  await requirePermission("edit")
+  await db.quoteCatalogItem.delete({ where: { id } })
   revalidatePath("/quote")
 }
 

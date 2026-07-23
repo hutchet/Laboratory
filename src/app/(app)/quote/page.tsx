@@ -38,8 +38,8 @@ export default async function QuotePage({ searchParams }: { searchParams: Promis
     }
     case "quote-overview":
     default: {
-      const [quotes, customers, projects] = await Promise.all([listQuotes(), listCustomerOptions(), listProjectOptions()])
-      return <OverviewView quotes={quotes} customers={customers} projects={projects} />
+      const [quotes, customers, projects, testCatalog] = await Promise.all([listQuotes(), listCustomerOptions(), listProjectOptions(), listTestCatalog()])
+      return <OverviewView quotes={quotes} customers={customers} projects={projects} testCatalog={testCatalog} />
     }
   }
 }

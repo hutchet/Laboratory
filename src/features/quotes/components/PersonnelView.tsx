@@ -9,6 +9,27 @@ import { Perm } from "@/shared/lib/rbac-client"
 import { savePersonnelRateConfig, savePersonnelRouting, deletePersonnelRouting, bulkDeletePersonnelRouting } from "../actions"
 import type { PersonnelRateConfigRow, PersonnelRoutingRow } from "../types"
 
+function parseHours(v: string | null | undefined): number {
+  const n = Number(v)
+  return Number.isFinite(n) ? n : 0
+}
+
+function fmtVND(n: number) {
+  return Math.round(n || 0).toLocaleString("vi-VN")
+}
+
+// Bản gốc (renderQuotePersonnel) tách giờ công theo 3 vai trò (T/E/L) cho mỗi
+// bước; schema PersonnelRouting hiện chỉ lưu tổng giờ theo bước (không tách
+// vai trò), nên bảng dưới đây tính "Tổng giờ" và "CP nhân sự" quy đổi theo đơn
+// giá kỹ thuật viên thay vì hiển thị 3 cột T/E/L riêng — giữ đúng ý nghĩa số
+// liệu trong khi khớp với dữ liệu đang có.
+function computeRoutingCost(it: PersonnelRoutingRow, config: PersonnelRateConfigRow) {
+  const totalHours = parseHours(it.prepHours) + parseHours(it.setupHours) + parseHours(it.testHours) + parseHours(it.reportHours)
+  const laborCost = totalHours * config.techRate
+  const withOverhead = laborCost * (1 + config.overheadPct / 100)
+  return { totalHours, withOverhead }
+}
+
 export function PersonnelView({ config, routing }: { config: PersonnelRateConfigRow; routing: PersonnelRoutingRow[] }) {
   const [q, setQ] = useState("")
   const [editing, setEditing] = useState<PersonnelRoutingRow | null>(null)
@@ -84,6 +105,8 @@ export function PersonnelView({ config, routing }: { config: PersonnelRateConfig
     { key: "setupHours", header: "Giờ lắp đặt", render: (it) => it.setupHours ?? "—" },
     { key: "testHours", header: "Giờ thử", render: (it) => it.testHours ?? "—" },
     { key: "reportHours", header: "Giờ báo cáo", render: (it) => it.reportHours ?? "—" },
+    { key: "totalHours", header: "Tổng giờ", align: "right", render: (it) => computeRoutingCost(it, config).totalHours || "—" },
+    { key: "laborCost", header: "CP nhân sự (VNĐ)", align: "right", render: (it) => `${fmtVND(computeRoutingCost(it, config).withOverhead)} đ` },
     {
       key: "actions", header: "", align: "right",
       render: (it) =>

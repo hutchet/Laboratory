@@ -1,208 +1,299 @@
 "use client"
 import { useEffect, useMemo, useState, useTransition } from "react"
 import { PageShell } from "@/shared/ui/page-shell"
-import { FilterBar } from "@/shared/ui/filter-bar"
-import { DataTable, type DataTableColumn } from "@/shared/ui/data-table"
-import { FormModal } from "@/shared/ui/form-modal"
+import { SearchInput } from "@/shared/ui/search-input"
+import { AddButton } from "@/shared/ui/add-button"
 import { CustomSelect } from "@/shared/ui/custom-select"
-import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
+import { DateField } from "@/shared/ui/date-field"
 import { StatusBadge } from "@/shared/ui/status-badge"
+import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
+import { KpiCard } from "@/shared/ui/kpi-card"
+import { computeSimpleTrend } from "@/shared/lib/trend"
+import { DirectionIcon } from "@/shared/ui/icons"
 import { Perm } from "@/shared/lib/rbac-client"
-import { saveQuote, deleteQuote, bulkDeleteQuotes } from "../actions"
-import { QUOTE_STATUS_LABEL, type QuoteRow, type Option } from "../types"
+import { saveQuote, deleteQuote, addQuoteItem, updateQuoteItemQty, removeQuoteItem } from "../actions"
+import { QUOTE_STATUS_LABEL, type QuoteRow, type Option, type TestCatalogRow } from "../types"
 
+function fmtVND(n: number) {
+  return Math.round(n || 0).toLocaleString("vi-VN")
+}
+// Khớp đúng hàm fmtDate() bản gốc (dd-mm-yyyy)
+function fmtDate(s?: string | null) {
+  if (!s) return "—"
+  const p = s.slice(0, 10).split("-")
+  return p.length === 3 ? `${p[2]}-${p[1]}-${p[0]}` : s
+}
 function statusTone(status: string | null): "neutral" | "info" | "success" | "danger" {
   if (status === "approved") return "success"
   if (status === "rejected") return "danger"
   if (status === "sent") return "info"
   return "neutral"
 }
-
-// Ported from the original's exportQuoteExcel(): downloads an .xls file (HTML table blob), same
-// technique the original used, alongside exportQuotePDF() which just calls window.print().
-function downloadXls(filename: string, rows: Array<Array<string | number | null>>) {
-  const esc = (v: string | number | null) => String(v ?? "—").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-  const body = rows.map((r) => `<tr>${r.map((c) => `<td>${esc(c)}</td>`).join("")}</tr>`).join("")
-  const html = `<html><head><meta charset="utf-8"></head><body><table border="1">${body}</table></body></html>`
-  const blob = new Blob(["\ufeff" + html], { type: "application/vnd.ms-excel;charset=utf-8;" })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement("a")
-  a.href = url
-  a.download = filename
-  a.click()
-  URL.revokeObjectURL(url)
+function itemTotal(it: { price: number | null; quantity: number | null }) {
+  return (it.price ?? 0) * (it.quantity ?? 1)
+}
+// Khớp itemsSubtotal trong renderQuoteOverview() bản gốc (tổng qtItemPrice*qty)
+function quoteItemsSubtotal(qt: QuoteRow) {
+  return qt.items.reduce((s, it) => s + itemTotal(it), 0)
+}
+function quoteGrandTotal(qt: QuoteRow) {
+  const sub = quoteItemsSubtotal(qt)
+  const vat = Math.round((sub * (qt.vatPercent ?? 0)) / 100)
+  return sub + vat
 }
 
-export function OverviewView({ quotes, customers, projects }: { quotes: QuoteRow[]; customers: Option[]; projects: Option[] }) {
+export function OverviewView({
+  quotes, customers, projects, testCatalog,
+}: {
+  quotes: QuoteRow[]
+  customers: Option[]
+  projects: Option[]
+  testCatalog: TestCatalogRow[]
+}) {
   const [q, setQ] = useState("")
-  const [editing, setEditing] = useState<QuoteRow | null>(null)
-  const [showForm, setShowForm] = useState(false)
+  const [openId, setOpenId] = useState<string | null>(null) // "new" hoặc id báo giá đang mở
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
-  const [selected, setSelected] = useState<Set<string>>(new Set())
-  const [bulkConfirm, setBulkConfirm] = useState(false)
-  const [editMode, setEditMode] = useState(false)
 
-  const [qCustomerId, setQCustomerId] = useState("")
-  const [qProjectId, setQProjectId] = useState("")
-  const [qStatus, setQStatus] = useState("draft")
+  const [fCustomerId, setFCustomerId] = useState("")
+  const [fProjectId, setFProjectId] = useState("")
+  const [fStatus, setFStatus] = useState("draft")
+  const [addSelect, setAddSelect] = useState("")
+  const [addQty, setAddQty] = useState("1")
 
+  const editing = openId && openId !== "new" ? quotes.find((it) => it.id === openId) ?? null : null
+
+  // Port của #page-title.title-back (PurchaseView/EquipmentView): khi đã mở 1
+  // báo giá, tiêu đề trên topbar trở thành nút quay lại danh sách thẻ.
   useEffect(() => {
-    if (showForm) {
-      setQCustomerId(editing?.customerId ?? "")
-      setQProjectId(editing?.projectId ?? "")
-      setQStatus(editing?.status ?? "draft")
+    const el = document.getElementById("page-title")
+    if (!el) return
+    if (openId) {
+      el.classList.add("title-back")
+      el.title = "Quay lại danh sách báo giá"
+      const handler = () => setOpenId(null)
+      el.addEventListener("click", handler)
+      return () => {
+        el.classList.remove("title-back")
+        el.removeAttribute("title")
+        el.removeEventListener("click", handler)
+      }
     }
-  }, [showForm, editing])
+    el.classList.remove("title-back")
+    el.removeAttribute("title")
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openId])
 
-  const filtered = useMemo(() => quotes.filter((it) => !q || it.title.toLowerCase().includes(q.toLowerCase())), [quotes, q])
+  const filtered = useMemo(
+    () => quotes.filter((it) => !q || it.title.toLowerCase().includes(q.toLowerCase()) || (it.code ?? "").toLowerCase().includes(q.toLowerCase())),
+    [quotes, q],
+  )
 
-  function openNew() { setEditing(null); setShowForm(true) }
-  function openEdit(it: QuoteRow) { setEditing(it); setShowForm(true) }
+  // ---- KPI hệ thống hoá (4 thẻ, xem shared/ui/kpi-card.tsx) ----
+  const kpis = useMemo(() => ({
+    total: quotes.length,
+    value: quotes.reduce((s, it) => s + (it.totalAmount ?? quoteGrandTotal(it)), 0),
+    approved: quotes.filter((it) => it.status === "approved").length,
+    draft: quotes.filter((it) => !it.status || it.status === "draft").length,
+  }), [quotes])
+  const trends = useMemo(() => ({
+    total: computeSimpleTrend(quotes, () => true, (it) => it.createdAt),
+    approved: computeSimpleTrend(quotes, (it) => it.status === "approved", (it) => it.createdAt),
+    draft: computeSimpleTrend(quotes, (it) => !it.status || it.status === "draft", (it) => it.createdAt),
+  }), [quotes])
+
+  function openNew() {
+    setFCustomerId(""); setFProjectId(""); setFStatus("draft"); setAddSelect(""); setAddQty("1")
+    setOpenId("new")
+  }
+  function openDetail(it: QuoteRow) {
+    setFCustomerId(it.customerId ?? ""); setFProjectId(it.projectId ?? ""); setFStatus(it.status ?? "draft"); setAddSelect(""); setAddQty("1")
+    setOpenId(it.id)
+  }
+  function closeDetail() { setOpenId(null) }
+
   function handleSubmit(formData: FormData) {
     const input = {
       id: editing?.id,
-      title: String(formData.get("title") || ""),
-      code: String(formData.get("code") || ""),
-      customerId: String(formData.get("customerId") || "") || null,
-      projectId: String(formData.get("projectId") || "") || null,
+      title: String(formData.get("title") || "") || "Báo giá mới",
+      code: String(formData.get("code") || "") || null,
+      customerId: fCustomerId || null,
+      projectId: fProjectId || null,
       quoteDate: String(formData.get("quoteDate") || "") || null,
       vatPercent: formData.get("vatPercent") ? Number(formData.get("vatPercent")) : 10,
-      totalAmount: formData.get("totalAmount") ? Number(formData.get("totalAmount")) : null,
-      status: String(formData.get("status") || "draft"),
+      creator: String(formData.get("creator") || "") || null,
+      notes: String(formData.get("notes") || "") || null,
+      totalAmount: editing ? quoteGrandTotal(editing) : null,
+      status: fStatus,
     }
-    startTransition(async () => { await saveQuote(input); setShowForm(false); setEditing(null) })
+    startTransition(async () => {
+      await saveQuote(input)
+      if (!editing) setOpenId(null)
+    })
   }
+
   function confirmDelete() {
     if (!confirmDeleteId) return
     const id = confirmDeleteId
-    startTransition(async () => { await deleteQuote(id); setConfirmDeleteId(null) })
-  }
-  function toggleSelect(id: string) {
-    setSelected((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
+    startTransition(async () => {
+      await deleteQuote(id)
+      setConfirmDeleteId(null)
+      if (openId === id) setOpenId(null)
     })
   }
-  function toggleEditMode() {
-    setEditMode((v) => { if (v) setSelected(new Set()); return !v })
+
+  function handleAddItem() {
+    if (!editing || !addSelect) return
+    const cat = testCatalog[Number(addSelect)]
+    if (!cat) return
+    const quoteId = editing.id
+    startTransition(async () => { await addQuoteItem({ quoteId, name: cat.name, standard: cat.standard, price: cat.price, quantity: Number(addQty) || 1 }) })
+    setAddSelect(""); setAddQty("1")
   }
-  function confirmBulkDelete() {
-    const ids = Array.from(selected)
-    startTransition(async () => { await bulkDeleteQuotes(ids); setSelected(new Set()); setBulkConfirm(false) })
+  function handleQtyChange(itemId: string, qty: string) {
+    startTransition(async () => { await updateQuoteItemQty(itemId, Number(qty) || 1) })
   }
-  const allSelected = filtered.length > 0 && filtered.every((it) => selected.has(it.id))
-  function toggleSelectAll() {
-    setSelected((prev) => (allSelected ? new Set() : new Set(filtered.map((it) => it.id))))
+  function handleRemoveItem(itemId: string) {
+    startTransition(async () => { await removeQuoteItem(itemId) })
   }
 
-  function exportExcel() {
-    const header = ["Báo giá", "Khách hàng", "Dự án", "Tổng tiền", "Trạng thái"]
-    const rows = filtered.map((it) => [
-      it.title,
-      it.customer?.name ?? "",
-      it.project?.name ?? "",
-      it.totalAmount ?? "",
-      QUOTE_STATUS_LABEL[it.status ?? "draft"] ?? it.status ?? "",
-    ])
-    downloadXls("bao-gia.xls", [header, ...rows])
-  }
-
-  const columns: Array<DataTableColumn<QuoteRow>> = [
-    ...(editMode
-      ? [{
-          key: "sel", header: <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} />, defaultWidth: 44,
-          render: (it: QuoteRow) => <input type="checkbox" checked={selected.has(it.id)} onClick={(e) => e.stopPropagation()} onChange={() => toggleSelect(it.id)} />,
-        } as DataTableColumn<QuoteRow>]
-      : []),
-    { key: "title", header: "Báo giá", render: (it) => <span style={{ fontWeight: 600 }}>{it.title}</span> },
-    { key: "customer", header: "Khách hàng", render: (it) => it.customer?.name ?? "—" },
-    { key: "project", header: "Dự án", render: (it) => it.project?.name ?? "—" },
-    { key: "totalAmount", header: "Tổng tiền", align: "right", render: (it) => (it.totalAmount != null ? it.totalAmount.toLocaleString("vi-VN") : "—") },
-    { key: "status", header: "Trạng thái", render: (it) => <StatusBadge label={QUOTE_STATUS_LABEL[it.status ?? "draft"] ?? it.status ?? "—"} tone={statusTone(it.status)} /> },
-    {
-      key: "actions", header: "", align: "right",
-      render: (it) =>
-        editMode ? (
-          <span className="acts" style={{ display: "flex", gap: 8, justifyContent: "flex-end" }} onClick={(e) => e.stopPropagation()}>
-            <Perm minPerm="dept_head">
-              <button type="button" className="txt-act pri" onClick={() => openEdit(it)}>Sửa</button>
-              <button type="button" className="txt-act del" onClick={() => setConfirmDeleteId(it.id)}>Xoá</button>
-            </Perm>
+  // ---- Trang chi tiết / form báo giá (khớp ql-form-wrap bản gốc) ----
+  if (openId) {
+    const itemsSubtotal = editing ? quoteItemsSubtotal(editing) : 0
+    const vatPct = editing ? editing.vatPercent ?? 10 : 10
+    const vatAmt = Math.round((itemsSubtotal * vatPct) / 100)
+    const grand = itemsSubtotal + vatAmt
+    return (
+      <PageShell
+        title={editing ? editing.title : "Thêm báo giá"}
+        actions={
+          <span style={{ display: "flex", gap: 8 }}>
+            <button type="button" className="btn-line" onClick={() => window.print()}>Xuất PDF</button>
+            {editing && (
+              <Perm minPerm="dept_head">
+                <button type="button" className="btn-danger" onClick={() => setConfirmDeleteId(editing.id)}>Xoá báo giá</button>
+              </Perm>
+            )}
           </span>
-        ) : null,
-    },
-  ]
+        }
+      >
+        <form id="tf-quote-form" onSubmit={(e) => { e.preventDefault(); handleSubmit(new FormData(e.currentTarget)) }} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div className="card">
+            <div className="row" style={{ flexWrap: "wrap", gap: 12 }}>
+              <div className="field" style={{ flex: 2, minWidth: 220 }}><label>Tên báo giá *</label><input name="title" required defaultValue={editing?.title ?? ""} placeholder="VD: Báo giá thử nghiệm EMC" /></div>
+              <div className="field" style={{ flex: 1, minWidth: 160 }}><label>Mã báo giá</label><input name="code" defaultValue={editing?.code ?? ""} placeholder="VD: BG-001" /></div>
+              <div className="field" style={{ flex: 1, minWidth: 160 }}><label>Ngày báo giá</label><DateField name="quoteDate" defaultValue={editing?.quoteDate?.slice(0, 10) ?? ""} /></div>
+            </div>
+            <div className="row" style={{ flexWrap: "wrap", gap: 12, marginTop: 12 }}>
+              <div className="field" style={{ flex: 1, minWidth: 200 }}><label>Khách hàng</label><CustomSelect value={fCustomerId} onChange={setFCustomerId} options={[{ value: "", label: "— Chọn khách hàng —" }, ...customers.map((c) => ({ value: c.id, label: c.name }))]} width="100%" /></div>
+              <div className="field" style={{ flex: 1, minWidth: 200 }}><label>Dự án</label><CustomSelect value={fProjectId} onChange={setFProjectId} options={[{ value: "", label: "— Không gắn dự án —" }, ...projects.map((p) => ({ value: p.id, label: p.name }))]} width="100%" /></div>
+              <div className="field" style={{ flex: 1, minWidth: 160 }}><label>Trạng thái</label><CustomSelect value={fStatus} onChange={setFStatus} options={Object.entries(QUOTE_STATUS_LABEL).map(([v, l]) => ({ value: v, label: l }))} width="100%" /></div>
+              <div className="field" style={{ flex: "0 0 120px" }}><label>VAT %</label><input name="vatPercent" type="number" defaultValue={editing?.vatPercent ?? 10} /></div>
+            </div>
+            <div className="row" style={{ flexWrap: "wrap", gap: 12, marginTop: 12 }}>
+              <div className="field" style={{ flex: 1, minWidth: 200 }}><label>Người lập</label><input name="creator" defaultValue={editing?.creator ?? ""} /></div>
+              <div className="field" style={{ flex: 2, minWidth: 220 }}><label>Ghi chú</label><input name="notes" defaultValue={editing?.notes ?? ""} /></div>
+            </div>
+          </div>
 
+          {editing && (
+            <div className="card">
+              <div className="section-head" style={{ marginBottom: 10 }}>
+                <h3>Hạng mục báo giá</h3>
+              </div>
+              <div className="row" style={{ gap: 10, flexWrap: "wrap", marginBottom: 12 }}>
+                <CustomSelect
+                  value={addSelect}
+                  onChange={setAddSelect}
+                  width={320}
+                  options={[{ value: "", label: "— Chọn mã bài thử để thêm —" }, ...testCatalog.map((c, i) => ({ value: String(i), label: `${c.code ?? "—"} — ${c.name} (${fmtVND(c.price ?? 0)} đ)` }))]}
+                />
+                <input type="number" min={1} value={addQty} onChange={(e) => setAddQty(e.target.value)} style={{ width: 80 }} />
+                <button type="button" className="btn-line" onClick={handleAddItem} disabled={!addSelect}>+ Thêm hạng mục</button>
+              </div>
+              <table className="rz-table">
+                <thead><tr><th>STT</th><th>Tên bài thử</th><th>Tiêu chuẩn</th><th>Đơn giá</th><th>SL</th><th>Thành tiền</th><th></th></tr></thead>
+                <tbody>
+                  {editing.items.length === 0 && (<tr><td colSpan={7} style={{ textAlign: "center", opacity: 0.6, padding: 16 }}>Chưa có hạng mục nào</td></tr>)}
+                  {editing.items.map((it, i) => (
+                    <tr key={it.id}>
+                      <td>{i + 1}</td>
+                      <td><b>{it.name}</b></td>
+                      <td>{it.standard ?? "—"}</td>
+                      <td>{fmtVND(it.price ?? 0)}</td>
+                      <td><input type="number" min={1} defaultValue={it.quantity ?? 1} onBlur={(e) => handleQtyChange(it.id, e.target.value)} style={{ width: 64 }} /></td>
+                      <td><b>{fmtVND(itemTotal(it))}</b></td>
+                      <td><button type="button" className="txt-act del" onClick={() => handleRemoveItem(it.id)}>Xóa</button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div className="row" style={{ justifyContent: "flex-end", marginTop: 14 }}>
+                <div style={{ minWidth: 260, display: "flex", flexDirection: "column", gap: 6, fontSize: 13 }}>
+                  <div className="prow"><span>Tạm tính hạng mục</span><b>{fmtVND(itemsSubtotal)} đ</b></div>
+                  <div className="prow"><span>VAT ({vatPct}%)</span><b>{fmtVND(vatAmt)} đ</b></div>
+                  <div className="prow" style={{ fontSize: 15 }}><span>Tổng cộng</span><b style={{ color: "var(--pri)" }}>{fmtVND(grand)} đ</b></div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="row" style={{ justifyContent: "flex-end", gap: 8 }}>
+            <button type="button" className="btn-line" onClick={closeDetail}>{editing ? "Đóng" : "Hủy"}</button>
+            <button type="submit" className="btn-pri" disabled={pending}>{pending ? "Đang lưu..." : "Lưu báo giá"}</button>
+          </div>
+        </form>
+
+        <ConfirmDialog open={!!confirmDeleteId} title="Xóa báo giá?" description="Hành động này không thể hoàn tác." confirmLabel="Xóa" danger onConfirm={confirmDelete} onCancel={() => setConfirmDeleteId(null)} />
+      </PageShell>
+    )
+  }
+
+  // ---- Trang danh sách: 4 thẻ KPI + lưới thẻ báo giá (cu-grid, hệ thống hoá phần 3) ----
   return (
     <PageShell
       title="Tổng quan báo giá"
-      actions={
-        <span style={{ display: "flex", gap: 8 }}>
-          <button type="button" className="btn-line" onClick={exportExcel}>Xuất Excel</button>
-          <button type="button" className="btn-line" onClick={() => window.print()}>Xuất PDF</button>
-          <Perm minPerm="dept_head">
-            {editMode && (
-              <button type="button" className="btn-danger" disabled={!selected.size} onClick={() => setBulkConfirm(true)} style={{ opacity: selected.size ? 1 : 0.5 }}>Xoá tất cả</button>
-            )}
-            <button type="button" className={editMode ? "btn-success" : "btn-line"} onClick={toggleEditMode}>{editMode ? "Xong" : "Chỉnh sửa"}</button>
-            <button type="button" className="btn-pri" onClick={openNew}>+ Thêm báo giá</button>
-          </Perm>
-        </span>
-      }
-      filters={<FilterBar search={{ value: q, onChange: setQ, placeholder: "Tìm báo giá..." }} />}
+      actions={<AddButton label="Thêm báo giá" onClick={openNew} />}
+      filters={<SearchInput value={q} onChange={setQ} placeholder="Tìm báo giá..." width={240} />}
     >
-      <DataTable columns={columns} rows={filtered} rowKey={(it) => it.id} loading={pending} emptyTitle="Chưa có báo giá nào" onRowClick={(it) => openEdit(it)} resizable maxBodyHeight={560} />
-
-      <FormModal
-        open={showForm}
-        title={editing ? "Sửa báo giá" : "Thêm báo giá"}
-        onClose={() => { setShowForm(false); setEditing(null) }}
-        onSubmit={() => { const f = document.getElementById("tf-quote-form") as HTMLFormElement | null; if (f) handleSubmit(new FormData(f)) }}
-        submitting={pending}
-        width={640}
-      >
-        <form key={editing?.id ?? "new"} id="tf-quote-form" onSubmit={(e) => e.preventDefault()} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <label style={{ fontSize: 12, fontWeight: 600 }}>Tên báo giá *
-            <input name="title" required defaultValue={editing?.title ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
-          </label>
-          <input type="hidden" name="customerId" value={qCustomerId} />
-          <input type="hidden" name="projectId" value={qProjectId} />
-          <input type="hidden" name="status" value={qStatus} />
-          <div className="row">
-            <div className="field" style={{ flex: 1 }}>
-              <label>Khách hàng</label>
-              <CustomSelect value={qCustomerId} onChange={setQCustomerId} width="100%" options={[{ value: "", label: "—" }, ...customers.map((c) => ({ value: c.id, label: c.name }))]} />
-            </div>
-            <div className="field" style={{ flex: 1 }}>
-              <label>Dự án</label>
-              <CustomSelect value={qProjectId} onChange={setQProjectId} width="100%" options={[{ value: "", label: "—" }, ...projects.map((p) => ({ value: p.id, label: p.name }))]} />
-            </div>
-          </div>
-          <div style={{ display: "flex", gap: 12 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Ngày báo giá
-              <input type="date" name="quoteDate" defaultValue={editing?.quoteDate ? editing.quoteDate.slice(0, 10) : ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
-            </label>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>VAT (%)
-              <input type="number" name="vatPercent" defaultValue={editing?.vatPercent ?? 10} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
-            </label>
-          </div>
-          <div style={{ display: "flex", gap: 12 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Tổng tiền
-              <input type="number" name="totalAmount" defaultValue={editing?.totalAmount ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
-            </label>
-            <div className="field" style={{ flex: 1 }}>
-              <label>Trạng thái</label>
-              <CustomSelect value={qStatus} onChange={setQStatus} width="100%" options={[{ value: "draft", label: "Bản nháp" }, { value: "sent", label: "Đã gửi" }, { value: "approved", label: "Đã duyệt" }, { value: "rejected", label: "Bị từ chối" }]} />
-            </div>
-          </div>
-        </form>
-      </FormModal>
-
-      <ConfirmDialog open={!!confirmDeleteId} title="Xoá báo giá?" description="Hành động này không thể hoàn tác." danger onConfirm={confirmDelete} onCancel={() => setConfirmDeleteId(null)} />
-      <ConfirmDialog open={bulkConfirm} title="Xoá các báo giá đã chọn?" description={`Sẽ xoá ${selected.size} báo giá đã chọn. Hành động này không thể hoàn tác.`} danger onConfirm={confirmBulkDelete} onCancel={() => setBulkConfirm(false)} />
+      <div className="kpis-tier" style={{ marginBottom: 20 }}>
+        <KpiCard label="Tổng số báo giá" value={kpis.total} tone="blue" trend={trends.total} />
+        <KpiCard label="Tổng giá trị" value={`${fmtVND(kpis.value)} đ`} tone="neutral" />
+        <KpiCard label="Đã duyệt" value={kpis.approved} tone="success" trend={trends.approved} />
+        <KpiCard label="Bản nháp" value={kpis.draft} tone="warning" trend={trends.draft} />
+      </div>
+      <div className="section-head">
+        <h3>Tất cả báo giá</h3>
+      </div>
+      {filtered.length === 0 ? (
+        <div className="empty-state">Chưa có báo giá nào</div>
+      ) : (
+        <div className="cu-grid">
+          {filtered.map((it) => {
+            const total = it.totalAmount ?? quoteGrandTotal(it)
+            const initials = it.title.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase()
+            return (
+              <div key={it.id} className="hub-card" style={{ cursor: "pointer" }} onClick={() => openDetail(it)}>
+                <div className="hub-top">
+                  <span className="hub-icon">{initials || "BG"}</span>
+                  <div className="hub-title"><h4>{it.title}</h4><p>{it.code ?? "—"} · {fmtDate(it.quoteDate)}</p></div>
+                  <button type="button" className="sys-arrow-control hub-arrow" aria-label="Xem chi tiết" onClick={(e) => { e.stopPropagation(); openDetail(it) }}>
+                    <span className="sys-arrow-glyph"><DirectionIcon name="chevronRight" size={20} /></span>
+                  </button>
+                </div>
+                <div className="hub-tags">
+                  <StatusBadge label={QUOTE_STATUS_LABEL[it.status ?? "draft"] ?? it.status ?? "—"} tone={statusTone(it.status)} />
+                </div>
+                <div className="hub-stats">
+                  <div className="hub-stat"><b>{it.customer?.name ?? "—"}</b><span>Khách hàng</span></div>
+                  <div className="hub-stat"><b>{it.project?.name ?? "—"}</b><span>Dự án</span></div>
+                  <div className="hub-stat"><b>{fmtVND(total)} đ</b><span>Tổng tiền</span></div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
     </PageShell>
   )
 }

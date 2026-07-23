@@ -98,8 +98,8 @@ export function CatalogView({ items, personnelConfig, routing }: { items: TestCa
     { key: "code", header: "Mã", render: (it) => it.code ?? "—" },
     { key: "name", header: "Tên bài thử", render: (it) => <span style={{ fontWeight: 600 }}>{it.name}</span> },
     { key: "standard", header: "Tiêu chuẩn", render: (it) => it.standard ?? "—" },
-    { key: "sampleQty", header: "Số lượng mẫu", render: (it) => it.sampleQty ?? "—" },
-    { key: "leadTime", header: "Thời gian", render: (it) => it.leadTime ?? "—" },
+    { key: "sampleQty", header: "Cấp mẫu", render: (it) => it.sampleQty ?? "—" },
+    { key: "leadTime", header: "Thời gian xử lý", render: (it) => it.leadTime ?? "—" },
     { key: "price", header: "Đơn giá", align: "right", render: (it) => (it.price != null ? it.price.toLocaleString("vi-VN") : "—") },
     {
       key: "actions", header: "", align: "right",

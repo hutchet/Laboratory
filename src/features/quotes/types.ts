@@ -1,5 +1,14 @@
 export type Option = { id: string; name: string }
 
+export type QuoteCatalogItemRow = {
+  id: string
+  quoteId: string
+  name: string
+  standard: string | null
+  price: number | null
+  quantity: number | null
+}
+
 export type QuoteRow = {
   id: string
   title: string
@@ -10,8 +19,12 @@ export type QuoteRow = {
   totalAmount: number | null
   customerId: string | null
   projectId: string | null
+  creator: string | null
+  notes: string | null
+  createdAt: string
   customer: { id: string; name: string } | null
   project: { id: string; name: string } | null
+  items: QuoteCatalogItemRow[]
 }
 
 export const QUOTE_STATUS_LABEL: Record<string, string> = {

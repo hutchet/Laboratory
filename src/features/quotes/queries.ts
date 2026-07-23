@@ -6,7 +6,7 @@ import type {
 } from "./types"
 
 export async function listQuotes(): Promise<QuoteRow[]> {
-  const rows = await db.quote.findMany({ include: { customer: true, project: true }, orderBy: { createdAt: "desc" } })
+  const rows = await db.quote.findMany({ include: { customer: true, project: true, catalogItems: true }, orderBy: { createdAt: "desc" } })
   return rows.map((q) => ({
     id: q.id,
     title: q.title,
@@ -17,8 +17,12 @@ export async function listQuotes(): Promise<QuoteRow[]> {
     totalAmount: q.totalAmount,
     customerId: q.customerId,
     projectId: q.projectId,
+    creator: q.creator,
+    notes: q.notes,
+    createdAt: q.createdAt.toISOString(),
     customer: q.customer ? { id: q.customer.id, name: q.customer.name } : null,
     project: q.project ? { id: q.project.id, name: q.project.name } : null,
+    items: q.catalogItems.map((it) => ({ id: it.id, quoteId: it.quoteId, name: it.name, standard: it.standard, price: it.price, quantity: it.quantity })),
   }))
 }
 
@@ -92,13 +96,13 @@ export type EquipmentPricingRow = {
   code: string | null
   hourlyRate: number | null
   centerId: string | null
-  center: { id: string; name: string } | null
+  center: { id: string; name: string; elecPrice: number | null; rentPrice: number | null } | null
 }
 
 export async function listEquipmentPricing(): Promise<EquipmentPricingRow[]> {
   const rows = await db.equipment.findMany({
-    select: { id: true, name: true, code: true, hourlyRate: true, centerId: true, center: { select: { id: true, name: true } } },
+    select: { id: true, name: true, code: true, hourlyRate: true, centerId: true, center: { select: { id: true, name: true, elecPrice: true, rentPrice: true } } },
     orderBy: { name: "asc" },
   })
-  return rows.map((r) => ({ ...r, center: r.center ? { id: r.center.id, name: r.center.name } : null }))
+  return rows.map((r) => ({ ...r, center: r.center ? { id: r.center.id, name: r.center.name, elecPrice: r.center.elecPrice, rentPrice: r.center.rentPrice } : null }))
 }
