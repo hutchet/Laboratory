@@ -744,17 +744,11 @@
   @media(max-width:1600px){.cu-grid{grid-template-columns:repeat(3,1fr)}}
   @media(max-width:1100px){.cu-grid{grid-template-columns:repeat(2,1fr)}}
   @media(max-width:680px){.cu-grid{grid-template-columns:1fr}}
-  /* Chuẩn hóa lưới KPI 4 cấp theo màn hình: PC=4/Laptop=3/iPad=2/Mobile=1 — dùng class riêng .kpis-tier
-     (không dùng .kpis mặc định) để không xung đột với các rule .kpis khác đang áp cho Dashboard. */
-  /* Fix bao cao 1:40 PM muc 8 ("Chung: quy tac danh sach the chua ap dung dung"):
-     quy tac chuan la 4 the/PC - 3 the/laptop - 2 the/ipad - 1 the/mobile (giong .cu-grid) —
-     ban 2026-07-23 truoc day bo mot moc 3 cot khien chuyen thang tu 4 xuong 2 la sai. */
+  /* Chuẩn hóa lưới KPI 3 cấp theo màn hình: PC/Laptop=4 cột, iPad=2 cột, Mobile=1 cột. */
   .kpis-tier{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
-  @media(max-width:1600px){.kpis-tier{grid-template-columns:repeat(3,1fr)}}
   @media(max-width:1100px){.kpis-tier{grid-template-columns:repeat(2,1fr)}}
   @media(max-width:680px){.kpis-tier{grid-template-columns:1fr}}
   .material-3 .kpis-tier{grid-template-columns:repeat(4,1fr)}
-  @media(max-width:1600px){.material-3 .kpis-tier{grid-template-columns:repeat(3,1fr)}}
   @media(max-width:1100px){.material-3 .kpis-tier{grid-template-columns:repeat(2,1fr)}}
   @media(max-width:680px){.material-3 .kpis-tier{grid-template-columns:1fr}}
   /* Trang popup (FormModal) — bố cục ngang, tối ưu PC/laptop: các field con bọc trong .field/.row
