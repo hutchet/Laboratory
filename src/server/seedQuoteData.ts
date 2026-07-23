@@ -50,6 +50,7 @@ export async function seedQuoteData() {
       code: c.code,
       name: c.name,
       standard: c.standard ?? undefined,
+      phong: c.phong ?? undefined,
       price: c.price ?? undefined,
       centerId: c.center ? centerIdByName.get(c.center) ?? null : null,
     })),

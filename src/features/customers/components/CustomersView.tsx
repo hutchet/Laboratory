@@ -10,15 +10,23 @@ import { ArrowButton } from "@/shared/ui/arrow-button"
 import { ActionIcon } from "@/shared/ui/icons"
 import { Perm } from "@/shared/lib/rbac-client"
 import { computeSimpleTrend } from "@/shared/lib/trend"
+import { useCurrency } from "@/shared/ui/currency-provider"
 import { saveCustomer, deleteCustomer } from "../actions"
 import type { CustomerRow } from "../types"
 
-function fmtVal(v:number){ if(v>=1e9) return `${(v/1e9).toLocaleString("vi-VN",{maximumFractionDigits:1})} tỷ đ`; if(v>=1e6) return `${Math.round(v/1e6).toLocaleString("vi-VN")} triệu đ`; if(v>0) return `${v.toLocaleString("vi-VN")} đ`; return "0 đ" }
 function initials(name:string){ const w=name.trim().split(/\s+/); return (w.length>=2?(w[0][0]+w[w.length-1][0]):name.slice(0,2)).toUpperCase() }
 const AV_COLORS=["#1d5fd6","#2e7d32","#7c3aed","#c62828","#e37c13","#0097a7"]
 const PAGE_SIZE = 8
 
 export function CustomersView({ customers }:{ customers:CustomerRow[] }) {
+  const { currency, format: fmtVND } = useCurrency()
+  function fmtVal(v: number) {
+    if (currency !== "VND") return fmtVND(v)
+    if (v >= 1e9) return `${(v / 1e9).toLocaleString("vi-VN", { maximumFractionDigits: 1 })} tỷ đ`
+    if (v >= 1e6) return `${Math.round(v / 1e6).toLocaleString("vi-VN")} triệu đ`
+    if (v > 0) return `${v.toLocaleString("vi-VN")} đ`
+    return "0 đ"
+  }
   const [q,setQ]=useState("")
   const [page,setPage]=useState(1)
   const [editing,setEditing]=useState<CustomerRow|null>(null)

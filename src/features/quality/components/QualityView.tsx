@@ -165,7 +165,7 @@ export function QualityView({
           </FilterBar>
         </div>
         <div style={{ padding: "12px 18px 18px" }}>
-          <DataTable columns={auditColumns} rows={filteredAudit} rowKey={(a) => a.id} emptyTitle="Chưa có nhật ký nào khớp điều kiện lọc" resizable />
+          <DataTable columns={auditColumns} rows={filteredAudit} rowKey={(a) => a.id} emptyTitle="Chưa có nhật ký nào khớp điều kiện lọc" resizable fillHeight />
         </div>
       </div>
     </PageShell>

@@ -288,7 +288,7 @@ export function MembersView({
           }} style={{ fontSize: 12, fontWeight: 600 }}>Chỉnh sửa</button>
         </div>
       )}
-      <DataTable columns={columns} rows={filtered} rowKey={(m) => m.id} loading={pending} emptyTitle="Chưa có thành viên nào" onRowClick={(m) => openEdit(m)} resizable maxBodyHeight={560} />
+      <DataTable columns={columns} rows={filtered} rowKey={(m) => m.id} loading={pending} emptyTitle="Chưa có thành viên nào" onRowClick={(m) => openEdit(m)} resizable maxBodyHeight={560} fillHeight />
 
       <FormModal
         open={showForm}

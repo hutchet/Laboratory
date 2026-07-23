@@ -95,11 +95,11 @@ export async function removeQuoteItem(id: string) {
 }
 
 // ---- Test catalog ----
-export type SaveTestCatalogInput = { id?: string; code?: string | null; name: string; standard?: string | null; sampleQty?: string | null; leadTime?: string | null; price?: number | null; centerId?: string | null }
+export type SaveTestCatalogInput = { id?: string; code?: string | null; name: string; standard?: string | null; phong?: string | null; sampleQty?: string | null; leadTime?: string | null; price?: number | null; centerId?: string | null }
 
 export async function saveTestCatalogItem(input: SaveTestCatalogInput) {
   await requirePermission(input.id ? "edit" : "create")
-  const data = { code: input.code || null, name: input.name, standard: input.standard || null, sampleQty: input.sampleQty || null, leadTime: input.leadTime || null, price: input.price ?? null, centerId: input.centerId || null }
+  const data = { code: input.code || null, name: input.name, standard: input.standard || null, phong: input.phong || null, sampleQty: input.sampleQty || null, leadTime: input.leadTime || null, price: input.price ?? null, centerId: input.centerId || null }
   if (input.id) await db.testCatalogItem.update({ where: { id: input.id }, data })
   else await db.testCatalogItem.create({ data })
   revalidatePath("/quote")

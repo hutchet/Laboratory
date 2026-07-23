@@ -10,6 +10,7 @@ import { DateField } from '@/shared/ui/date-field'
 import { PageShell } from "@/shared/ui/page-shell"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { KpiCard } from "@/shared/ui/kpi-card"
+import { useCurrency } from "@/shared/ui/currency-provider"
 import { computeSimpleTrend } from "@/shared/lib/trend"
 import { useRouter } from "next/navigation"
 import { saveProject, deleteProject } from "../actions"
@@ -39,6 +40,7 @@ function fmtDate(s?: string | null){
 }
 
 export function ProjectsView({ projects, customers, centers }:{ projects:ProjectRow[]; customers:Option[]; centers:Option[] }) {
+  const { format: fmtVND } = useCurrency()
   const router = useRouter()
   const [chip,setChip] = useState("all")
   const [q,setQ] = useState("")
@@ -136,7 +138,7 @@ export function ProjectsView({ projects, customers, centers }:{ projects:Project
               <div key={p.id}><ProjectCard
                 id={p.id}
                 name={p.name}
-                value={p.value!=null?p.value.toLocaleString("vi-VN")+"đ":null}
+                value={p.value!=null?fmtVND(p.value):null}
                 statusLabel={PROJECT_STATUS_LABEL[p.derivedStatus]??p.derivedStatus}
                 statusBg={STATUS_BG[p.derivedStatus]??"var(--neutral-soft)"}
                 statusColor={STATUS_COLOR[p.derivedStatus]??"var(--neutral)"}

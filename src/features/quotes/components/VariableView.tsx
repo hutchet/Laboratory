@@ -10,12 +10,9 @@ import { KpiCard } from "@/shared/ui/kpi-card"
 import { Perm } from "@/shared/lib/rbac-client"
 import { DirectionIcon } from "@/shared/ui/icons"
 import { computeSimpleTrend } from "@/shared/lib/trend"
+import { useCurrency } from "@/shared/ui/currency-provider"
 import { saveVariableCost, deleteVariableCost, bulkDeleteVariableCosts } from "../actions"
 import type { VariableCostRow, Option } from "../types"
-
-function fmtVND(n: number) {
-  return Math.round(n || 0).toLocaleString("vi-VN")
-}
 
 const NO_CENTER_KEY = "__none__"
 const NO_CENTER_LABEL = "Chưa gán trung tâm"
@@ -27,6 +24,7 @@ type CenterGroup = { key: string; name: string; centerId: string | null; items: 
 // khoản chi phí nào), khoản chi phí chưa gán Trung tâm gộp vào thẻ riêng.
 // Trang danh sách thẻ có 4 KPI.
 export function VariableView({ items, centers = [] }: { items: VariableCostRow[]; centers?: Option[] }) {
+  const { format: fmtVND } = useCurrency()
   const [q, setQ] = useState("")
   const [editing, setEditing] = useState<VariableCostRow | null>(null)
   const [showForm, setShowForm] = useState(false)
@@ -83,12 +81,13 @@ export function VariableView({ items, centers = [] }: { items: VariableCostRow[]
     const withAmount = items.filter((it) => it.amount != null)
     const totalCost = items.reduce((a, it) => a + (it.amount || 0), 0)
     const avgCost = withAmount.length ? totalCost / withAmount.length : 0
-    return { total: items.length, centerCount: centers.length, totalCost, avgCost }
+    return { total: items.length, missingAmount: items.length - withAmount.length, totalCost, avgCost }
   }, [items, centers])
 
   // Trend theo data thuc (rule KPI global) — dua tren VariableCost.createdAt.
   const variableTrends = useMemo(() => ({
     total: computeSimpleTrend(items, () => true, (it) => it.createdAt),
+    noAmount: computeSimpleTrend(items, (it) => it.amount == null, (it) => it.createdAt),
   }), [items])
 
   const filtered = useMemo(() => {
@@ -163,9 +162,9 @@ export function VariableView({ items, centers = [] }: { items: VariableCostRow[]
         <>
           <div className="kpis-tier" style={{ marginBottom: 16 }}>
             <KpiCard label="Tổng khoản mục" value={overview.total} tone="blue" trend={variableTrends.total} />
-            <KpiCard label="Trung tâm" value={overview.centerCount} tone="blue" />
-            <KpiCard label="Tổng chi phí" value={`${fmtVND(overview.totalCost)} đ`} tone="warning" />
-            <KpiCard label="Chi phí trung bình" value={`${fmtVND(overview.avgCost)} đ`} tone="success" />
+            <KpiCard label="Chưa có chi phí" value={overview.missingAmount} tone="danger" trend={variableTrends.noAmount} />
+            <KpiCard label="Tổng chi phí" value={fmtVND(overview.totalCost)} tone="warning" />
+            <KpiCard label="Chi phí trung bình" value={fmtVND(overview.avgCost)} tone="success" />
           </div>
           {groups.length === 0 ? (
             <div className="empty">Chưa có trung tâm nào — thêm trung tâm ở trang Trung tâm để tạo chi phí theo từng trung tâm.</div>
@@ -180,13 +179,13 @@ export function VariableView({ items, centers = [] }: { items: VariableCostRow[]
                   <div key={g.key} className="hub-card" onClick={() => openCenter(g.key)} style={{ cursor: "pointer" }}>
                     <div className="hub-top">
                       <div className="hub-icon">{initial}</div>
-                      <div className="hub-title"><h4>{g.name}</h4><p>{g.items.length} khoản mục · {fmtVND(val)} đ</p></div>
+                      <div className="hub-title"><h4>{g.name}</h4><p>{g.items.length} khoản mục · {fmtVND(val)}</p></div>
                       <span className="hub-arrow sys-arrow-glyph"><DirectionIcon name="chevronRight" size={20} /></span>
                     </div>
                     <div className="hub-stats">
                       <div className="hub-stat"><b>{g.items.length}</b><span>Khoản mục</span></div>
                       <div className="hub-stat"><b>{withAmount.length}</b><span>Có giá trị</span></div>
-                      <div className="hub-stat"><b>{fmtVND(avgVal)} đ</b><span>CP TB</span></div>
+                      <div className="hub-stat"><b>{fmtVND(avgVal)}</b><span>CP TB</span></div>
                     </div>
                   </div>
                 )
@@ -213,7 +212,7 @@ export function VariableView({ items, centers = [] }: { items: VariableCostRow[]
               </span>
             </div>
           </div>
-          <DataTable columns={columns} rows={filtered} rowKey={(it) => it.id} loading={pending} emptyTitle="Chưa có chi phí nào" onRowClick={(it) => openEdit(it)} resizable maxBodyHeight={560} />
+          <DataTable columns={columns} rows={filtered} rowKey={(it) => it.id} loading={pending} emptyTitle="Chưa có chi phí nào" onRowClick={(it) => openEdit(it)} resizable maxBodyHeight={560} fillHeight />
         </>
       )}
 

@@ -8,6 +8,7 @@ import { Perm } from "@/shared/lib/rbac-client"
 import { KpiCard } from "@/shared/ui/kpi-card"
 import { DirectionIcon } from "@/shared/ui/icons"
 import { computeSimpleTrend } from "@/shared/lib/trend"
+import { useCurrency } from "@/shared/ui/currency-provider"
 import { saveDepreciationAsset } from "../actions"
 import type { DepreciationAssetRow } from "../types"
 import type { Option } from "@/features/projects/types"
@@ -33,6 +34,7 @@ const NO_CENTER_LABEL = "Trung tâm thử nghiệm chung"
 type CenterGroup = { key: string; name: string; centerId: string | null; items: DepreciationAssetRow[] }
 
 export function DepreciationView({ items, centers = [] }: { items: DepreciationAssetRow[]; centers?: Option[] }) {
+  const { currency, format: fmtVND } = useCurrency()
   const [q, setQ] = useState("")
   const [editing, setEditing] = useState<DepreciationAssetRow | null>(null)
   const [showForm, setShowForm] = useState(false)
@@ -167,9 +169,9 @@ export function DepreciationView({ items, centers = [] }: { items: DepreciationA
     { key: "idx", header: "STT", defaultWidth: 48, render: (it) => centerFilteredItems.findIndex((x) => x.id === it.id) + 1 },
     { key: "assetName", header: "Tài sản", render: (it) => <span style={{ fontWeight: 600 }}>{it.assetName}</span> },
     { key: "assetGroup", header: "Nhóm", render: (it) => it.assetGroup ?? "—" },
-    { key: "totalValue", header: "Tổng giá trị (VNĐ)", align: "right", render: (it) => (it.totalValue != null ? it.totalValue.toLocaleString("vi-VN") : "—") },
+    { key: "totalValue", header: `Tổng giá trị (${currency})`, align: "right", render: (it) => (it.totalValue != null ? fmtVND(it.totalValue) : "—") },
     { key: "years", header: "Số năm KH", align: "right", render: (it) => it.years ?? "—" },
-    { key: "khPerHour", header: "Khấu hao/giờ (VNĐ)", align: "right", render: (it) => <b>{khPerHour(it.totalValue, it.years).toLocaleString("vi-VN")}</b> },
+    { key: "khPerHour", header: `Khấu hao/giờ (${currency})`, align: "right", render: (it) => <b>{fmtVND(khPerHour(it.totalValue, it.years))}</b> },
     {
       key: "actions", header: "", align: "right",
       render: (it) => (
@@ -186,8 +188,8 @@ export function DepreciationView({ items, centers = [] }: { items: DepreciationA
         <>
           <div className="kpis-tier" style={{ marginBottom: 16 }}>
             <KpiCard label="Tổng tài sản" value={overview.total} hint="Theo danh sách thiết bị" tone="blue" trend={dvTrendTotal} />
-            <KpiCard label="Tổng giá trị (VNĐ)" value={overview.totalValue.toLocaleString("vi-VN")} hint="Toàn bộ tài sản" tone="success" trend={dvTrendValue} />
-            <KpiCard label="Tổng khấu hao/giờ" value={overview.totalPerHour.toLocaleString("vi-VN")} hint="VNĐ/giờ" tone="warning" trend={dvTrendPerHour} />
+            <KpiCard label={`Tổng giá trị (${currency})`} value={fmtVND(overview.totalValue)} hint="Toàn bộ tài sản" tone="success" trend={dvTrendValue} />
+            <KpiCard label="Tổng khấu hao/giờ" value={fmtVND(overview.totalPerHour)} hint={`${currency}/giờ`} tone="warning" trend={dvTrendPerHour} />
             <KpiCard label="Thiếu dữ liệu" value={overview.missing} hint="Chưa nhập giá trị/số năm" tone="danger" trend={dvTrendMissing} />
           </div>
 
@@ -204,11 +206,11 @@ export function DepreciationView({ items, centers = [] }: { items: DepreciationA
                   <div key={g.key} className="hub-card" onClick={() => openCenter(g.key)}>
                     <div className="hub-top">
                       <div className="hub-icon">{initial}</div>
-                      <div className="hub-title"><h4>{g.name}</h4><p>{g.items.length} tài sản · {val.toLocaleString("vi-VN")} đ</p></div>
+                      <div className="hub-title"><h4>{g.name}</h4><p>{g.items.length} tài sản · {fmtVND(val)}</p></div>
                       <span className="hub-arrow sys-arrow-glyph"><DirectionIcon name="chevronRight" size={20} /></span>
                     </div>
                     <div className="hub-tags">
-                      <span className="hub-tag">{perHour.toLocaleString("vi-VN")} đ/giờ</span>
+                      <span className="hub-tag">{fmtVND(perHour)}/giờ</span>
                       {missing > 0 && <span className="hub-tag" style={{ color: "var(--red)" }}>{missing} thiếu dữ liệu</span>}
                     </div>
                     <div className="hub-stats">
@@ -228,8 +230,8 @@ export function DepreciationView({ items, centers = [] }: { items: DepreciationA
         <div className="center-detail-section">
           <div className="kpis-tier" style={{ marginBottom: 16 }}>
             <KpiCard label="Tổng tài sản" value={openGroup.items.length} hint={openGroup.name} tone="blue" trend={centerTrends.total} />
-            <KpiCard label="Tổng giá trị (VNĐ)" value={centerTotalValue.toLocaleString("vi-VN")} hint="Trong trung tâm này" tone="success" trend={centerTrends.value} />
-            <KpiCard label="Khấu hao/giờ" value={centerPerHour.toLocaleString("vi-VN")} hint="VNĐ/giờ" tone="warning" trend={centerTrends.perHour} />
+            <KpiCard label={`Tổng giá trị (${currency})`} value={fmtVND(centerTotalValue)} hint="Trong trung tâm này" tone="success" trend={centerTrends.value} />
+            <KpiCard label="Khấu hao/giờ" value={fmtVND(centerPerHour)} hint={`${currency}/giờ`} tone="warning" trend={centerTrends.perHour} />
             <KpiCard label="Thiếu dữ liệu" value={centerMissing} hint="Cần bổ sung" tone="danger" trend={centerTrends.missing} />
           </div>
 
@@ -238,7 +240,7 @@ export function DepreciationView({ items, centers = [] }: { items: DepreciationA
               <div><h3>{openGroup.name}</h3><span>Danh sách khấu hao chi tiết — ánh xạ tự động từ thiết bị</span></div>
               <FilterBar search={{ value: q, onChange: setQ, placeholder: "Tìm trong trung tâm này..." }} />
             </div>
-            <DataTable columns={detailColumns} rows={centerFilteredItems} rowKey={(it) => it.id} onRowClick={openEdit} loading={pending} emptyTitle="Chưa có tài sản nào" resizable maxBodyHeight={560} />
+            <DataTable columns={detailColumns} rows={centerFilteredItems} rowKey={(it) => it.id} onRowClick={openEdit} loading={pending} emptyTitle="Chưa có tài sản nào" resizable maxBodyHeight={560} fillHeight />
           </div>
         </div>
       )}
@@ -268,7 +270,7 @@ export function DepreciationView({ items, centers = [] }: { items: DepreciationA
               <input name="assetGroup" value={dvGroup} onChange={(e) => setDvGroup(e.target.value)} />
             </div>
             <div className="field" style={{ flex: 1 }}>
-              <label>Tổng giá trị (đ)</label>
+              <label>{`Tổng giá trị gốc (VNĐ)`}</label>
               <input type="number" name="totalValue" value={dvValue} onChange={(e) => setDvValue(e.target.value)} />
             </div>
             <div className="field" style={{ flex: 1 }}>
@@ -278,7 +280,7 @@ export function DepreciationView({ items, centers = [] }: { items: DepreciationA
           </div>
           <div className="callout" style={{ fontSize: 12, marginTop: 4 }}>
             Khấu hao/giờ tự tính = Tổng giá trị ÷ (Số năm × 8640 giờ):{" "}
-            <b style={{ color: "var(--pri)" }}>{khPerHour(Number(dvValue) || 0, Number(dvYears) || 0).toLocaleString("vi-VN")}</b> đ/giờ
+            <b style={{ color: "var(--pri)" }}>{fmtVND(khPerHour(Number(dvValue) || 0, Number(dvYears) || 0))}</b>/giờ
           </div>
         </form>
       </FormModal>

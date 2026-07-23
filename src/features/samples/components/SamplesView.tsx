@@ -10,6 +10,7 @@ import { StatusBadge } from "@/shared/ui/status-badge"
 import { KpiCard } from "@/shared/ui/kpi-card"
 import { IconButton } from "@/shared/ui/icon-button"
 import { CustomSelect } from "@/shared/ui/custom-select"
+import { DirectionIcon } from "@/shared/ui/icons"
 import { Perm } from "@/shared/lib/rbac-client"
 import { computeSimpleTrend } from "@/shared/lib/trend"
 import { saveSample, deleteSample, bulkDeleteSamples } from "../actions"
@@ -22,9 +23,17 @@ function statusTone(status: string): "neutral" | "info" | "success" | "warning" 
   return "neutral"
 }
 
+const NO_PROJECT_KEY = "__none__"
+
+// y/c 4.2 (23/07, 9:05 toi): Quan ly mau chuyen sang mo hinh danh sach the
+// theo Du an (giong Danh muc/Ma tran/Nhan su/Chi phi bien doi bao gia) de
+// chuan hoa theo layout chung - the danh sach truoc, chon 1 the de xem bang
+// mau chi tiet cua du an do, thay cho kieu accordion cu (khong dung class
+// .cu-grid/.hub-card nen khong dong bo giao dien va bi vo ket cau bang khi
+// doi mau toi vi dung mau hex cung thay vi bien theme).
 export function SamplesView({ samples, customers, projects }: { samples: SampleRow[]; customers: Option[]; projects: Option[] }) {
   const [q, setQ] = useState("")
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
+  const [openGroupKey, setOpenGroupKey] = useState("")
   const [editing, setEditing] = useState<SampleRow | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
@@ -56,19 +65,45 @@ export function SamplesView({ samples, customers, projects }: { samples: SampleR
   }, [samples])
   const trends=useMemo(()=>({total:computeSimpleTrend(samples,s=>true,s=>s.createdAt),testing:computeSimpleTrend(samples,s=>s.derivedStatus==="testing",s=>s.createdAt),done:computeSimpleTrend(samples,s=>s.derivedStatus==="completed"||s.derivedStatus==="returned",s=>s.createdAt),received:computeSimpleTrend(samples,s=>s.derivedStatus==="received",s=>s.createdAt)}),[samples])
 
+  // Danh sach the theo Du an - luon tinh tren TOAN BO mau (khong loc theo q),
+  // giong dung pattern cua Danh muc/Ma tran/Nhan su/Chi phi bien doi.
+  const groups = useMemo(() => groupSamplesByProject(samples), [samples])
+  const openGroup = groups.find((g) => (g.project?.id ?? NO_PROJECT_KEY) === openGroupKey) ?? null
+
+  useEffect(() => {
+    const el = document.getElementById("page-title")
+    if (!el) return
+    if (openGroup) {
+      el.classList.add("title-back")
+      el.title = "Quay lại danh sách dự án"
+      const handler = () => backToGrid()
+      el.addEventListener("click", handler)
+      return () => {
+        el.classList.remove("title-back")
+        el.removeAttribute("title")
+        el.removeEventListener("click", handler)
+      }
+    }
+    el.classList.remove("title-back")
+    el.removeAttribute("title")
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openGroup?.project?.id])
+
+  function openGroupFn(key: string) { setOpenGroupKey(key); setQ("") }
+  function backToGrid() { setOpenGroupKey(""); setQ("") }
+
+  // Loc theo q CHI trong pham vi the dang mo - giong dung pattern cua cac
+  // trang danh sach the khac (khong loc toan bo truoc khi nhom the).
   const filtered = useMemo(() => {
-    return samples.filter((s) => {
+    const list = openGroup ? openGroup.samples : []
+    return list.filter((s) => {
       if (q) {
         const hay = `${s.code ?? s.name} ${s.serialNumber ?? ""} ${s.project?.name ?? ""}`.toLowerCase()
         if (!hay.includes(q.toLowerCase())) return false
       }
       return true
     })
-  }, [samples, q])
-
-  const groups = useMemo(() => groupSamplesByProject(filtered), [filtered])
-
-  function toggleGroup(key: string) { setCollapsed((prev) => ({ ...prev, [key]: !prev[key] })) }
+  }, [openGroup, q])
 
   function openNew() { setEditing(null); setShowForm(true) }
   function openEdit(s: SampleRow) { setEditing(s); setShowForm(true) }
@@ -138,12 +173,8 @@ export function SamplesView({ samples, customers, projects }: { samples: SampleR
     },
   ]
 
-  // Fix thu tu: KPI phai hien TRUOC toolbar/filter (giong Du an/Khach hang/Trung tam) -
-  // khong dung props actions/filters cua PageShell nua (thu tu co dinh actions->filters->children
-  // luon day KPI xuong duoi toolbar). Chuyen toan bo vao children voi kpis-tier + section-head,
-  // dung chung AddButton chuan thay nut bespoke cu.
   return (
-    <PageShell title="Quản lý Mẫu">
+    <PageShell title="Quản lý Mẫu" subtitle={openGroup ? undefined : "Chọn một dự án để xem danh sách mẫu"}>
       <div id="page-samples">
       <div className="kpis-tier" style={{ marginBottom: 20 }}>
         <KpiCard label="Tổng số mẫu" value={kpis.total} tone="blue" trend={trends.total} />
@@ -151,58 +182,58 @@ export function SamplesView({ samples, customers, projects }: { samples: SampleR
         <KpiCard label="Hoàn thành" value={kpis.done} tone="success" trend={trends.done} />
         <KpiCard label="Mới nhận, chưa xếp lịch" value={kpis.received} tone="danger" trend={trends.received} />
       </div>
-      <div className="section-head">
-        <h3>Tất cả mẫu</h3>
-        <div className="tools">
-          <FilterBar search={{ value: q, onChange: setQ, placeholder: "Tìm mã mẫu, seri, dự án..." }} />
-          <Perm minPerm="technician">
-            {editMode && (
-              <button type="button" className="btn-danger" disabled={!selected.size} onClick={() => setBulkConfirm(true)} style={{ opacity: selected.size ? 1 : 0.5 }}>Xoá tất cả</button>
-            )}
-            <button type="button" className={editMode ? "btn-success" : "btn-line"} onClick={toggleEditMode}>{editMode ? "Xong" : "Chỉnh sửa"}</button>
-            <AddButton label="Thêm mẫu" onClick={openNew} />
-          </Perm>
-        </div>
-      </div>
 
-      {groups.length === 0 ? (
-        <div style={{ padding: 32, textAlign: "center", color: "#9aa1ab" }}>Chưa có mẫu nào</div>
-      ) : (
-        groups.map((g, gi) => {
-          const key = g.project?.id ?? `__none__${gi}`
-          const isCollapsed = !!collapsed[key]
-          const totalItems = g.samples.reduce((sum, s) => sum + s.totalItems, 0)
-          const totalDone = g.samples.reduce((sum, s) => sum + s.doneCount, 0)
-          const pct = totalItems ? Math.round((totalDone / totalItems) * 100) : 0
-          return (
-            <div key={key} style={{ border: "1px solid #eceff2", borderRadius: 10, marginBottom: 16, overflow: "hidden" }}>
-              <div
-                onClick={() => toggleGroup(key)}
-                style={{ padding: "14px 18px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", background: "#fafbfc" }}
-              >
-                <div>
-                  <h3 style={{ fontSize: 15, margin: 0 }}>{g.project ? g.project.name : "Không thuộc dự án nào"}</h3>
-                  <span style={{ fontSize: 12, color: "#9aa1ab" }}>{g.customer ? `Khách hàng: ${g.customer.name} · ` : ""}{g.samples.length} mẫu</span>
-                </div>
-                <div className="sm-progress-surface">
-                  <div className="sm-progress-info">
-                    <div>Tiến độ</div>
-                    <div>{pct}%</div>
+      {!openGroup && (
+        groups.length === 0 ? (
+          <div className="empty">Chưa có mẫu nào — thêm mẫu để tạo danh sách theo từng dự án.</div>
+        ) : (
+          <div className="cu-grid">
+            {groups.map((g) => {
+              const key = g.project?.id ?? NO_PROJECT_KEY
+              const totalItems = g.samples.reduce((sum, s) => sum + s.totalItems, 0)
+              const totalDone = g.samples.reduce((sum, s) => sum + s.doneCount, 0)
+              const pct = totalItems ? Math.round((totalDone / totalItems) * 100) : 0
+              const testingCount = g.samples.filter((s) => s.derivedStatus === "testing").length
+              const initial = (g.project?.name ?? "Khác").trim().slice(0, 2).toUpperCase() || "KH"
+              return (
+                <div key={key} className="hub-card" onClick={() => openGroupFn(key)} style={{ cursor: "pointer" }}>
+                  <div className="hub-top">
+                    <div className="hub-icon">{initial}</div>
+                    <div className="hub-title">
+                      <h4>{g.project ? g.project.name : "Không thuộc dự án nào"}</h4>
+                      <p>{g.customer ? `${g.customer.name} · ` : ""}{g.samples.length} mẫu</p>
+                    </div>
+                    <span className="hub-arrow sys-arrow-glyph"><DirectionIcon name="chevronRight" size={20} /></span>
                   </div>
-                  <div className="pbar" style={{ width: 90, height: 6, background: "#eceff2", borderRadius: 4, overflow: "hidden" }}>
-                    <div style={{ width: `${pct}%`, height: "100%", background: "#1d5fd6" }} />
+                  <div className="hub-stats">
+                    <div className="hub-stat"><b>{g.samples.length}</b><span>Mẫu</span></div>
+                    <div className="hub-stat"><b>{pct}%</b><span>Tiến độ</span></div>
+                    <div className="hub-stat"><b>{testingCount}</b><span>Đang thử</span></div>
                   </div>
-                  <span className="sm-progress-chevron" style={{ transform: isCollapsed ? "rotate(-90deg)" : "none", transition: "transform .15s" }}>▾</span>
                 </div>
-              </div>
-              {!isCollapsed && (
-                <div style={{ overflowX: "auto" }}>
-                  <DataTable columns={columns} rows={g.samples} rowKey={(s) => s.id} loading={pending} emptyTitle="Chưa có mẫu nào" onRowClick={(s) => openEdit(s)} resizable maxBodyHeight={480} />
-                </div>
-              )}
+              )
+            })}
+          </div>
+        )
+      )}
+
+      {openGroup && (
+        <>
+          <div className="section-head">
+            <h3>{openGroup.project ? openGroup.project.name : "Không thuộc dự án nào"}</h3>
+            <div className="tools">
+              <FilterBar search={{ value: q, onChange: setQ, placeholder: "Tìm mã mẫu, seri..." }} />
+              <Perm minPerm="technician">
+                {editMode && (
+                  <button type="button" className="btn-danger" disabled={!selected.size} onClick={() => setBulkConfirm(true)} style={{ opacity: selected.size ? 1 : 0.5 }}>Xoá tất cả</button>
+                )}
+                <button type="button" className={editMode ? "btn-success" : "btn-line"} onClick={toggleEditMode}>{editMode ? "Xong" : "Chỉnh sửa"}</button>
+                <AddButton label="Thêm mẫu" onClick={openNew} />
+              </Perm>
             </div>
-          )
-        })
+          </div>
+          <DataTable columns={columns} rows={filtered} rowKey={(s) => s.id} loading={pending} emptyTitle="Chưa có mẫu nào" onRowClick={(s) => openEdit(s)} resizable maxBodyHeight={560} fillHeight />
+        </>
       )}
 
       <FormModal
@@ -258,7 +289,7 @@ export function SamplesView({ samples, customers, projects }: { samples: SampleR
             <label>Trạng thái mẫu</label>
             <CustomSelect value={sStatus} onChange={setSStatus} width="100%" options={[{ value: "", label: "— Tự động —" }, ...SAMPLE_STATUS_ORDER.map((s) => ({ value: s, label: SAMPLE_STATUS_LABEL[s] }))]} />
           </div>
-          <div style={{ fontSize: 12, color: "#9aa1ab" }}>Để trống để trạng thái tự suy ra từ tiến độ bài thử liên kết (giống hành vi bản gốc); chỉ chọn thủ công khi cần ghi đè.</div>
+          <div style={{ fontSize: 12, color: "var(--muted)" }}>Để trống để trạng thái tự suy ra từ tiến độ bài thử liên kết (giống hành vi bản gốc); chỉ chọn thủ công khi cần ghi đè.</div>
         </form>
       </FormModal>
 

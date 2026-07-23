@@ -68,6 +68,7 @@ export function CatalogView({ items, personnelConfig, routing, centers = [] }: {
   const catalogTrends = useMemo(() => ({
     total: computeSimpleTrend(items, () => true, (it) => it.createdAt),
     withPrice: computeSimpleTrend(items, (it) => it.price != null, (it) => it.createdAt),
+    noPrice: computeSimpleTrend(items, (it) => it.price == null, (it) => it.createdAt),
   }), [items])
 
   const groups: CenterGroup[] = useMemo(() => {
@@ -111,7 +112,7 @@ export function CatalogView({ items, personnelConfig, routing, centers = [] }: {
     const withPrice = items.filter((it) => it.price != null)
     const avgPrice = withPrice.length ? withPrice.reduce((a, it) => a + (it.price || 0), 0) / withPrice.length : 0
     const totalValue = items.reduce((a, it) => a + (it.price || 0), 0)
-    return { total: items.length, centerCount: centers.length, avgPrice, totalValue }
+    return { total: items.length, missingPrice: items.length - withPrice.length, avgPrice, totalValue }
   }, [items, centers])
 
   const filtered = useMemo(() => {
@@ -127,6 +128,7 @@ export function CatalogView({ items, personnelConfig, routing, centers = [] }: {
       code: String(formData.get("code") || ""),
       name: String(formData.get("name") || ""),
       standard: String(formData.get("standard") || ""),
+      phong: String(formData.get("phong") || ""),
       sampleQty: String(formData.get("sampleQty") || ""),
       leadTime: String(formData.get("leadTime") || ""),
       price: formData.get("price") ? Number(formData.get("price")) : null,
@@ -169,6 +171,7 @@ export function CatalogView({ items, personnelConfig, routing, centers = [] }: {
     { key: "code", header: "Mã", render: (it) => it.code ?? "—" },
     { key: "name", header: "Tên bài thử", render: (it) => <span style={{ fontWeight: 600 }}>{it.name}</span> },
     { key: "standard", header: "Tiêu chuẩn", render: (it) => it.standard ?? "—" },
+    { key: "phong", header: "Phòng", render: (it) => it.phong ?? "—" },
     { key: "sampleQty", header: "Cấp mẫu", render: (it) => it.sampleQty ?? "—" },
     { key: "leadTime", header: "Thời gian xử lý", render: (it) => it.leadTime ?? "—" },
     { key: "price", header: "Đơn giá", align: "right", render: (it) => (it.price != null ? fmtVND(it.price) : "—") },
@@ -194,7 +197,7 @@ export function CatalogView({ items, personnelConfig, routing, centers = [] }: {
         <>
           <div className="kpis-tier" style={{ marginBottom: 16 }}>
             <KpiCard label="Tổng bài thử" value={overview.total} tone="blue" trend={catalogTrends.total} />
-            <KpiCard label="Trung tâm" value={overview.centerCount} tone="blue" />
+            <KpiCard label="Chưa có đơn giá" value={overview.missingPrice} tone="danger" trend={catalogTrends.noPrice} />
             <KpiCard label="Đơn giá trung bình" value={fmtVND(overview.avgPrice)} tone="warning" trend={catalogTrends.withPrice} />
             <KpiCard label="Tổng giá trị danh mục" value={fmtVND(overview.totalValue)} tone="success" />
           </div>
@@ -244,7 +247,7 @@ export function CatalogView({ items, personnelConfig, routing, centers = [] }: {
               </span>
             </div>
           </div>
-          <DataTable columns={columns} rows={filtered} rowKey={(it) => it.id} loading={pending} emptyTitle="Chưa có bài thử nào" onRowClick={(it) => openEdit(it)} resizable maxBodyHeight={560} />
+          <DataTable columns={columns} rows={filtered} rowKey={(it) => it.id} loading={pending} emptyTitle="Chưa có bài thử nào" onRowClick={(it) => openEdit(it)} resizable maxBodyHeight={560} fillHeight />
         </>
       )}
 
@@ -269,6 +272,9 @@ export function CatalogView({ items, personnelConfig, routing, centers = [] }: {
           </label>
           <label style={{ fontSize: 12, fontWeight: 600 }}>Tiêu chuẩn
             <input name="standard" defaultValue={editing?.standard ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+          </label>
+          <label style={{ fontSize: 12, fontWeight: 600 }}>Phòng
+            <input name="phong" defaultValue={editing?.phong ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
           </label>
           <div style={{ display: "flex", gap: 12 }}>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Số lượng mẫu

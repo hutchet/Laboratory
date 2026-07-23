@@ -12,9 +12,8 @@ export type Language = "vi" | "en"
 // Đơn vị tiền tệ hiển thị (yêu cầu 23/07, 5:36 chiều) — re-export từ shared/lib/currency để
 // AppSettings dùng chung 1 nguồn duy nhất, tránh khai báo trùng "VND"|"USD"|... ở 2 nơi.
 import type { Currency } from "@/shared/lib/currency"
-import { CURRENCY_OPTIONS } from "@/shared/lib/currency"
 export type { Currency }
-export { CURRENCY_OPTIONS }
+export { CURRENCY_OPTIONS } from "@/shared/lib/currency"
 
 export type FontOption = { key: FontKey; label: string; stack: string }
 

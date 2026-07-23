@@ -424,6 +424,7 @@ export function TasksView({ tasks, projects, members, centers, initialQuery }: T
             onRowClick={(t) => openEdit(t)}
             resizable
             maxBodyHeight={520}
+            fillHeight
           />
         </>
       )}

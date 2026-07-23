@@ -428,7 +428,7 @@ export function EquipmentView({ equipment, centers, bookings = [] }: { equipment
                 bi day du (sua thong tin theo hang muc), khong con phai bat centerEditMode
                 truoc. Checkbox/nut Sua/Xoa rieng da co stopPropagation nen khong bi mo
                 form 2 lan khi bam vao chinh cac nut do. */}
-            <DataTable columns={detailColumns} rows={centerFilteredItems} rowKey={(e) => e.id} onRowClick={openEdit} loading={pending} emptyTitle="Chưa có thiết bị nào" resizable maxBodyHeight={560} />
+            <DataTable columns={detailColumns} rows={centerFilteredItems} rowKey={(e) => e.id} onRowClick={openEdit} loading={pending} emptyTitle="Chưa có thiết bị nào" resizable maxBodyHeight={560} fillHeight />
           </div>
         </div>
       )}

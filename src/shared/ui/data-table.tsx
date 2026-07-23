@@ -1,6 +1,6 @@
 "use client"
 import type { ReactNode } from "react"
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { EmptyState } from "@/shared/ui/empty-state"
 
 export type DataTableColumn<T> = {
@@ -10,6 +10,9 @@ export type DataTableColumn<T> = {
   // Starting width in px when `resizable` is enabled on DataTable. Falls back to 140.
   defaultWidth?: number
   render: (row: T) => ReactNode
+  // Khi khong set: tieu de (th) mac dinh can GIUA, noi dung (td) mac dinh can DAU
+  // (trai) - theo dung rule chuan (y/c 23/07, 8:20 toi). Khi co set (vd "right" cho cot
+  // gia tien), gia tri nay ap dung DONG THOI cho ca th va td cua cot do.
   align?: "left" | "right" | "center"
 }
 
@@ -27,16 +30,40 @@ export type DataTableProps<T> = {
   // When set, wraps the table body in a fixed-height scroll container with a sticky
   // header (vertical scrollbar) instead of letting the table grow to fit all rows.
   maxBodyHeight?: number
+  // Khi true: bang tu do chieu cao con lai cua man hinh (tinh tu vi tri cua bang xuong
+  // den day khung nhin) thay cho mot con so maxBodyHeight co dinh - dung cho cac bang
+  // la thanh phan cuoi cung cua trang, khong con the/thanh phan nao khac ben duoi (y/c
+  // 23/07, 8:20 toi, muc 4). Tu dong cap nhat lai khi thay doi kich thuoc man hinh.
+  fillHeight?: boolean
 }
 
 /** Standard table used by every list feature. Do not hand-roll <table> markup in feature pages. */
-export function DataTable<T>({ columns, rows, rowKey, onRowClick, emptyTitle = "Không có dữ liệu", emptyDescription, loading, resizable, maxBodyHeight }: DataTableProps<T>) {
+export function DataTable<T>({ columns, rows, rowKey, onRowClick, emptyTitle = "Không có dữ liệu", emptyDescription, loading, resizable, maxBodyHeight, fillHeight }: DataTableProps<T>) {
   const [widths, setWidths] = useState<Record<string, number>>(() => {
     const init: Record<string, number> = {}
     columns.forEach((c) => { init[c.key] = c.defaultWidth ?? (typeof c.width === "number" ? c.width : 140) })
     return init
   })
   const dragRef = useRef<{ key: string; startX: number; startWidth: number } | null>(null)
+  const containerRef = useRef<HTMLDivElement | null>(null)
+  const [fillPx, setFillPx] = useState<number | undefined>(maxBodyHeight ?? 480)
+
+  // Do chieu cao con lai cua man hinh tinh tu vi tri hien tai cua bang xuong day
+  // khung nhin, roi dung con so nay lam max-height cho vung scroll cua bang (giu toi
+  // thieu 220px de tranh bang bi be qua khi trinh duyet thap). Chay lai khi resize.
+  useEffect(() => {
+    if (!fillHeight) return
+    function measure() {
+      const el = containerRef.current
+      if (!el) return
+      const top = el.getBoundingClientRect().top
+      const next = Math.max(220, window.innerHeight - top - 24)
+      setFillPx(next)
+    }
+    measure()
+    window.addEventListener("resize", measure)
+    return () => window.removeEventListener("resize", measure)
+  }, [fillHeight, rows.length])
 
   if (!loading && rows.length === 0) {
     return <EmptyState title={emptyTitle} description={emptyDescription} />
@@ -46,6 +73,7 @@ export function DataTable<T>({ columns, rows, rowKey, onRowClick, emptyTitle = "
   // clamped to a 34px minimum column width like the original.
   function onResizeStart(key: string, e: React.MouseEvent) {
     e.preventDefault()
+    e.stopPropagation()
     dragRef.current = { key, startX: e.clientX, startWidth: widths[key] ?? 140 }
     function onMove(ev: MouseEvent) {
       const d = dragRef.current
@@ -62,14 +90,18 @@ export function DataTable<T>({ columns, rows, rowKey, onRowClick, emptyTitle = "
     document.addEventListener("mouseup", onUp)
   }
 
+  const effectiveMaxHeight = fillHeight ? fillPx : maxBodyHeight
+  const scrollable = !!effectiveMaxHeight
+
   return (
     <div
+      ref={containerRef}
       data-tf-kit="data-table"
       style={{
         overflowX: "auto",
-        overflowY: maxBodyHeight ? "auto" : undefined,
-        maxHeight: maxBodyHeight,
-        border: "1px solid #e7eaee",
+        overflowY: scrollable ? "auto" : undefined,
+        maxHeight: effectiveMaxHeight,
+        border: "1px solid var(--line)",
         borderRadius: 10,
       }}
     >
@@ -80,7 +112,7 @@ export function DataTable<T>({ columns, rows, rowKey, onRowClick, emptyTitle = "
           </colgroup>
         )}
         <thead>
-          <tr style={{ background: "#f7f8fa", textAlign: "left" }}>
+          <tr style={{ background: "var(--bg)", textAlign: "left" }}>
             {columns.map((c, i) => (
               <th
                 key={c.key}
@@ -88,18 +120,25 @@ export function DataTable<T>({ columns, rows, rowKey, onRowClick, emptyTitle = "
                   padding: "10px 12px",
                   fontWeight: 600,
                   width: resizable ? widths[c.key] : c.width,
-                  textAlign: c.align || "left",
-                  whiteSpace: "nowrap",
-                  borderBottom: "1px solid #e7eaee",
-                  position: maxBodyHeight ? "sticky" : resizable ? "relative" : undefined,
-                  top: maxBodyHeight ? 0 : undefined,
-                  zIndex: maxBodyHeight ? 2 : undefined,
-                  background: maxBodyHeight ? "#f7f8fa" : undefined,
+                  // Rule chuan: tieu de mac dinh can GIUA; cot co align rieng (vd gia tien
+                  // can "right") thi ap dung dong bo ca tieu de va noi dung.
+                  textAlign: c.align || "center",
+                  // Cho phep chu xuong hang thu 2 khi keo hep cot (y/c 23/07, 9:05 toi -
+                  // sua lai dung yeu cau ban dau: KHONG cat chu "...", de trinh duyet tu
+                  // wrap va tang chieu cao dong khi can).
+                  whiteSpace: "normal",
+                  wordBreak: "break-word",
+                  borderBottom: "1px solid var(--line)",
+                  position: scrollable ? "sticky" : resizable ? "relative" : undefined,
+                  top: scrollable ? 0 : undefined,
+                  zIndex: scrollable ? 2 : undefined,
+                  background: scrollable ? "var(--bg)" : undefined,
                 }}
               >
                 {c.header}
                 {resizable && i > 0 && i < columns.length - 1 && (
                   <span
+                    className="col-resizer"
                     onMouseDown={(e) => onResizeStart(c.key, e)}
                     style={{ position: "absolute", right: -3, top: 0, width: 6, height: "100%", cursor: "col-resize", userSelect: "none" }}
                   />
@@ -120,10 +159,24 @@ export function DataTable<T>({ columns, rows, rowKey, onRowClick, emptyTitle = "
               <tr
                 key={rowKey(row)}
                 onClick={onRowClick ? () => onRowClick(row) : undefined}
-                style={{ cursor: onRowClick ? "pointer" : "default", borderBottom: "1px solid #f0f1f3" }}
+                style={{ cursor: onRowClick ? "pointer" : "default", borderBottom: "1px solid var(--line)" }}
               >
                 {columns.map((c) => (
-                  <td key={c.key} style={{ padding: "10px 12px", textAlign: c.align || "left" }}>
+                  <td
+                    key={c.key}
+                    style={{
+                      padding: "10px 12px",
+                      // Rule chuan: noi dung mac dinh can DAU (trai); cot co align rieng (vd
+                      // gia tien can "right") thi dung dung align do.
+                      textAlign: c.align || "left",
+                      // Khi keo hep cot lai, cho chu xuong hang thu 2 (dung yeu cau ban dau
+                      // 23/07, 8:20 toi, sua lai theo phan hoi 23/07, 9:05 toi) - KHONG cat
+                      // chu bang "...", de wordWrap tu nhien va chieu cao dong tu tang.
+                      maxWidth: resizable ? widths[c.key] : undefined,
+                      whiteSpace: "normal",
+                      wordBreak: "break-word",
+                    }}
+                  >
                     {c.render(row)}
                   </td>
                 ))}

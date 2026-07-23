@@ -10,6 +10,7 @@ import { FormModal } from "@/shared/ui/form-modal"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { StatusBadge } from "@/shared/ui/status-badge"
 import { DirectionIcon } from "@/shared/ui/icons"
+import { useCurrency } from "@/shared/ui/currency-provider"
 import { savePurchaseItem, deletePurchaseItem, bulkDeletePurchaseItems } from "../actions"
 import {
   PURCHASE_STATUS_LABEL,
@@ -67,6 +68,7 @@ export function PurchaseView({
   members: Array<{ id: string; name: string; team: string | null }>
   centers: Array<{ id: string; name: string }>
 }) {
+  const { currency, format: fmtVND } = useCurrency()
   const [groupBy, setGroupBy] = useState<PurchaseGroupBy>("lab")
   const [openGroup, setOpenGroup] = useState<string | null>(null)
   const [q, setQ] = useState("")
@@ -216,8 +218,8 @@ export function PurchaseView({
     // truoc day bi bo sot khi build lai bang.
     { key: "stt", header: "STT", defaultWidth: 56, render: (it) => activeList.findIndex((x) => x.id === it.id) + 1 },
     { key: "name", header: "Tên hạng mục", defaultWidth: 220, render: (it) => <span style={{ fontWeight: 600 }}>{it.name}</span> },
-    { key: "amount", header: "Giá trị", align: "right", defaultWidth: 130, render: (it) => (it.amount ? `${purchaseFormatAmount(purchaseParseAmount(it.amount))} đ` : "—") },
-    { key: "price", header: "Đơn giá", defaultWidth: 110, render: (it) => it.price ?? "—" },
+    { key: "amount", header: "Giá trị", align: "right", defaultWidth: 130, render: (it) => (it.amount ? (currency !== "VND" ? fmtVND(purchaseParseAmount(it.amount)) : `${purchaseFormatAmount(purchaseParseAmount(it.amount))} đ`) : "—") },
+    { key: "price", header: "Đơn giá", align: "right", defaultWidth: 110, render: (it) => it.price ?? "—" },
     { key: "supplier", header: "Nhà cung cấp", defaultWidth: 170, render: (it) => it.supplier ?? "—" },
     { key: "task", header: "Loại task", defaultWidth: 120, render: (it) => it.task ?? "—" },
     { key: "tfs", header: "TFS", defaultWidth: 100, render: (it) => it.tfs ?? "—" },
@@ -257,7 +259,7 @@ export function PurchaseView({
       <PageShell title="Theo dõi mua hàng">
         <div className="kpis-tier" style={{ marginBottom: 16 }}>
           <KpiCard label="Tổng hạng mục" value={items.length} tone="blue" trend={trendTotal} />
-          <KpiCard label="Tổng giá trị" value={`${purchaseFormatAmount(totalValue)} đ`} tone="danger" trend={trendValue} />
+          <KpiCard label="Tổng giá trị" value={currency !== "VND" ? fmtVND(totalValue) : `${purchaseFormatAmount(totalValue)} đ`} tone="danger" trend={trendValue} />
           <KpiCard label="Đang triển khai" value={ongoingCount} tone="warning" trend={trendOngoing} />
           <KpiCard label="Hoàn thành" value={doneCount} tone="success" trend={trendDone} />
         </div>
@@ -289,7 +291,7 @@ export function PurchaseView({
                 <div key={key} className="hub-card" onClick={() => setOpenGroup(key)}>
                   <div className="hub-top">
                     <div className="hub-icon">{initial}</div>
-                    <div className="hub-title"><h4>{key}</h4><p>{list.length} hạng mục · {purchaseFormatAmount(val)} đ</p></div>
+                    <div className="hub-title"><h4>{key}</h4><p>{list.length} hạng mục · {currency !== "VND" ? fmtVND(val) : `${purchaseFormatAmount(val)} đ`}</p></div>
                     <span className="hub-arrow sys-arrow-glyph"><DirectionIcon name="chevronRight" size={20} /></span>
                   </div>
                   <div className="hub-tags">
@@ -337,7 +339,7 @@ export function PurchaseView({
       </>}
       filters={<FilterBar search={{ value: q, onChange: setQ, placeholder: "Tìm hạng mục..." }} />}
     >
-      <DataTable columns={columns} rows={activeList} rowKey={(it) => it.id} onRowClick={openEdit} loading={pending} emptyTitle="Chưa có hạng mục nào trong nhóm này" resizable maxBodyHeight={560} />
+      <DataTable columns={columns} rows={activeList} rowKey={(it) => it.id} onRowClick={openEdit} loading={pending} emptyTitle="Chưa có hạng mục nào trong nhóm này" resizable maxBodyHeight={560} fillHeight />
 
       {showForm && (
         <PurchaseFormModal

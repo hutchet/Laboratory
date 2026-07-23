@@ -39,6 +39,7 @@ export type TestCatalogRow = {
   code: string | null
   name: string
   standard: string | null
+  phong: string | null
   sampleQty: string | null
   leadTime: string | null
   price: number | null

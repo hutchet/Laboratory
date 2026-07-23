@@ -98,13 +98,15 @@ export function PersonnelView({ config, routing, centers = [] }: { config: Perso
     const totalHours = routing.reduce((a, it) => a + computeRoutingCost(it, config).totalHours, 0)
     const totalCost = routing.reduce((a, it) => a + computeRoutingCost(it, config).withOverhead, 0)
     const avgHours = routing.length ? totalHours / routing.length : 0
-    return { total: routing.length, centerCount: centers.length, avgHours, totalCost }
+    const missingHours = routing.filter((it) => computeRoutingCost(it, config).totalHours === 0).length
+    return { total: routing.length, missingHours, avgHours, totalCost }
   }, [routing, centers, config])
 
   // Trend theo data thuc (rule KPI global) — dua tren PersonnelRouting.createdAt.
   const personnelTrends = useMemo(() => ({
     total: computeSimpleTrend(routing, () => true, (it) => it.createdAt),
-  }), [routing])
+    noHours: computeSimpleTrend(routing, (it) => computeRoutingCost(it, config).totalHours === 0, (it) => it.createdAt),
+  }), [routing, config])
 
   const filtered = useMemo(() => {
     const list = openGroup ? openGroup.items : []
@@ -197,7 +199,7 @@ export function PersonnelView({ config, routing, centers = [] }: { config: Perso
         <>
           <div className="kpis-tier" style={{ marginBottom: 16 }}>
             <KpiCard label="Tổng bài thử" value={overview.total} tone="blue" trend={personnelTrends.total} />
-            <KpiCard label="Trung tâm" value={overview.centerCount} tone="blue" />
+            <KpiCard label="Chưa khai báo giờ" value={overview.missingHours} tone="danger" trend={personnelTrends.noHours} />
             <KpiCard label="Giờ TB / bài thử" value={overview.avgHours.toFixed(1)} tone="warning" />
             <KpiCard label="Tổng CP nhân sự" value={fmtVND(overview.totalCost)} tone="success" />
           </div>
@@ -267,7 +269,7 @@ export function PersonnelView({ config, routing, centers = [] }: { config: Perso
               </span>
             </div>
           </div>
-          <DataTable columns={columns} rows={filtered} rowKey={(it) => it.id} loading={pending} emptyTitle="Chưa có định tuyến nào" onRowClick={(it) => openEdit(it)} resizable maxBodyHeight={560} />
+          <DataTable columns={columns} rows={filtered} rowKey={(it) => it.id} loading={pending} emptyTitle="Chưa có định tuyến nào" onRowClick={(it) => openEdit(it)} resizable maxBodyHeight={560} fillHeight />
         </>
       )}
 

@@ -495,7 +495,7 @@ export function AuditPlanView({
           </div>
         </FilterBar>
       </div>
-      <DataTable columns={itemColumns} rows={scopedItems} rowKey={(it) => it.id} onRowClick={(row) => { setEditingItem(row); setShowItemForm(true) }} loading={pending} emptyTitle="Chưa có hạng mục nào" resizable />
+      <DataTable columns={itemColumns} rows={scopedItems} rowKey={(it) => it.id} onRowClick={(row) => { setEditingItem(row); setShowItemForm(true) }} loading={pending} emptyTitle="Chưa có hạng mục nào" resizable fillHeight />
       </>
       )}
 

@@ -71,13 +71,14 @@ export function MatrixView({ items, centers = [] }: { items: EquipmentPricingRow
     const withRate = items.filter((it) => it.hourlyRate != null)
     const totalRate = items.reduce((a, it) => a + (it.hourlyRate || 0), 0)
     const avgRate = withRate.length ? totalRate / withRate.length : 0
-    return { total: items.length, centerCount: centers.length, totalRate, avgRate }
+    return { total: items.length, missingRate: items.length - withRate.length, totalRate, avgRate }
   }, [items, centers])
 
   // Trend theo data thuc (rule KPI global) — dua tren Equipment.createdAt.
   const matrixTrends = useMemo(() => ({
     total: computeSimpleTrend(items, () => true, (it) => it.createdAt),
     withRate: computeSimpleTrend(items, (it) => it.hourlyRate != null, (it) => it.createdAt),
+    noRate: computeSimpleTrend(items, (it) => it.hourlyRate == null, (it) => it.createdAt),
   }), [items])
 
   const columns: Array<DataTableColumn<EquipmentPricingRow>> = [
@@ -103,7 +104,7 @@ export function MatrixView({ items, centers = [] }: { items: EquipmentPricingRow
         <>
           <div className="kpis-tier" style={{ marginBottom: 16 }}>
             <KpiCard label="Tổng thiết bị" value={overview.total} tone="blue" trend={matrixTrends.total} />
-            <KpiCard label="Trung tâm" value={overview.centerCount} tone="blue" />
+            <KpiCard label="Chưa có đơn giá" value={overview.missingRate} tone="danger" trend={matrixTrends.noRate} />
             <KpiCard label="Tổng đơn giá/giờ" value={fmtVND(overview.totalRate)} tone="warning" trend={matrixTrends.withRate} />
             <KpiCard label="Đơn giá TB/giờ" value={fmtVND(overview.avgRate)} tone="success" />
           </div>
@@ -137,7 +138,7 @@ export function MatrixView({ items, centers = [] }: { items: EquipmentPricingRow
       )}
 
       {openGroup && (
-        <DataTable columns={columns} rows={openGroup.items} rowKey={(it) => it.id} loading={pending} emptyTitle="Chưa có thiết bị nào" resizable maxBodyHeight={480} />
+        <DataTable columns={columns} rows={openGroup.items} rowKey={(it) => it.id} loading={pending} emptyTitle="Chưa có thiết bị nào" resizable maxBodyHeight={480} fillHeight />
       )}
     </PageShell>
   )

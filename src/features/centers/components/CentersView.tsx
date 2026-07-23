@@ -11,15 +11,23 @@ import { ArrowButton } from "@/shared/ui/arrow-button"
 import { PlainSelect } from "@/shared/ui/plain-select"
 import { Perm } from "@/shared/lib/rbac-client"
 import { computeSimpleTrend } from "@/shared/lib/trend"
+import { useCurrency } from "@/shared/ui/currency-provider"
 import { saveCenter, deleteCenter, saveGroup, deleteGroup, grantViewerAccess, revokeViewerAccess } from "../actions"
 import type { CenterRow, GroupRow, ViewerAccessGrant, ViewerCandidate } from "../types"
 
-function fmtVal(v:number){ if(v>=1e9) return `${(v/1e9).toLocaleString("vi-VN",{maximumFractionDigits:1})} tỷ đ`; if(v>=1e6) return `${Math.round(v/1e6).toLocaleString("vi-VN")} triệu đ`; if(v>0) return `${v.toLocaleString("vi-VN")} đ`; return "0 đ" }
 function initials(name:string){ return name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase() }
 const AV_COLORS=["#2e7d32","#1d5fd6","#7c3aed","#c62828","#e37c13"]
 const PAGE_SIZE = 8
 
 export function CentersView({ centers, groups = [], memberOptions = [], viewerCandidates = [], viewerGrants = [] }:{ centers:CenterRow[]; groups?: GroupRow[]; memberOptions?: Array<{ id: string; name: string }>; viewerCandidates?: ViewerCandidate[]; viewerGrants?: ViewerAccessGrant[] }) {
+  const { currency, format: fmtVND } = useCurrency()
+  function fmtVal(v: number) {
+    if (currency !== "VND") return fmtVND(v)
+    if (v >= 1e9) return `${(v / 1e9).toLocaleString("vi-VN", { maximumFractionDigits: 1 })} tỷ đ`
+    if (v >= 1e6) return `${Math.round(v / 1e6).toLocaleString("vi-VN")} triệu đ`
+    if (v > 0) return `${v.toLocaleString("vi-VN")} đ`
+    return "0 đ"
+  }
   const [q,setQ]=useState("")
   const [page,setPage]=useState(1)
   const [editing,setEditing]=useState<CenterRow|null>(null)
