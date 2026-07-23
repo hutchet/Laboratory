@@ -4,6 +4,7 @@ import { PageShell } from "@/shared/ui/page-shell"
 import { KpiCard } from "@/shared/ui/kpi-card"
 import { FormModal } from "@/shared/ui/form-modal"
 import { ArrowButton } from "@/shared/ui/arrow-button"
+import { DirectionIcon } from "@/shared/ui/icons"
 import { CustomSelect } from "@/shared/ui/custom-select"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { Perm } from "@/shared/lib/rbac-client"
@@ -292,7 +293,7 @@ export function BookingsView({
                     <div className="hub-top">
                       <div className="hub-icon">{initial}</div>
                       <div className="hub-title"><h4>{g.name}</h4><p>{g.items.length} thiết bị · {todayCount} lượt đặt hôm nay</p></div>
-                      <span className="hub-arrow sys-arrow-glyph">›</span>
+                      <span className="hub-arrow sys-arrow-glyph"><DirectionIcon name="chevronRight" size={20} /></span>
                     </div>
                     <div className="hub-tags">
                       <span className="hub-tag">{ready} sẵn sàng</span>

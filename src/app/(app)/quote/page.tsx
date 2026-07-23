@@ -17,20 +17,20 @@ export default async function QuotePage({ searchParams }: { searchParams: Promis
 
   switch (activeTab) {
     case "quote-catalog": {
-      const [items, config, routing] = await Promise.all([listTestCatalog(), getPersonnelRateConfig(), listPersonnelRouting()])
-      return <CatalogView items={items} personnelConfig={config} routing={routing} />
+      const [items, config, routing, centers] = await Promise.all([listTestCatalog(), getPersonnelRateConfig(), listPersonnelRouting(), listCenterOptions()])
+      return <CatalogView items={items} personnelConfig={config} routing={routing} centers={centers} />
     }
     case "quote-matrix": {
-      const items = await listEquipmentPricing()
-      return <MatrixView items={items} />
+      const [items, centers] = await Promise.all([listEquipmentPricing(), listCenterOptions()])
+      return <MatrixView items={items} centers={centers} />
     }
     case "quote-personnel": {
-      const [config, routing] = await Promise.all([getPersonnelRateConfig(), listPersonnelRouting()])
-      return <PersonnelView config={config} routing={routing} />
+      const [config, routing, centers] = await Promise.all([getPersonnelRateConfig(), listPersonnelRouting(), listCenterOptions()])
+      return <PersonnelView config={config} routing={routing} centers={centers} />
     }
     case "quote-variable": {
-      const items = await listVariableCosts()
-      return <VariableView items={items} />
+      const [items, centers] = await Promise.all([listVariableCosts(), listCenterOptions()])
+      return <VariableView items={items} centers={centers} />
     }
     case "quote-depreciation": {
       const [items, centers] = await Promise.all([listDepreciationAssets(), listCenterOptions()])

@@ -83,9 +83,6 @@ type SortKey = "title" | "project" | "assignee" | "dueDate" | "priority" | "stat
 const PRIORITY_RANK: Record<string, number> = { high: 3, med: 2, low: 1 }
 
 export function TasksView({ tasks, projects, members, centers, initialQuery }: TasksViewProps) {
-  // Trang "Danh sách trung tâm" (hub-card, mô hình giống trang Trung tâm) — mỗi nhân viên
-  // thuộc trung tâm nào sẽ vào thẻ đó để xem/tạo danh sách công việc của mình.
-  const [openCenterId, setOpenCenterId] = useState<string | null>(null)
   const [chip, setChip] = useState("all")
   const [q, setQ] = useState(initialQuery || "")
   const [sortKey, setSortKey] = useState<SortKey>("dueDate")
@@ -118,34 +115,12 @@ export function TasksView({ tasks, projects, members, centers, initialQuery }: T
   const memberName = (id: string | null) => members.find((m) => m.id === id)?.name ?? "—"
   const centerName = (id: string) => (id === NO_CENTER ? "Không thuộc trung tâm" : centers.find((c) => c.id === id)?.name ?? "—")
 
-  // Thống kê theo từng thẻ trung tâm (mô hình giống trang Trung tâm): số công việc, quá hạn,
-  // hoàn thành. Tasks chưa gắn centerId gộp vào thẻ "Không thuộc trung tâm" để không ẩn dữ liệu.
-  const centerCards = useMemo(() => {
-    const byCenter = new Map<string, TaskRow[]>()
-    for (const t of tasks) {
-      const key = t.centerId || NO_CENTER
-      if (!byCenter.has(key)) byCenter.set(key, [])
-      byCenter.get(key)!.push(t)
-    }
-    const cards = centers.map((c) => ({ id: c.id, name: c.name, list: byCenter.get(c.id) || [] }))
-    const orphan = byCenter.get(NO_CENTER) || []
-    if (orphan.length) cards.push({ id: NO_CENTER, name: "Không thuộc trung tâm", list: orphan })
-    return cards.map((c) => ({
-      id: c.id,
-      name: c.name,
-      count: c.list.length,
-      done: c.list.filter((t) => t.status === "done").length,
-      overdue: c.list.filter((t) => taskState(t) === "over").length,
-    }))
-  }, [tasks, centers])
-
   const hubKpis = useMemo(() => ({
-    totalCenters: centerCards.length,
     totalTasks: tasks.length,
     doing: tasks.filter((t) => t.status !== "done").length,
     overdue: tasks.filter((t) => taskState(t) === "over").length,
     done: tasks.filter((t) => t.status === "done").length,
-  }), [tasks, centerCards])
+  }), [tasks])
 
   // Trend theo data thuc cho 3 the KPI hero (muc 4d) — cung phong cach voi
   // computeKpiTrend/computeKpiSparklines cua Dashboard: snapshot = chi tinh tren
@@ -182,44 +157,6 @@ export function TasksView({ tasks, projects, members, centers, initialQuery }: T
     }
   }, [tasks])
 
-  // Tasks + trends for currently open center (detail view)
-  const centerTasks = useMemo(() => {
-    if (!openCenterId) return []
-    return tasks.filter((t) => (t.centerId || NO_CENTER) === openCenterId)
-  }, [tasks, openCenterId])
-  const centerTrends = useMemo(() => {
-    if (!openCenterId) return { total: { pct: 0, up: null, sparkline: [] }, doing: { pct: 0, up: null, sparkline: [] }, overdue: { pct: 0, up: null, sparkline: [] }, done: { pct: 0, up: null, sparkline: [] } }
-    const now = Date.now()
-    const day = 86400000
-    const centerId = openCenterId
-    function snapshot(asOfMs: number) {
-      const list = tasks.filter((t) => new Date(t.createdAt).getTime() <= asOfMs && (t.centerId || NO_CENTER) === centerId)
-      return {
-        total: list.length,
-        doing: list.filter((t) => t.status !== "done").length,
-        overdue: list.filter((t) => taskState(t) === "over").length,
-        done: list.filter((t) => t.status === "done").length,
-      }
-    }
-    function pctChg(c: number, p: number) {
-      if (p === 0) return c === 0 ? { pct: 0, up: null as boolean | null } : { pct: 100, up: true }
-      const pct = Math.round(((c - p) / p) * 100)
-      if (pct === 0) return { pct: 0, up: true }
-      return { pct: Math.abs(pct), up: pct >= 0 }
-    }
-    function sp(key: keyof ReturnType<typeof snapshot>) {
-      const pts: number[] = []; for (let i = 6; i >= 0; i--) pts.push(snapshot(now - i * day)[key]); return pts
-    }
-    const c = snapshot(now)
-    const p = snapshot(now - 7 * day)
-    return {
-      total: { ...pctChg(c.total, p.total), sparkline: sp("total") },
-      doing: { ...pctChg(c.doing, p.doing), sparkline: sp("doing") },
-      overdue: { ...pctChg(c.overdue, p.overdue), sparkline: sp("overdue") },
-      done: { ...pctChg(c.done, p.done), sparkline: sp("done") },
-    }
-  }, [tasks, openCenterId])
-
   function toggleSort(key: SortKey) {
     if (sortKey === key) setSortDir((d) => (d === 1 ? -1 : 1))
     else { setSortKey(key); setSortDir(1) }
@@ -233,14 +170,8 @@ export function TasksView({ tasks, projects, members, centers, initialQuery }: T
     )
   }
 
-  const scopedTasks = useMemo(() => {
-    if (!openCenterId) return tasks
-    if (openCenterId === NO_CENTER) return tasks.filter((t) => !t.centerId)
-    return tasks.filter((t) => t.centerId === openCenterId)
-  }, [tasks, openCenterId])
-
   const filtered = useMemo(() => {
-    const list = scopedTasks.filter((t) => {
+    const list = tasks.filter((t) => {
       if (chip === "over" && taskState(t) !== "over") return false
       if (chip === "soon" && taskState(t) !== "soon") return false
       if (chip === "done" && t.status !== "done") return false
@@ -262,7 +193,7 @@ export function TasksView({ tasks, projects, members, centers, initialQuery }: T
       return 0
     })
     return sorted
-  }, [scopedTasks, chip, q, sortKey, sortDir, members])
+  }, [tasks, chip, q, sortKey, sortDir, members])
 
   function exportExcel() {
     const header = ["Tên", "Dự án", "Phụ trách", "Hạn chốt", "Còn lại", "Ưu tiên", "Trạng thái"]
@@ -359,7 +290,7 @@ export function TasksView({ tasks, projects, members, centers, initialQuery }: T
         </span>
       ),
     },
-    { key: "dueDate", header: sortableHeader("dueDate", "Hạn chốt"), render: (t) => (t.dueDate ? new Date(t.dueDate).toLocaleDateString("vi-VN") : "—") },
+    { key: "dueDate", header: "Hạn chốt", render: (t) => (t.dueDate ? new Date(t.dueDate).toLocaleDateString("vi-VN") : "—") },
     { key: "left", header: "Còn lại", render: (t) => daysLeftLabel(t) },
     { key: "priority", header: sortableHeader("priority", "Ưu tiên"), render: (t) => <StatusBadge label={PRIORITY_LABEL[t.priority ?? "med"]} tone={priorityTone(t.priority)} /> },
     { key: "status", header: sortableHeader("status", "Trạng thái"), render: (t) => <StatusBadge label={STATUS_LABEL[t.status ?? "todo"]} tone={statusTone(t.status)} /> },
@@ -378,83 +309,41 @@ export function TasksView({ tasks, projects, members, centers, initialQuery }: T
   ]
 
   return (
-    <PageShell
-      title="Công việc"
-      subtitle={openCenterId ? `Trung tâm: ${centerName(openCenterId)}` : "Theo dõi và phân công công việc theo trung tâm"}
-    >
-      {!openCenterId && (
-        <>
-          <div className="kpis-tier" style={{ marginBottom: 20 }}>
-            <KpiCard label="Đang thực hiện" value={hubKpis.doing} tone="blue" trend={hubTrends.doing} />
-            <KpiCard label="Tổng công việc" value={hubKpis.totalTasks} tone="warning" trend={hubTrends.totalTasks} />
-            <KpiCard label="Quá hạn" value={hubKpis.overdue} tone="danger" trend={hubTrends.overdue} />
-            <KpiCard label="Hoàn thành" value={hubKpis.done} tone="success" trend={hubTrends.done} />
-          </div>
-          <div className="cu-grid">
-            {centerCards.map((c) => (
-              <div key={c.id} className="hub-card" onClick={() => setOpenCenterId(c.id)} style={{ cursor: "pointer" }}>
-                <div className="hub-top">
-                  <div className="hub-icon">{initials(c.name)}</div>
-                  <div className="hub-title">
-                    <h4>{c.name}</h4>
-                    <p>{c.count} công việc</p>
-                  </div>
-                  <span className="hub-arrow sys-arrow-glyph">›</span>
-                </div>
-                <div className="hub-stats" style={{ display: "flex", gap: 12, marginTop: 10, fontSize: 12 }}>
-                  <span>Hoàn thành: <b>{c.done}</b></span>
-                  <span>Quá hạn: <b>{c.overdue}</b></span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
-
-      {openCenterId && (
-        <>
-          <button type="button" className="btn-line" style={{ marginBottom: 12 }} onClick={() => setOpenCenterId(null)}>
-            ‹ Danh sách trung tâm
-          </button>
-          <div className="kpis-tier" style={{ marginBottom: 16 }}>
-            <KpiCard label="Tổng công việc" value={centerTasks.length} trend={centerTrends.total} />
-            <KpiCard label="Đang thực hiện" value={centerTasks.filter(t => t.status !== "done").length} tone="warning" trend={centerTrends.doing} />
-            <KpiCard label="Quá hạn" value={centerTasks.filter(t => taskState(t) === "over").length} tone="danger" trend={centerTrends.overdue} />
-            <KpiCard label="Hoàn thành" value={centerTasks.filter(t => t.status === "done").length} tone="success" trend={centerTrends.done} />
-          </div>
-          <div className="section-head">
-            <h3>Danh sách công việc</h3>
-            <div className="tools">
-              <FilterBar search={{ value: q, onChange: setQ, placeholder: "Tìm công việc..." }}>
-                <ChipFilterDropdown value={chip} options={CHIPS} onChange={setChip} />
-              </FilterBar>
-              <span style={{ display: "flex", gap: 8 }}>
-                <button type="button" className="btn-line" onClick={exportExcel}>
-                  Xuất Excel
-                </button>
-                {editMode && (
-                  <button type="button" className="btn-danger" disabled={!selected.size} onClick={() => setBulkConfirm(true)} style={{ opacity: selected.size ? 1 : 0.5 }}>Xoá tất cả</button>
-                )}
-                <button type="button" className={editMode ? "btn-success" : "btn-line"} onClick={toggleEditMode}>{editMode ? "Xong" : "Chỉnh sửa"}</button>
-                <button type="button" className="btn-pri" onClick={openNew}>
-                  + Thêm công việc
-                </button>
-              </span>
-            </div>
-          </div>
-          <DataTable
-            columns={columns}
-            rows={filtered}
-            rowKey={(t) => t.id}
-            loading={pending}
-            emptyTitle="Chưa có công việc nào"
-            emptyDescription="Nhấn “Thêm công việc” để tạo mới."
-            onRowClick={(t) => openEdit(t)}
-            resizable
-            maxBodyHeight={520}
-          />
-        </>
-      )}
+    <PageShell title="Công việc" subtitle="Theo dõi và phân công công việc">
+      <div className="kpis-tier" style={{ marginBottom: 20 }}>
+        <KpiCard label="Đang thực hiện" value={hubKpis.doing} tone="blue" trend={hubTrends.doing} />
+        <KpiCard label="Tổng công việc" value={hubKpis.totalTasks} tone="warning" trend={hubTrends.totalTasks} />
+        <KpiCard label="Quá hạn" value={hubKpis.overdue} tone="danger" trend={hubTrends.overdue} />
+        <KpiCard label="Hoàn thành" value={hubKpis.done} tone="success" trend={hubTrends.done} />
+      </div>
+      <div className="section-head">
+        <h3>Danh sách công việc</h3>
+        <div className="tools">
+          <FilterBar search={{ value: q, onChange: setQ, placeholder: "Tìm công việc..." }}>
+            <ChipFilterDropdown value={chip} options={CHIPS} onChange={setChip} />
+          </FilterBar>
+          <span style={{ display: "flex", gap: 8 }}>
+            {editMode && (
+              <button type="button" className="btn-danger" disabled={!selected.size} onClick={() => setBulkConfirm(true)} style={{ opacity: selected.size ? 1 : 0.5 }}>Xoá tất cả</button>
+            )}
+            <button type="button" className={editMode ? "btn-success" : "btn-line"} onClick={toggleEditMode}>{editMode ? "Xong" : "Chỉnh sửa"}</button>
+            <button type="button" className="btn-pri" onClick={openNew}>
+              + Thêm công việc
+            </button>
+          </span>
+        </div>
+      </div>
+      <DataTable
+        columns={columns}
+        rows={filtered}
+        rowKey={(t) => t.id}
+        loading={pending}
+        emptyTitle="Chưa có công việc nào"
+        emptyDescription="Nhấn “Thêm công việc” để tạo mới."
+        onRowClick={(t) => openEdit(t)}
+        resizable
+        maxBodyHeight={520}
+      />
 
       <FormModal
         open={showForm}

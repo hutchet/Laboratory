@@ -1,16 +1,19 @@
 "use client"
-import { useMemo, useState, useTransition } from "react"
+import { useEffect, useMemo, useState, useTransition } from "react"
 import { PageShell } from "@/shared/ui/page-shell"
 import { FilterBar } from "@/shared/ui/filter-bar"
 import { DataTable, type DataTableColumn } from "@/shared/ui/data-table"
 import { FormModal } from "@/shared/ui/form-modal"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
+import { CustomSelect } from "@/shared/ui/custom-select"
+import { KpiCard } from "@/shared/ui/kpi-card"
 import { Perm } from "@/shared/lib/rbac-client"
+import { DirectionIcon } from "@/shared/ui/icons"
 import { saveTestCatalogItem, deleteTestCatalogItem, bulkDeleteTestCatalogItems } from "../actions"
-import type { TestCatalogRow, PersonnelRateConfigRow, PersonnelRoutingRow } from "../types"
+import type { TestCatalogRow, PersonnelRateConfigRow, PersonnelRoutingRow, Option } from "../types"
 
 function fmtVND(n: number) {
-  return Math.round(n).toLocaleString("vi-VN")
+  return Math.round(n || 0).toLocaleString("vi-VN")
 }
 
 function parseHours(v: string | null | undefined): number {
@@ -36,7 +39,16 @@ function computeCatalogBreakdown(item: TestCatalogRow, routing: PersonnelRouting
   return { match, prepHours, setupHours, testHours, reportHours, totalHours, laborCost, overhead, computedTotal }
 }
 
-export function CatalogView({ items, personnelConfig, routing }: { items: TestCatalogRow[]; personnelConfig: PersonnelRateConfigRow; routing: PersonnelRoutingRow[] }) {
+const NO_CENTER_KEY = "__none__"
+const NO_CENTER_LABEL = "Chưa gán trung tâm"
+
+type CenterGroup = { key: string; name: string; centerId: string | null; items: TestCatalogRow[] }
+
+// y/c 4.2 (đợt mới): Danh mục báo giá chuyển sang mô hình danh sách thẻ theo
+// Trung tâm (giống Ma trận báo giá/Khấu hao thiết bị) — mỗi Trung tâm khai báo
+// trong trang Trung tâm luôn có 1 thẻ (kể cả chưa có bài thử nào), bài thử chưa
+// gán Trung tâm gộp vào thẻ "Chưa gán trung tâm". Trang danh sách thẻ có 4 KPI.
+export function CatalogView({ items, personnelConfig, routing, centers = [] }: { items: TestCatalogRow[]; personnelConfig: PersonnelRateConfigRow; routing: PersonnelRoutingRow[]; centers?: Option[] }) {
   const [q, setQ] = useState("")
   const [editing, setEditing] = useState<TestCatalogRow | null>(null)
   const [showForm, setShowForm] = useState(false)
@@ -45,9 +57,62 @@ export function CatalogView({ items, personnelConfig, routing }: { items: TestCa
   const [bulkConfirm, setBulkConfirm] = useState(false)
   const [editMode, setEditMode] = useState(false)
   const [breakdownItem, setBreakdownItem] = useState<TestCatalogRow | null>(null)
+  const [openCenterKey, setOpenCenterKey] = useState("")
+  const [fCenterId, setFCenterId] = useState("")
   const [pending, startTransition] = useTransition()
 
-  const filtered = useMemo(() => items.filter((it) => !q || it.name.toLowerCase().includes(q.toLowerCase())), [items, q])
+  useEffect(() => {
+    if (showForm) setFCenterId(editing?.centerId ?? (openCenterKey && openCenterKey !== NO_CENTER_KEY ? openCenterKey : ""))
+  }, [showForm, editing, openCenterKey])
+
+  const groups: CenterGroup[] = useMemo(() => {
+    const byCenter = new Map<string, TestCatalogRow[]>()
+    for (const it of items) {
+      const key = it.centerId || NO_CENTER_KEY
+      if (!byCenter.has(key)) byCenter.set(key, [])
+      byCenter.get(key)!.push(it)
+    }
+    const list: CenterGroup[] = centers.map((c) => ({ key: c.id, name: c.name, centerId: c.id, items: byCenter.get(c.id) || [] }))
+    const orphan = byCenter.get(NO_CENTER_KEY) || []
+    if (orphan.length) list.push({ key: NO_CENTER_KEY, name: NO_CENTER_LABEL, centerId: null, items: orphan })
+    return list
+  }, [items, centers])
+
+  const openGroup = groups.find((g) => g.key === openCenterKey) ?? null
+
+  useEffect(() => {
+    const el = document.getElementById("page-title")
+    if (!el) return
+    if (openGroup) {
+      el.classList.add("title-back")
+      el.title = "Quay lại danh sách trung tâm"
+      const handler = () => backToGrid()
+      el.addEventListener("click", handler)
+      return () => {
+        el.classList.remove("title-back")
+        el.removeAttribute("title")
+        el.removeEventListener("click", handler)
+      }
+    }
+    el.classList.remove("title-back")
+    el.removeAttribute("title")
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openGroup?.key])
+
+  function openCenter(key: string) { setOpenCenterKey(key); setQ("") }
+  function backToGrid() { setOpenCenterKey(""); setQ("") }
+
+  const overview = useMemo(() => {
+    const withPrice = items.filter((it) => it.price != null)
+    const avgPrice = withPrice.length ? withPrice.reduce((a, it) => a + (it.price || 0), 0) / withPrice.length : 0
+    const totalValue = items.reduce((a, it) => a + (it.price || 0), 0)
+    return { total: items.length, centerCount: centers.length, avgPrice, totalValue }
+  }, [items, centers])
+
+  const filtered = useMemo(() => {
+    const list = openGroup ? openGroup.items : []
+    return list.filter((it) => !q || it.name.toLowerCase().includes(q.toLowerCase()))
+  }, [openGroup, q])
 
   function openNew() { setEditing(null); setShowForm(true) }
   function openEdit(it: TestCatalogRow) { setEditing(it); setShowForm(true) }
@@ -60,6 +125,7 @@ export function CatalogView({ items, personnelConfig, routing }: { items: TestCa
       sampleQty: String(formData.get("sampleQty") || ""),
       leadTime: String(formData.get("leadTime") || ""),
       price: formData.get("price") ? Number(formData.get("price")) : null,
+      centerId: fCenterId || null,
     }
     startTransition(async () => { await saveTestCatalogItem(input); setShowForm(false); setEditing(null) })
   }
@@ -118,20 +184,58 @@ export function CatalogView({ items, personnelConfig, routing }: { items: TestCa
   ]
 
   return (
-    <PageShell
-      title="Danh mục bài thử nghiệm"
-      actions={
-        <span style={{ display: "flex", gap: 8 }}>
-          {editMode && (
-            <button type="button" className="btn-danger" disabled={!selected.size} onClick={() => setBulkConfirm(true)} style={{ opacity: selected.size ? 1 : 0.5 }}>Xoá tất cả</button>
+    <PageShell title="Danh mục bài thử nghiệm" subtitle={openGroup ? undefined : "Chọn một trung tâm để xem danh mục bài thử"}>
+      {!openGroup && (
+        <>
+          <div className="kpis-tier" style={{ marginBottom: 16 }}>
+            <KpiCard label="Tổng bài thử" value={overview.total} tone="blue" />
+            <KpiCard label="Trung tâm" value={overview.centerCount} tone="blue" />
+            <KpiCard label="Đơn giá trung bình" value={`${fmtVND(overview.avgPrice)} đ`} tone="warning" />
+            <KpiCard label="Tổng giá trị danh mục" value={`${fmtVND(overview.totalValue)} đ`} tone="success" />
+          </div>
+          {groups.length === 0 ? (
+            <div className="empty">Chưa có trung tâm nào — thêm trung tâm ở trang Trung tâm để tạo danh mục theo từng trung tâm.</div>
+          ) : (
+            <div className="cu-grid">
+              {groups.map((g) => {
+                const withPrice = g.items.filter((it) => it.price != null)
+                const val = withPrice.reduce((a, it) => a + (it.price || 0), 0)
+                const initial = g.name.replace(/Trung tâm|thử nghiệm/gi, "").trim().slice(0, 2).toUpperCase() || "TT"
+                return (
+                  <div key={g.key} className="hub-card" onClick={() => openCenter(g.key)} style={{ cursor: "pointer" }}>
+                    <div className="hub-top">
+                      <div className="hub-icon">{initial}</div>
+                      <div className="hub-title"><h4>{g.name}</h4><p>{g.items.length} bài thử · {fmtVND(val)} đ</p></div>
+                      <span className="hub-arrow sys-arrow-glyph"><DirectionIcon name="chevronRight" size={20} /></span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           )}
-          <Perm minPerm="dept_head"><button type="button" className={editMode ? "btn-success" : "btn-line"} onClick={toggleEditMode}>{editMode ? "Xong" : "Chỉnh sửa"}</button>
-          <button type="button" className="btn-pri" onClick={openNew}>+ Thêm bài thử</button></Perm>
-        </span>
-      }
-      filters={<FilterBar search={{ value: q, onChange: setQ, placeholder: "Tìm bài thử..." }} />}
-    >
-      <DataTable columns={columns} rows={filtered} rowKey={(it) => it.id} loading={pending} emptyTitle="Chưa có bài thử nào" onRowClick={(it) => openEdit(it)} resizable maxBodyHeight={560} />
+        </>
+      )}
+
+      {openGroup && (
+        <>
+          <div className="section-head">
+            <h3>{openGroup.name}</h3>
+            <div className="tools">
+              <FilterBar search={{ value: q, onChange: setQ, placeholder: "Tìm bài thử..." }} />
+              <span style={{ display: "flex", gap: 8 }}>
+                {editMode && (
+                  <button type="button" className="btn-danger" disabled={!selected.size} onClick={() => setBulkConfirm(true)} style={{ opacity: selected.size ? 1 : 0.5 }}>Xoá tất cả</button>
+                )}
+                <Perm minPerm="dept_head">
+                  <button type="button" className={editMode ? "btn-success" : "btn-line"} onClick={toggleEditMode}>{editMode ? "Xong" : "Chỉnh sửa"}</button>
+                  <button type="button" className="btn-pri" onClick={openNew}>+ Thêm bài thử</button>
+                </Perm>
+              </span>
+            </div>
+          </div>
+          <DataTable columns={columns} rows={filtered} rowKey={(it) => it.id} loading={pending} emptyTitle="Chưa có bài thử nào" onRowClick={(it) => openEdit(it)} resizable maxBodyHeight={560} />
+        </>
+      )}
 
       <FormModal
         open={showForm}
@@ -149,6 +253,9 @@ export function CatalogView({ items, personnelConfig, routing }: { items: TestCa
               <input name="name" required defaultValue={editing?.name ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
             </label>
           </div>
+          <label style={{ fontSize: 12, fontWeight: 600 }}>Trung tâm
+            <CustomSelect value={fCenterId} onChange={setFCenterId} width="100%" options={[{ value: "", label: NO_CENTER_LABEL }, ...centers.map((c) => ({ value: c.id, label: c.name }))]} />
+          </label>
           <label style={{ fontSize: 12, fontWeight: 600 }}>Tiêu chuẩn
             <input name="standard" defaultValue={editing?.standard ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
           </label>

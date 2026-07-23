@@ -10,6 +10,7 @@ import { computeSimpleTrend } from "@/shared/lib/trend"
 import { StatusBadge } from "@/shared/ui/status-badge"
 import { CustomSelect } from "@/shared/ui/custom-select"
 import { Perm } from "@/shared/lib/rbac-client"
+import { DirectionIcon } from "@/shared/ui/icons"
 import { saveEquipment, deleteEquipment, bulkDeleteEquipment } from "../actions"
 import { saveCenter } from "@/features/centers/actions"
 import { EQUIPMENT_STATUS_LABEL, CAL_STATUS_LABEL, equipmentCalStatus, type EquipmentRow, type BookingRow, type Option } from "../types"
@@ -359,7 +360,7 @@ export function EquipmentView({ equipment, centers, bookings = [] }: { equipment
                     <div className="hub-top">
                       <div className="hub-icon">{initial}</div>
                       <div className="hub-title"><h4>{g.name}</h4><p>{g.items.length} thiết bị · {rooms} phòng thử</p></div>
-                      <span className="hub-arrow sys-arrow-glyph">›</span>
+                      <span className="hub-arrow sys-arrow-glyph"><DirectionIcon name="chevronRight" size={20} /></span>
                     </div>
                     <div className="hub-tags">
                       <span className="hub-tag">{cats} danh mục</span>

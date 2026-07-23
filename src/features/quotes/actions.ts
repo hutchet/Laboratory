@@ -95,11 +95,11 @@ export async function removeQuoteItem(id: string) {
 }
 
 // ---- Test catalog ----
-export type SaveTestCatalogInput = { id?: string; code?: string | null; name: string; standard?: string | null; sampleQty?: string | null; leadTime?: string | null; price?: number | null }
+export type SaveTestCatalogInput = { id?: string; code?: string | null; name: string; standard?: string | null; sampleQty?: string | null; leadTime?: string | null; price?: number | null; centerId?: string | null }
 
 export async function saveTestCatalogItem(input: SaveTestCatalogInput) {
   await requirePermission(input.id ? "edit" : "create")
-  const data = { code: input.code || null, name: input.name, standard: input.standard || null, sampleQty: input.sampleQty || null, leadTime: input.leadTime || null, price: input.price ?? null }
+  const data = { code: input.code || null, name: input.name, standard: input.standard || null, sampleQty: input.sampleQty || null, leadTime: input.leadTime || null, price: input.price ?? null, centerId: input.centerId || null }
   if (input.id) await db.testCatalogItem.update({ where: { id: input.id }, data })
   else await db.testCatalogItem.create({ data })
   revalidatePath("/quote")
@@ -130,11 +130,11 @@ export async function savePersonnelRateConfig(input: SavePersonnelRateConfigInpu
   revalidatePath("/quote")
 }
 
-export type SavePersonnelRoutingInput = { id?: string; testCode?: string | null; testName: string; prepHours?: string | null; setupHours?: string | null; testHours?: string | null; reportHours?: string | null }
+export type SavePersonnelRoutingInput = { id?: string; testCode?: string | null; testName: string; prepHours?: string | null; setupHours?: string | null; testHours?: string | null; reportHours?: string | null; centerId?: string | null }
 
 export async function savePersonnelRouting(input: SavePersonnelRoutingInput) {
   await requirePermission(input.id ? "edit" : "create")
-  const data = { testCode: input.testCode || null, testName: input.testName, prepHours: input.prepHours || null, setupHours: input.setupHours || null, testHours: input.testHours || null, reportHours: input.reportHours || null }
+  const data = { testCode: input.testCode || null, testName: input.testName, prepHours: input.prepHours || null, setupHours: input.setupHours || null, testHours: input.testHours || null, reportHours: input.reportHours || null, centerId: input.centerId || null }
   if (input.id) await db.personnelRouting.update({ where: { id: input.id }, data })
   else await db.personnelRouting.create({ data })
   revalidatePath("/quote")
@@ -168,11 +168,11 @@ export async function saveDepreciationAsset(input: SaveDepreciationAssetInput) {
 }
 
 // ---- Variable costs ----
-export type SaveVariableCostInput = { id?: string; costType: string; description?: string | null; amount?: number | null }
+export type SaveVariableCostInput = { id?: string; costType: string; description?: string | null; amount?: number | null; centerId?: string | null }
 
 export async function saveVariableCost(input: SaveVariableCostInput) {
   await requirePermission(input.id ? "edit" : "create")
-  const data = { costType: input.costType, description: input.description || null, amount: input.amount ?? null }
+  const data = { costType: input.costType, description: input.description || null, amount: input.amount ?? null, centerId: input.centerId || null }
   if (input.id) await db.variableCost.update({ where: { id: input.id }, data })
   else await db.variableCost.create({ data })
   revalidatePath("/quote")

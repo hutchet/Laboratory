@@ -1,18 +1,29 @@
 "use client"
-import { useMemo, useState, useTransition } from "react"
+import { useEffect, useMemo, useState, useTransition } from "react"
 import { PageShell } from "@/shared/ui/page-shell"
+import { KpiCard } from "@/shared/ui/kpi-card"
 import { DataTable, type DataTableColumn } from "@/shared/ui/data-table"
+import { DirectionIcon } from "@/shared/ui/icons"
 import { updateEquipmentRate } from "../actions"
 import type { EquipmentPricingRow } from "../queries"
+import type { Option } from "../types"
 
 function fmtVND(n: number) {
   return n.toLocaleString("vi-VN")
 }
 
-export function MatrixView({ items }: { items: EquipmentPricingRow[] }) {
+const NO_CENTER_KEY = "__none__"
+const NO_CENTER_LABEL = "Chưa gán trung tâm"
+
+type CenterGroup = { key: string; name: string; centerId: string | null; items: EquipmentPricingRow[] }
+
+// y/c 4.2: Ma trận báo giá luôn hiển thị đủ thẻ cho MỌI trung tâm khai báo ở
+// trang Trung tâm (kể cả trung tâm chưa có thiết bị nào), không chỉ những
+// trung tâm đang có dữ liệu thiết bị. Trang danh sách thẻ có 4 KPI.
+export function MatrixView({ items, centers = [] }: { items: EquipmentPricingRow[]; centers?: Option[] }) {
   const [pending, startTransition] = useTransition()
   const [drafts, setDrafts] = useState<Record<string, string>>({})
-  const [openCenter, setOpenCenter] = useState<string | null>(null)
+  const [openCenterKey, setOpenCenterKey] = useState("")
 
   function save(id: string) {
     const val = drafts[id]
@@ -20,21 +31,49 @@ export function MatrixView({ items }: { items: EquipmentPricingRow[] }) {
     startTransition(async () => { await updateEquipmentRate(id, rate) })
   }
 
-  // Ported from renderQuoteMatrix(): group equipment by center into hub-cards
-  // showing machine count and total hourly-rate value per center.
-  const groups = useMemo(() => {
-    const map = new Map<string, { centerId: string | null; centerName: string; items: EquipmentPricingRow[] }>()
+  const groups: CenterGroup[] = useMemo(() => {
+    const byCenter = new Map<string, EquipmentPricingRow[]>()
     for (const it of items) {
-      const key = it.centerId ?? "__none__"
-      const name = it.center?.name ?? "Chưa gán trung tâm"
-      const g = map.get(key) ?? { centerId: it.centerId, centerName: name, items: [] }
-      g.items.push(it)
-      map.set(key, g)
+      const key = it.centerId || NO_CENTER_KEY
+      if (!byCenter.has(key)) byCenter.set(key, [])
+      byCenter.get(key)!.push(it)
     }
-    return Array.from(map.values()).sort((a, b) => b.items.length - a.items.length)
-  }, [items])
+    const list: CenterGroup[] = centers.map((c) => ({ key: c.id, name: c.name, centerId: c.id, items: byCenter.get(c.id) || [] }))
+    const orphan = byCenter.get(NO_CENTER_KEY) || []
+    if (orphan.length) list.push({ key: NO_CENTER_KEY, name: NO_CENTER_LABEL, centerId: null, items: orphan })
+    return list
+  }, [items, centers])
 
-  const activeGroup = groups.find((g) => (g.centerId ?? "__none__") === openCenter)
+  const openGroup = groups.find((g) => g.key === openCenterKey) ?? null
+
+  useEffect(() => {
+    const el = document.getElementById("page-title")
+    if (!el) return
+    if (openGroup) {
+      el.classList.add("title-back")
+      el.title = "Quay lại danh sách trung tâm"
+      const handler = () => backToGrid()
+      el.addEventListener("click", handler)
+      return () => {
+        el.classList.remove("title-back")
+        el.removeAttribute("title")
+        el.removeEventListener("click", handler)
+      }
+    }
+    el.classList.remove("title-back")
+    el.removeAttribute("title")
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openGroup?.key])
+
+  function openCenter(key: string) { setOpenCenterKey(key) }
+  function backToGrid() { setOpenCenterKey("") }
+
+  const overview = useMemo(() => {
+    const withRate = items.filter((it) => it.hourlyRate != null)
+    const totalRate = items.reduce((a, it) => a + (it.hourlyRate || 0), 0)
+    const avgRate = withRate.length ? totalRate / withRate.length : 0
+    return { total: items.length, centerCount: centers.length, totalRate, avgRate }
+  }, [items, centers])
 
   const columns: Array<DataTableColumn<EquipmentPricingRow>> = [
     { key: "code", header: "Mã", render: (it) => it.code ?? "—" },
@@ -53,44 +92,41 @@ export function MatrixView({ items }: { items: EquipmentPricingRow[] }) {
     },
   ]
 
-  if (openCenter && activeGroup) {
-    return (
-      <PageShell
-        title={activeGroup.centerName}
-        subtitle="Chỉnh giá và nhấn ra ngoài ô để lưu"
-        actions={<button type="button" onClick={() => setOpenCenter(null)} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid #dfe3e8", background: "#fff" }}>← Quay lại danh sách trung tâm</button>}
-      >
-        <DataTable columns={columns} rows={activeGroup.items} rowKey={(it) => it.id} loading={pending} emptyTitle="Chưa có thiết bị nào" resizable maxBodyHeight={480} />
-      </PageShell>
-    )
-  }
-
   return (
-    <PageShell title="Đơn giá thiết bị theo trung tâm" subtitle="Chọn một trung tâm để xem và chỉnh đơn giá thiết bị">
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 14 }}>
-        {groups.map((g) => {
-          const key = g.centerId ?? "__none__"
-          const total = g.items.reduce((s, it) => s + (it.hourlyRate ?? 0), 0)
-          const initials = g.centerName.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase()
-          return (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setOpenCenter(key)}
-              style={{ textAlign: "left", cursor: "pointer", border: "1px solid #e7eaee", borderRadius: 12, padding: 16, background: "#fff" }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ width: 36, height: 36, borderRadius: 10, background: "#eaf1ff", color: "#1d5fd6", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700 }}>{initials || "—"}</span>
-                <span style={{ fontWeight: 700 }}>{g.centerName}</span>
-              </div>
-              <div style={{ marginTop: 12, display: "flex", justifyContent: "space-between", fontSize: 13, opacity: 0.8 }}>
-                <span>Thiết bị: <b>{g.items.length}</b></span>
-                <span>Tổng đơn giá/giờ: <b>{fmtVND(total)} đ</b></span>
-              </div>
-            </button>
-          )
-        })}
-      </div>
+    <PageShell title="Đơn giá thiết bị theo trung tâm" subtitle={openGroup ? "Chỉnh giá và nhấn ra ngoài ô để lưu" : "Chọn một trung tâm để xem và chỉnh đơn giá thiết bị"}>
+      {!openGroup && (
+        <>
+          <div className="kpis-tier" style={{ marginBottom: 16 }}>
+            <KpiCard label="Tổng thiết bị" value={overview.total} tone="blue" />
+            <KpiCard label="Trung tâm" value={overview.centerCount} tone="blue" />
+            <KpiCard label="Tổng đơn giá/giờ" value={`${fmtVND(overview.totalRate)} đ`} tone="warning" />
+            <KpiCard label="Đơn giá TB/giờ" value={`${fmtVND(overview.avgRate)} đ`} tone="success" />
+          </div>
+          {groups.length === 0 ? (
+            <div className="empty">Chưa có trung tâm nào — thêm trung tâm ở trang Trung tâm để tạo ma trận theo từng trung tâm.</div>
+          ) : (
+            <div className="cu-grid">
+              {groups.map((g) => {
+                const total = g.items.reduce((s, it) => s + (it.hourlyRate ?? 0), 0)
+                const initial = g.name.replace(/Trung tâm|thử nghiệm/gi, "").trim().slice(0, 2).toUpperCase() || "TT"
+                return (
+                  <div key={g.key} className="hub-card" onClick={() => openCenter(g.key)} style={{ cursor: "pointer" }}>
+                    <div className="hub-top">
+                      <div className="hub-icon">{initial}</div>
+                      <div className="hub-title"><h4>{g.name}</h4><p>{g.items.length} thiết bị · {fmtVND(total)} đ</p></div>
+                      <span className="hub-arrow sys-arrow-glyph"><DirectionIcon name="chevronRight" size={20} /></span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </>
+      )}
+
+      {openGroup && (
+        <DataTable columns={columns} rows={openGroup.items} rowKey={(it) => it.id} loading={pending} emptyTitle="Chưa có thiết bị nào" resizable maxBodyHeight={480} />
+      )}
     </PageShell>
   )
 }

@@ -6,6 +6,7 @@ import { DataTable, type DataTableColumn } from "@/shared/ui/data-table"
 import { FormModal } from "@/shared/ui/form-modal"
 import { Perm } from "@/shared/lib/rbac-client"
 import { KpiCard } from "@/shared/ui/kpi-card"
+import { DirectionIcon } from "@/shared/ui/icons"
 import { computeSimpleTrend } from "@/shared/lib/trend"
 import { saveDepreciationAsset } from "../actions"
 import type { DepreciationAssetRow } from "../types"
@@ -204,7 +205,7 @@ export function DepreciationView({ items, centers = [] }: { items: DepreciationA
                     <div className="hub-top">
                       <div className="hub-icon">{initial}</div>
                       <div className="hub-title"><h4>{g.name}</h4><p>{g.items.length} tài sản · {val.toLocaleString("vi-VN")} đ</p></div>
-                      <span className="hub-arrow sys-arrow-glyph">›</span>
+                      <span className="hub-arrow sys-arrow-glyph"><DirectionIcon name="chevronRight" size={20} /></span>
                     </div>
                     <div className="hub-tags">
                       <span className="hub-tag">{perHour.toLocaleString("vi-VN")} đ/giờ</span>

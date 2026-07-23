@@ -411,7 +411,7 @@
   .avstack .a:first-child{margin-left:0}
   .due{font-size:12px;color:var(--muted)}
   .pcard .pacts{display:flex;gap:6px}
-  .pager{display:flex;align-items:center;justify-content:space-between;margin-top:24px;flex-wrap:wrap;gap:10px;padding:16px 0;border-top:2px solid var(--line)}
+  .pager{display:flex;align-items:center;justify-content:space-between;margin-top:8px;flex-wrap:wrap;gap:10px;padding:6px 0;border-top:1px solid var(--line)}
   #proj-pager{position:static;width:100%}
   #page-projects{display:flex;flex-direction:column;min-height:calc(100vh - 108px)}
   #page-projects .proj-list-wrap{flex:1}

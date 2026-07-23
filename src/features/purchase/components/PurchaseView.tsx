@@ -9,6 +9,7 @@ import { computeSimpleTrend } from "@/shared/lib/trend"
 import { FormModal } from "@/shared/ui/form-modal"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { StatusBadge } from "@/shared/ui/status-badge"
+import { DirectionIcon } from "@/shared/ui/icons"
 import { savePurchaseItem, deletePurchaseItem, bulkDeletePurchaseItems } from "../actions"
 import {
   PURCHASE_STATUS_LABEL,
@@ -289,7 +290,7 @@ export function PurchaseView({
                   <div className="hub-top">
                     <div className="hub-icon">{initial}</div>
                     <div className="hub-title"><h4>{key}</h4><p>{list.length} hạng mục · {purchaseFormatAmount(val)} đ</p></div>
-                    <span className="hub-arrow sys-arrow-glyph">›</span>
+                    <span className="hub-arrow sys-arrow-glyph"><DirectionIcon name="chevronRight" size={20} /></span>
                   </div>
                   <div className="hub-tags">
                     <span className="hub-tag">{done} hoàn thành</span>

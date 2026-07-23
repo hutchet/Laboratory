@@ -1,4 +1,5 @@
 import type { MouseEventHandler } from "react"
+import { DirectionIcon } from "@/shared/ui/icons"
 
 export type PlanCardProps = {
   projectName: string
@@ -38,7 +39,7 @@ export function PlanCard({ projectName, status, packCount, itemCount, passCount,
           <h4>{projectName}</h4>
           <p>{status}</p>
         </div>
-        <span className="hub-arrow sys-arrow-glyph">›</span>
+        <span className="hub-arrow sys-arrow-glyph"><DirectionIcon name="chevronRight" size={20} /></span>
       </div>
       <div className="hub-tags">
         <span className="hub-tag">{packCount} mẫu</span>

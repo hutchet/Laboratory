@@ -35,7 +35,12 @@ export async function listProjectOptions(): Promise<Option[]> {
 }
 
 export async function listTestCatalog(): Promise<TestCatalogRow[]> {
-  return db.testCatalogItem.findMany({ orderBy: { createdAt: "desc" } })
+  const [items, centers] = await Promise.all([
+    db.testCatalogItem.findMany({ orderBy: { createdAt: "desc" } }),
+    db.center.findMany({ select: { id: true, name: true } }),
+  ])
+  const centerMap = new Map(centers.map((c) => [c.id, c]))
+  return items.map((it) => ({ ...it, center: it.centerId ? centerMap.get(it.centerId) ?? null : null }))
 }
 
 export async function getPersonnelRateConfig(): Promise<PersonnelRateConfigRow> {
@@ -45,7 +50,12 @@ export async function getPersonnelRateConfig(): Promise<PersonnelRateConfigRow> 
 }
 
 export async function listPersonnelRouting(): Promise<PersonnelRoutingRow[]> {
-  return db.personnelRouting.findMany({ orderBy: { createdAt: "desc" } })
+  const [items, centers] = await Promise.all([
+    db.personnelRouting.findMany({ orderBy: { createdAt: "desc" } }),
+    db.center.findMany({ select: { id: true, name: true } }),
+  ])
+  const centerMap = new Map(centers.map((c) => [c.id, c]))
+  return items.map((it) => ({ ...it, center: it.centerId ? centerMap.get(it.centerId) ?? null : null }))
 }
 
 // y/c 116.1: Danh sach thiet bi nhap trong trang Thiet bi PHAI tu dong anh xa sang
@@ -87,7 +97,12 @@ export async function listDepreciationAssets(): Promise<DepreciationAssetRow[]> 
 }
 
 export async function listVariableCosts(): Promise<VariableCostRow[]> {
-  return db.variableCost.findMany({ orderBy: { createdAt: "desc" } })
+  const [items, centers] = await Promise.all([
+    db.variableCost.findMany({ orderBy: { createdAt: "desc" } }),
+    db.center.findMany({ select: { id: true, name: true } }),
+  ])
+  const centerMap = new Map(centers.map((c) => [c.id, c]))
+  return items.map((it) => ({ ...it, center: it.centerId ? centerMap.get(it.centerId) ?? null : null }))
 }
 
 export type EquipmentPricingRow = {

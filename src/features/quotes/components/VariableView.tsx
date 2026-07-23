@@ -1,15 +1,31 @@
 "use client"
-import { useMemo, useState, useTransition } from "react"
+import { useEffect, useMemo, useState, useTransition } from "react"
 import { PageShell } from "@/shared/ui/page-shell"
 import { FilterBar } from "@/shared/ui/filter-bar"
 import { DataTable, type DataTableColumn } from "@/shared/ui/data-table"
 import { FormModal } from "@/shared/ui/form-modal"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
+import { CustomSelect } from "@/shared/ui/custom-select"
+import { KpiCard } from "@/shared/ui/kpi-card"
 import { Perm } from "@/shared/lib/rbac-client"
+import { DirectionIcon } from "@/shared/ui/icons"
 import { saveVariableCost, deleteVariableCost, bulkDeleteVariableCosts } from "../actions"
-import type { VariableCostRow } from "../types"
+import type { VariableCostRow, Option } from "../types"
 
-export function VariableView({ items }: { items: VariableCostRow[] }) {
+function fmtVND(n: number) {
+  return Math.round(n || 0).toLocaleString("vi-VN")
+}
+
+const NO_CENTER_KEY = "__none__"
+const NO_CENTER_LABEL = "Chưa gán trung tâm"
+
+type CenterGroup = { key: string; name: string; centerId: string | null; items: VariableCostRow[] }
+
+// y/c 4.2: Chi phí biến đổi chuyển sang mô hình danh sách thẻ theo Trung tâm —
+// mỗi Trung tâm khai báo trong trang Trung tâm luôn có 1 thẻ (kể cả chưa có
+// khoản chi phí nào), khoản chi phí chưa gán Trung tâm gộp vào thẻ riêng.
+// Trang danh sách thẻ có 4 KPI.
+export function VariableView({ items, centers = [] }: { items: VariableCostRow[]; centers?: Option[] }) {
   const [q, setQ] = useState("")
   const [editing, setEditing] = useState<VariableCostRow | null>(null)
   const [showForm, setShowForm] = useState(false)
@@ -17,9 +33,62 @@ export function VariableView({ items }: { items: VariableCostRow[] }) {
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [bulkConfirm, setBulkConfirm] = useState(false)
   const [editMode, setEditMode] = useState(false)
+  const [openCenterKey, setOpenCenterKey] = useState("")
+  const [fCenterId, setFCenterId] = useState("")
   const [pending, startTransition] = useTransition()
 
-  const filtered = useMemo(() => items.filter((it) => !q || it.costType.toLowerCase().includes(q.toLowerCase())), [items, q])
+  useEffect(() => {
+    if (showForm) setFCenterId(editing?.centerId ?? (openCenterKey && openCenterKey !== NO_CENTER_KEY ? openCenterKey : ""))
+  }, [showForm, editing, openCenterKey])
+
+  const groups: CenterGroup[] = useMemo(() => {
+    const byCenter = new Map<string, VariableCostRow[]>()
+    for (const it of items) {
+      const key = it.centerId || NO_CENTER_KEY
+      if (!byCenter.has(key)) byCenter.set(key, [])
+      byCenter.get(key)!.push(it)
+    }
+    const list: CenterGroup[] = centers.map((c) => ({ key: c.id, name: c.name, centerId: c.id, items: byCenter.get(c.id) || [] }))
+    const orphan = byCenter.get(NO_CENTER_KEY) || []
+    if (orphan.length) list.push({ key: NO_CENTER_KEY, name: NO_CENTER_LABEL, centerId: null, items: orphan })
+    return list
+  }, [items, centers])
+
+  const openGroup = groups.find((g) => g.key === openCenterKey) ?? null
+
+  useEffect(() => {
+    const el = document.getElementById("page-title")
+    if (!el) return
+    if (openGroup) {
+      el.classList.add("title-back")
+      el.title = "Quay lại danh sách trung tâm"
+      const handler = () => backToGrid()
+      el.addEventListener("click", handler)
+      return () => {
+        el.classList.remove("title-back")
+        el.removeAttribute("title")
+        el.removeEventListener("click", handler)
+      }
+    }
+    el.classList.remove("title-back")
+    el.removeAttribute("title")
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openGroup?.key])
+
+  function openCenter(key: string) { setOpenCenterKey(key); setQ("") }
+  function backToGrid() { setOpenCenterKey(""); setQ("") }
+
+  const overview = useMemo(() => {
+    const withAmount = items.filter((it) => it.amount != null)
+    const totalCost = items.reduce((a, it) => a + (it.amount || 0), 0)
+    const avgCost = withAmount.length ? totalCost / withAmount.length : 0
+    return { total: items.length, centerCount: centers.length, totalCost, avgCost }
+  }, [items, centers])
+
+  const filtered = useMemo(() => {
+    const list = openGroup ? openGroup.items : []
+    return list.filter((it) => !q || it.costType.toLowerCase().includes(q.toLowerCase()))
+  }, [openGroup, q])
 
   function openNew() { setEditing(null); setShowForm(true) }
   function openEdit(it: VariableCostRow) { setEditing(it); setShowForm(true) }
@@ -29,6 +98,7 @@ export function VariableView({ items }: { items: VariableCostRow[] }) {
       costType: String(formData.get("costType") || ""),
       description: String(formData.get("description") || ""),
       amount: formData.get("amount") ? Number(formData.get("amount")) : null,
+      centerId: fCenterId || null,
     }
     startTransition(async () => { await saveVariableCost(input); setShowForm(false); setEditing(null) })
   }
@@ -82,20 +152,57 @@ export function VariableView({ items }: { items: VariableCostRow[] }) {
   ]
 
   return (
-    <PageShell
-      title="Chi phí biến đổi khác"
-      actions={
-        <span style={{ display: "flex", gap: 8 }}>
-          {editMode && (
-            <button type="button" className="btn-danger" disabled={!selected.size} onClick={() => setBulkConfirm(true)} style={{ opacity: selected.size ? 1 : 0.5 }}>Xoá tất cả</button>
+    <PageShell title="Chi phí biến đổi khác" subtitle={openGroup ? undefined : "Chọn một trung tâm để xem chi phí biến đổi"}>
+      {!openGroup && (
+        <>
+          <div className="kpis-tier" style={{ marginBottom: 16 }}>
+            <KpiCard label="Tổng khoản mục" value={overview.total} tone="blue" />
+            <KpiCard label="Trung tâm" value={overview.centerCount} tone="blue" />
+            <KpiCard label="Tổng chi phí" value={`${fmtVND(overview.totalCost)} đ`} tone="warning" />
+            <KpiCard label="Chi phí trung bình" value={`${fmtVND(overview.avgCost)} đ`} tone="success" />
+          </div>
+          {groups.length === 0 ? (
+            <div className="empty">Chưa có trung tâm nào — thêm trung tâm ở trang Trung tâm để tạo chi phí theo từng trung tâm.</div>
+          ) : (
+            <div className="cu-grid">
+              {groups.map((g) => {
+                const val = g.items.reduce((a, it) => a + (it.amount || 0), 0)
+                const initial = g.name.replace(/Trung tâm|thử nghiệm/gi, "").trim().slice(0, 2).toUpperCase() || "TT"
+                return (
+                  <div key={g.key} className="hub-card" onClick={() => openCenter(g.key)} style={{ cursor: "pointer" }}>
+                    <div className="hub-top">
+                      <div className="hub-icon">{initial}</div>
+                      <div className="hub-title"><h4>{g.name}</h4><p>{g.items.length} khoản mục · {fmtVND(val)} đ</p></div>
+                      <span className="hub-arrow sys-arrow-glyph"><DirectionIcon name="chevronRight" size={20} /></span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           )}
-          <Perm minPerm="dept_head"><button type="button" className={editMode ? "btn-success" : "btn-line"} onClick={toggleEditMode}>{editMode ? "Xong" : "Chỉnh sửa"}</button>
-          <button type="button" className="btn-pri" onClick={openNew}>+ Thêm chi phí</button></Perm>
-        </span>
-      }
-      filters={<FilterBar search={{ value: q, onChange: setQ, placeholder: "Tìm chi phí..." }} />}
-    >
-      <DataTable columns={columns} rows={filtered} rowKey={(it) => it.id} loading={pending} emptyTitle="Chưa có chi phí nào" onRowClick={(it) => openEdit(it)} resizable maxBodyHeight={560} />
+        </>
+      )}
+
+      {openGroup && (
+        <>
+          <div className="section-head">
+            <h3>{openGroup.name}</h3>
+            <div className="tools">
+              <FilterBar search={{ value: q, onChange: setQ, placeholder: "Tìm chi phí..." }} />
+              <span style={{ display: "flex", gap: 8 }}>
+                {editMode && (
+                  <button type="button" className="btn-danger" disabled={!selected.size} onClick={() => setBulkConfirm(true)} style={{ opacity: selected.size ? 1 : 0.5 }}>Xoá tất cả</button>
+                )}
+                <Perm minPerm="dept_head">
+                  <button type="button" className={editMode ? "btn-success" : "btn-line"} onClick={toggleEditMode}>{editMode ? "Xong" : "Chỉnh sửa"}</button>
+                  <button type="button" className="btn-pri" onClick={openNew}>+ Thêm chi phí</button>
+                </Perm>
+              </span>
+            </div>
+          </div>
+          <DataTable columns={columns} rows={filtered} rowKey={(it) => it.id} loading={pending} emptyTitle="Chưa có chi phí nào" onRowClick={(it) => openEdit(it)} resizable maxBodyHeight={560} />
+        </>
+      )}
 
       <FormModal
         open={showForm}
@@ -107,6 +214,9 @@ export function VariableView({ items }: { items: VariableCostRow[] }) {
         <form key={editing?.id ?? "new"} id="tf-variable-form" onSubmit={(e) => e.preventDefault()} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <label style={{ fontSize: 12, fontWeight: 600 }}>Loại chi phí *
             <input name="costType" required defaultValue={editing?.costType ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+          </label>
+          <label style={{ fontSize: 12, fontWeight: 600 }}>Trung tâm
+            <CustomSelect value={fCenterId} onChange={setFCenterId} width="100%" options={[{ value: "", label: NO_CENTER_LABEL }, ...centers.map((c) => ({ value: c.id, label: c.name }))]} />
           </label>
           <label style={{ fontSize: 12, fontWeight: 600 }}>Mô tả
             <input name="description" defaultValue={editing?.description ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />

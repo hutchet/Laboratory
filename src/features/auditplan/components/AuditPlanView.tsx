@@ -9,6 +9,7 @@ import { CustomSelect } from "@/shared/ui/custom-select"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { StatusBadge } from "@/shared/ui/status-badge"
 import { IconButton } from "@/shared/ui/icon-button"
+import { DirectionIcon } from "@/shared/ui/icons"
 import { Perm } from "@/shared/lib/rbac-client"
 import {
   saveAuditPlan, deleteAuditPlan,
@@ -311,7 +312,7 @@ export function AuditPlanView({
                 <div className="hub-top">
                   <div className="hub-icon">{initial}</div>
                   <div className="hub-title"><h4>{p.title}</h4><p>{p.scheduledAt ? new Date(p.scheduledAt).toLocaleDateString("vi-VN") : "Chưa có ngày dự kiến"}</p></div>
-                  <span className="hub-arrow sys-arrow-glyph">›</span>
+                  <span className="hub-arrow sys-arrow-glyph"><DirectionIcon name="chevronRight" size={20} /></span>
                 </div>
                 <div className="hub-tags">
                   <StatusBadge label={AUDIT_STATUS_LABEL[p.status ?? ""] ?? p.status ?? "—"} tone={planStatusTone(p.status)} />

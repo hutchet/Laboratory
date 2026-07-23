@@ -1,13 +1,16 @@
 "use client"
-import { useMemo, useState, useTransition } from "react"
+import { useEffect, useMemo, useState, useTransition } from "react"
 import { PageShell } from "@/shared/ui/page-shell"
 import { FilterBar } from "@/shared/ui/filter-bar"
 import { DataTable, type DataTableColumn } from "@/shared/ui/data-table"
 import { FormModal } from "@/shared/ui/form-modal"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
+import { CustomSelect } from "@/shared/ui/custom-select"
+import { KpiCard } from "@/shared/ui/kpi-card"
 import { Perm } from "@/shared/lib/rbac-client"
+import { DirectionIcon } from "@/shared/ui/icons"
 import { savePersonnelRateConfig, savePersonnelRouting, deletePersonnelRouting, bulkDeletePersonnelRouting } from "../actions"
-import type { PersonnelRateConfigRow, PersonnelRoutingRow } from "../types"
+import type { PersonnelRateConfigRow, PersonnelRoutingRow, Option } from "../types"
 
 function parseHours(v: string | null | undefined): number {
   const n = Number(v)
@@ -30,7 +33,16 @@ function computeRoutingCost(it: PersonnelRoutingRow, config: PersonnelRateConfig
   return { totalHours, withOverhead }
 }
 
-export function PersonnelView({ config, routing }: { config: PersonnelRateConfigRow; routing: PersonnelRoutingRow[] }) {
+const NO_CENTER_KEY = "__none__"
+const NO_CENTER_LABEL = "Chưa gán trung tâm"
+
+type CenterGroup = { key: string; name: string; centerId: string | null; items: PersonnelRoutingRow[] }
+
+// y/c 4.2: Nhân sự báo giá chuyển sang mô hình danh sách thẻ theo Trung tâm —
+// mỗi Trung tâm khai báo trong trang Trung tâm luôn có 1 thẻ (kể cả chưa có
+// định tuyến nào), định tuyến chưa gán Trung tâm gộp vào thẻ riêng. Trang
+// danh sách thẻ có 4 KPI.
+export function PersonnelView({ config, routing, centers = [] }: { config: PersonnelRateConfigRow; routing: PersonnelRoutingRow[]; centers?: Option[] }) {
   const [q, setQ] = useState("")
   const [editing, setEditing] = useState<PersonnelRoutingRow | null>(null)
   const [showForm, setShowForm] = useState(false)
@@ -38,9 +50,62 @@ export function PersonnelView({ config, routing }: { config: PersonnelRateConfig
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [bulkConfirm, setBulkConfirm] = useState(false)
   const [editMode, setEditMode] = useState(false)
+  const [openCenterKey, setOpenCenterKey] = useState("")
+  const [fCenterId, setFCenterId] = useState("")
   const [pending, startTransition] = useTransition()
 
-  const filtered = useMemo(() => routing.filter((it) => !q || it.testName.toLowerCase().includes(q.toLowerCase())), [routing, q])
+  useEffect(() => {
+    if (showForm) setFCenterId(editing?.centerId ?? (openCenterKey && openCenterKey !== NO_CENTER_KEY ? openCenterKey : ""))
+  }, [showForm, editing, openCenterKey])
+
+  const groups: CenterGroup[] = useMemo(() => {
+    const byCenter = new Map<string, PersonnelRoutingRow[]>()
+    for (const it of routing) {
+      const key = it.centerId || NO_CENTER_KEY
+      if (!byCenter.has(key)) byCenter.set(key, [])
+      byCenter.get(key)!.push(it)
+    }
+    const list: CenterGroup[] = centers.map((c) => ({ key: c.id, name: c.name, centerId: c.id, items: byCenter.get(c.id) || [] }))
+    const orphan = byCenter.get(NO_CENTER_KEY) || []
+    if (orphan.length) list.push({ key: NO_CENTER_KEY, name: NO_CENTER_LABEL, centerId: null, items: orphan })
+    return list
+  }, [routing, centers])
+
+  const openGroup = groups.find((g) => g.key === openCenterKey) ?? null
+
+  useEffect(() => {
+    const el = document.getElementById("page-title")
+    if (!el) return
+    if (openGroup) {
+      el.classList.add("title-back")
+      el.title = "Quay lại danh sách trung tâm"
+      const handler = () => backToGrid()
+      el.addEventListener("click", handler)
+      return () => {
+        el.classList.remove("title-back")
+        el.removeAttribute("title")
+        el.removeEventListener("click", handler)
+      }
+    }
+    el.classList.remove("title-back")
+    el.removeAttribute("title")
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openGroup?.key])
+
+  function openCenter(key: string) { setOpenCenterKey(key); setQ("") }
+  function backToGrid() { setOpenCenterKey(""); setQ("") }
+
+  const overview = useMemo(() => {
+    const totalHours = routing.reduce((a, it) => a + computeRoutingCost(it, config).totalHours, 0)
+    const totalCost = routing.reduce((a, it) => a + computeRoutingCost(it, config).withOverhead, 0)
+    const avgHours = routing.length ? totalHours / routing.length : 0
+    return { total: routing.length, centerCount: centers.length, avgHours, totalCost }
+  }, [routing, centers, config])
+
+  const filtered = useMemo(() => {
+    const list = openGroup ? openGroup.items : []
+    return list.filter((it) => !q || it.testName.toLowerCase().includes(q.toLowerCase()))
+  }, [openGroup, q])
 
   function saveRates(formData: FormData) {
     const input = {
@@ -64,6 +129,7 @@ export function PersonnelView({ config, routing }: { config: PersonnelRateConfig
       setupHours: String(formData.get("setupHours") || ""),
       testHours: String(formData.get("testHours") || ""),
       reportHours: String(formData.get("reportHours") || ""),
+      centerId: fCenterId || null,
     }
     startTransition(async () => { await savePersonnelRouting(input); setShowForm(false); setEditing(null) })
   }
@@ -122,59 +188,98 @@ export function PersonnelView({ config, routing }: { config: PersonnelRateConfig
   ]
 
   return (
-    <PageShell
-      title="Đơn giá nhân sự"
-      actions={
-        <span style={{ display: "flex", gap: 8 }}>
-          {editMode && (
-            <button type="button" className="btn-danger" disabled={!selected.size} onClick={() => setBulkConfirm(true)} style={{ opacity: selected.size ? 1 : 0.5 }}>Xoá tất cả</button>
+    <PageShell title="Đơn giá nhân sự" subtitle={openGroup ? undefined : "Chọn một trung tâm để xem định tuyến giờ công"}>
+      {!openGroup && (
+        <>
+          <div className="kpis-tier" style={{ marginBottom: 16 }}>
+            <KpiCard label="Tổng bài thử" value={overview.total} tone="blue" />
+            <KpiCard label="Trung tâm" value={overview.centerCount} tone="blue" />
+            <KpiCard label="Giờ TB / bài thử" value={overview.avgHours.toFixed(1)} tone="warning" />
+            <KpiCard label="Tổng CP nhân sự" value={`${fmtVND(overview.totalCost)} đ`} tone="success" />
+          </div>
+          <form
+            onSubmit={(e) => { e.preventDefault(); saveRates(new FormData(e.currentTarget)) }}
+            style={{ display: "flex", gap: 12, alignItems: "flex-end", marginBottom: 16, padding: 12, border: "1px solid #e7eaee", borderRadius: 10, flexWrap: "wrap" }}
+          >
+            <label style={{ fontSize: 12, fontWeight: 600 }}>Kỹ thuật viên
+              <input type="number" name="techRate" defaultValue={config.techRate} style={{ width: 100, padding: 6, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4, display: "block" }} />
+            </label>
+            <label style={{ fontSize: 12, fontWeight: 600 }}>Kỹ sư
+              <input type="number" name="engRate" defaultValue={config.engRate} style={{ width: 100, padding: 6, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4, display: "block" }} />
+            </label>
+            <label style={{ fontSize: 12, fontWeight: 600 }}>Trưởng nhóm
+              <input type="number" name="leadRate" defaultValue={config.leadRate} style={{ width: 100, padding: 6, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4, display: "block" }} />
+            </label>
+            <label style={{ fontSize: 12, fontWeight: 600 }}>Quản lý
+              <input type="number" name="mgrRate" defaultValue={config.mgrRate} style={{ width: 100, padding: 6, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4, display: "block" }} />
+            </label>
+            <label style={{ fontSize: 12, fontWeight: 600 }}>Phụ phí chung (%)
+              <input type="number" name="overheadPct" defaultValue={config.overheadPct} style={{ width: 100, padding: 6, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4, display: "block" }} />
+            </label>
+            <Perm minPerm="dept_head"><button type="submit" className="btn-pri" disabled={pending}>Lưu đơn giá</button></Perm>
+          </form>
+          {groups.length === 0 ? (
+            <div className="empty">Chưa có trung tâm nào — thêm trung tâm ở trang Trung tâm để tạo định tuyến theo từng trung tâm.</div>
+          ) : (
+            <div className="cu-grid">
+              {groups.map((g) => {
+                const totalCost = g.items.reduce((a, it) => a + computeRoutingCost(it, config).withOverhead, 0)
+                const initial = g.name.replace(/Trung tâm|thử nghiệm/gi, "").trim().slice(0, 2).toUpperCase() || "TT"
+                return (
+                  <div key={g.key} className="hub-card" onClick={() => openCenter(g.key)} style={{ cursor: "pointer" }}>
+                    <div className="hub-top">
+                      <div className="hub-icon">{initial}</div>
+                      <div className="hub-title"><h4>{g.name}</h4><p>{g.items.length} bài thử · {fmtVND(totalCost)} đ</p></div>
+                      <span className="hub-arrow sys-arrow-glyph"><DirectionIcon name="chevronRight" size={20} /></span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           )}
-          <Perm minPerm="dept_head"><button type="button" className={editMode ? "btn-success" : "btn-line"} onClick={toggleEditMode}>{editMode ? "Xong" : "Chỉnh sửa"}</button>
-          <button type="button" className="btn-pri" onClick={openNew}>+ Thêm định tuyến</button></Perm>
-        </span>
-      }
-      filters={<FilterBar search={{ value: q, onChange: setQ, placeholder: "Tìm bài thử..." }} />}
-    >
-      <form
-        onSubmit={(e) => { e.preventDefault(); saveRates(new FormData(e.currentTarget)) }}
-        style={{ display: "flex", gap: 12, alignItems: "flex-end", marginBottom: 16, padding: 12, border: "1px solid #e7eaee", borderRadius: 10, flexWrap: "wrap" }}
-      >
-        <label style={{ fontSize: 12, fontWeight: 600 }}>Kỹ thuật viên
-          <input type="number" name="techRate" defaultValue={config.techRate} style={{ width: 100, padding: 6, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4, display: "block" }} />
-        </label>
-        <label style={{ fontSize: 12, fontWeight: 600 }}>Kỹ sư
-          <input type="number" name="engRate" defaultValue={config.engRate} style={{ width: 100, padding: 6, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4, display: "block" }} />
-        </label>
-        <label style={{ fontSize: 12, fontWeight: 600 }}>Trưởng nhóm
-          <input type="number" name="leadRate" defaultValue={config.leadRate} style={{ width: 100, padding: 6, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4, display: "block" }} />
-        </label>
-        <label style={{ fontSize: 12, fontWeight: 600 }}>Quản lý
-          <input type="number" name="mgrRate" defaultValue={config.mgrRate} style={{ width: 100, padding: 6, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4, display: "block" }} />
-        </label>
-        <label style={{ fontSize: 12, fontWeight: 600 }}>Phụ phí (%)
-          <input type="number" name="overheadPct" defaultValue={config.overheadPct} style={{ width: 100, padding: 6, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4, display: "block" }} />
-        </label>
-        <button type="submit" style={{ padding: "8px 14px", borderRadius: 8, border: "none", background: "#1d5fd6", color: "#fff" }}>Lưu đơn giá</button>
-      </form>
+        </>
+      )}
 
-      <DataTable columns={columns} rows={filtered} rowKey={(it) => it.id} loading={pending} emptyTitle="Chưa có định tuyến nào" onRowClick={(it) => openEdit(it)} resizable maxBodyHeight={560} />
+      {openGroup && (
+        <>
+          <div className="section-head">
+            <h3>{openGroup.name}</h3>
+            <div className="tools">
+              <FilterBar search={{ value: q, onChange: setQ, placeholder: "Tìm bài thử..." }} />
+              <span style={{ display: "flex", gap: 8 }}>
+                {editMode && (
+                  <button type="button" className="btn-danger" disabled={!selected.size} onClick={() => setBulkConfirm(true)} style={{ opacity: selected.size ? 1 : 0.5 }}>Xoá tất cả</button>
+                )}
+                <Perm minPerm="dept_head">
+                  <button type="button" className={editMode ? "btn-success" : "btn-line"} onClick={toggleEditMode}>{editMode ? "Xong" : "Chỉnh sửa"}</button>
+                  <button type="button" className="btn-pri" onClick={openNew}>+ Thêm định tuyến</button>
+                </Perm>
+              </span>
+            </div>
+          </div>
+          <DataTable columns={columns} rows={filtered} rowKey={(it) => it.id} loading={pending} emptyTitle="Chưa có định tuyến nào" onRowClick={(it) => openEdit(it)} resizable maxBodyHeight={560} />
+        </>
+      )}
 
       <FormModal
         open={showForm}
-        title={editing ? "Sửa định tuyến" : "Thêm định tuyến nhân công"}
+        title={editing ? "Sửa định tuyến" : "Thêm định tuyến"}
         onClose={() => { setShowForm(false); setEditing(null) }}
-        onSubmit={() => { const f = document.getElementById("tf-routing-form") as HTMLFormElement | null; if (f) handleSubmit(new FormData(f)) }}
+        onSubmit={() => { const f = document.getElementById("tf-personnel-form") as HTMLFormElement | null; if (f) handleSubmit(new FormData(f)) }}
         submitting={pending}
       >
-        <form key={editing?.id ?? "new"} id="tf-routing-form" onSubmit={(e) => e.preventDefault()} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <form key={editing?.id ?? "new"} id="tf-personnel-form" onSubmit={(e) => e.preventDefault()} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <div style={{ display: "flex", gap: 12 }}>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Mã
               <input name="testCode" defaultValue={editing?.testCode ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
             </label>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 2 }}>Tên bài thử *
+            <label style={{ fontSize: 12, fontWeight: 600, flex: 2 }}>Bài thử *
               <input name="testName" required defaultValue={editing?.testName ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
             </label>
           </div>
+          <label style={{ fontSize: 12, fontWeight: 600 }}>Trung tâm
+            <CustomSelect value={fCenterId} onChange={setFCenterId} width="100%" options={[{ value: "", label: NO_CENTER_LABEL }, ...centers.map((c) => ({ value: c.id, label: c.name }))]} />
+          </label>
           <div style={{ display: "flex", gap: 12 }}>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Giờ chuẩn bị
               <input name="prepHours" defaultValue={editing?.prepHours ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
