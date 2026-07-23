@@ -326,10 +326,10 @@ export function PlanView({
   return (
     <PageShell title="Kế hoạch thử nghiệm">
       {!projectFilter ? (
-        /* Port 1:1 cua #plan-card-overview ban goc (dong 3746; CSS dong 848): luoi the
-           tom tat ke hoach theo tung du an - giu dung id de dung grid CSS
-           "repeat(auto-fit,minmax(300px,1fr))" (KHAC .proj-grid) - bam vao 1 the de vao
-           dung ke hoach cua du an do. */
+        /* Luoi the tom tat ke hoach theo tung du an (#plan-card-overview) - da chuan hoa
+           theo dung nguyen tac chung 4 the/hang PC - 3/laptop - 2/ipad - 1/mobile
+           (CSS dong ~3316, giong .proj-grid/#ap-plan-cards/#eq-center-cards) - bam vao
+           1 the de vao dung ke hoach cua du an do. */
         <div id="plan-card-overview">
           {projectCards.map(({ project, status, packCount, itemCount, passCount, doneCount, avgProgress }) => (
             <PlanCard
@@ -556,7 +556,7 @@ export function PlanView({
           <div className="card">
             <div className="ch">
               <h3>Xuất báo cáo kế hoạch</h3>
-              <span>Tải danh sách bài thử chi tiết trong phạm vi đang lọc</span>
+              <span>Tải danh sách bài thử chi tiết trong phạm vi ��ang lọc</span>
             </div>
             <div style={{ display: "flex", gap: 8 }}>
               <button type="button" className="btn-line" onClick={exportCsv}>⤓ Xuất Excel</button>

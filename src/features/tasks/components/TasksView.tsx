@@ -395,10 +395,11 @@ export function TasksView({ tasks, projects, members, centers, initialQuery }: T
               <div key={c.id} className="hub-card" onClick={() => setOpenCenterId(c.id)} style={{ cursor: "pointer" }}>
                 <div className="hub-top">
                   <div className="hub-icon">{initials(c.name)}</div>
-                  <div>
-                    <div style={{ fontWeight: 700 }}>{c.name}</div>
-                    <div style={{ fontSize: 12, color: "#8a8f98" }}>{c.count} công việc</div>
+                  <div className="hub-title">
+                    <h4>{c.name}</h4>
+                    <p>{c.count} công việc</p>
                   </div>
+                  <span className="hub-arrow sys-arrow-glyph">›</span>
                 </div>
                 <div className="hub-stats" style={{ display: "flex", gap: 12, marginTop: 10, fontSize: 12 }}>
                   <span>Hoàn thành: <b>{c.done}</b></span>

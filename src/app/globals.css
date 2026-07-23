@@ -3319,5 +3319,14 @@ html body .center-detail-card > .qs-box, html body .center-detail-card #pm-detai
 @media(max-width:1100px){#ap-plan-cards,.material-3 #ap-plan-cards{grid-template-columns:repeat(2,1fr)!important}}
 @media(max-width:760px){#ap-plan-cards,.material-3 #ap-plan-cards{grid-template-columns:1fr!important}}
 
+/* Chuan hoa luoi the tom tat Ke hoach thu nghiem (#plan-card-overview) theo dung
+   nguyen tac 4 the/hang PC - 3/laptop - 2/ipad - 1/mobile, thay cho
+   repeat(auto-fit,minmax(...)) khong on dinh so cot (dong ~867). */
+#plan-card-overview{display:grid!important;grid-template-columns:repeat(4,1fr)!important;gap:18px!important;margin-bottom:20px!important}
+.material-3 #plan-card-overview{display:grid!important;grid-template-columns:repeat(4,1fr)!important}
+@media(max-width:1600px){#plan-card-overview,.material-3 #plan-card-overview{grid-template-columns:repeat(3,1fr)!important}}
+@media(max-width:1100px){#plan-card-overview,.material-3 #plan-card-overview{grid-template-columns:repeat(2,1fr)!important}}
+@media(max-width:760px){#plan-card-overview,.material-3 #plan-card-overview{grid-template-columns:1fr!important}}
+
 /* h-agent: equipment overview always 4 cols */
 #eq-analytics-metrics{grid-template-columns:repeat(4,1fr)!important}
