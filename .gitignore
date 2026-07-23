@@ -5,3 +5,4 @@ node_modules
 prisma/dev.db
 .vercel
 .env.production
+.env*

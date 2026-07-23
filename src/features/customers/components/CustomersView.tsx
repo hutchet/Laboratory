@@ -121,13 +121,15 @@ export function CustomersView({ customers }:{ customers:CustomerRow[] }) {
       )}
 
       {filtered.length>0 && (
-        <div className="pager" id="cu-pager" style={{position:"sticky",bottom:0,background:"var(--bg,#f3f4f6)",zIndex:5,borderTop:"2px solid var(--line,#e4e8f0)",marginTop:"auto"}}>
+        <div className="pager" id="cu-pager" style={{position:"sticky",bottom:0,background:"var(--bg,#f3f4f6)",zIndex:5,borderTop:"2px solid var(--line,#e4e8f0)",marginTop:"auto",...(pageCount<=1?{justifyContent:"flex-start",width:"fit-content"}:{})}}>
           <span className="info">Hiện thị {(safePage-1)*PAGE_SIZE+1}–{Math.min(safePage*PAGE_SIZE,filtered.length)} / {filtered.length} khách hàng</span>
+          {pageCount>1 && (
           <div className="pages">
             <ArrowButton direction="chevronLeft" onClick={()=>setPage(p=>Math.max(1,p-1))} disabled={safePage===1} ariaLabel="Trang trước" />
             {Array.from({length:pageCount},(_,i)=>i+1).map(n=>(<button key={n} className={`pg${n===safePage?" active":""}`} onClick={()=>setPage(n)}>{n}</button>))}
             <ArrowButton direction="chevronRight" onClick={()=>setPage(p=>Math.min(pageCount,p+1))} disabled={safePage===pageCount} ariaLabel="Trang sau" />
           </div>
+          )}
         </div>
       )}
 

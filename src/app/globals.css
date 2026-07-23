@@ -1408,6 +1408,8 @@
   --sys-danger-bg:#ffdad6;
   --sys-warning:#8a5100;
   --sys-warning-bg:#ffddb3;
+  --sys-purple:#6d28d9;
+  --sys-purple-bg:#ede4fb;
   --sys-focus:#5271aa;
 }
 [data-theme=dark]{
@@ -1436,6 +1438,8 @@
   --sys-danger-bg:#542327;
   --sys-warning:#ffd89a;
   --sys-warning-bg:#5f4000;
+  --sys-purple:#c9b6fb;
+  --sys-purple-bg:#3f2a63;
   --sys-focus:#adc6ff;
 }
 /* Level 0: canvas and navigation */
@@ -1473,7 +1477,7 @@
 .material-3 .kcard.kb{background:var(--sys-icon-active-bg)!important;color:var(--sys-text)!important}.material-3 .kcard.kb .v{color:var(--sys-primary)!important}
 .material-3 .kcard.kg{background:var(--sys-success-bg)!important;color:var(--sys-text)!important}.material-3 .kcard.kg .v{color:var(--sys-success)!important}
 .material-3 .kcard.kr{background:var(--sys-danger-bg)!important;color:var(--sys-text)!important}.material-3 .kcard.kr .v{color:var(--sys-danger)!important}
-.material-3 .kcard.kp{background:var(--sys-surface-control)!important;color:var(--sys-text)!important}.material-3 .kcard.kp .v{color:var(--sys-icon)!important}
+.material-3 .kcard.kp{background:var(--sys-purple-bg)!important;color:var(--sys-text)!important}.material-3 .kcard.kp .v{color:var(--sys-purple)!important}
 .material-3 .kcard :is(.l,.s),.material-3 .paycard :is(.pc-lab,.pc-sub){color:var(--sys-text-muted)!important;opacity:1!important}
 /* Tables */
 .material-3 table{background:var(--sys-surface-large)!important;color:var(--sys-text)!important}
@@ -1682,7 +1686,7 @@ html[data-theme=dark] body.material-3 :is(.sys-arrow-glyph,.sys-select-arrow){ba
 
 
 /* v93 — card navigation arrow joins global directional icon registry */
-.material-3 .hub-arrow{width:32px!important;height:32px!important;min-width:32px!important;min-height:32px!important;display:grid!important;place-items:center!important;border-radius:10px!important;background:var(--sys-icon-bg)!important;color:var(--sys-icon)!important;font-size:22px!important;font-weight:500!important;line-height:1!important;transform:translateY(-1px)!important;flex:none!important}
+.material-3 .hub-arrow{width:32px!important;height:32px!important;min-width:32px!important;min-height:32px!important;display:grid!important;place-items:center!important;border-radius:10px!important;background:var(--sys-icon-bg)!important;color:var(--sys-icon)!important;font-size:22px!important;font-weight:500!important;line-height:1!important;transform:none!important;flex:none!important}
 html[data-theme=dark] body.material-3 .hub-arrow{background:#394451!important;color:#c4ccd7!important}
 
 

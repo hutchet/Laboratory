@@ -263,18 +263,12 @@ export function PurchaseView({
         <div className="section-head">
           <h3>Tất cả hạng mục</h3>
           <div className="tools">
-            <span style={{ display: "flex", gap: 8 }}>
-              {(Object.keys(PURCHASE_GROUPBY_LABEL) as PurchaseGroupBy[]).map((g) => (
-                <button
-                  key={g}
-                  type="button"
-                  className={groupBy === g ? "btn-pri" : "btn-line"}
-                  onClick={() => setGroupBy(g)}
-                >
-                  Theo {PURCHASE_GROUPBY_LABEL[g]}
-                </button>
-              ))}
-            </span>
+            <CustomSelect
+              value={groupBy}
+              onChange={(v) => setGroupBy(v as PurchaseGroupBy)}
+              width={190}
+              options={(Object.keys(PURCHASE_GROUPBY_LABEL) as PurchaseGroupBy[]).map((g) => ({ value: g, label: `Theo ${PURCHASE_GROUPBY_LABEL[g]}` }))}
+            />
             <button type="button" className="btn-line" onClick={exportCsv}>Xuất CSV</button>
             <button type="button" className="btn-pri" onClick={openNew}>+ Thêm hạng mục</button>
           </div>

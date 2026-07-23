@@ -54,8 +54,10 @@ export function AuditPlanView({
   const [showPhaseForm, setShowPhaseForm] = useState(false)
   const [showItemForm, setShowItemForm] = useState(false)
   const [editingItem, setEditingItem] = useState<AuditItemRow | null>(null)
+  const [editingPhase, setEditingPhase] = useState<AuditPhaseRow | null>(null)
   const [confirmDeletePlanId, setConfirmDeletePlanId] = useState<string | null>(null)
   const [confirmDeleteItemId, setConfirmDeleteItemId] = useState<string | null>(null)
+  const [confirmDeletePhaseId, setConfirmDeletePhaseId] = useState<string | null>(null)
   const [itemSelected, setItemSelected] = useState<Set<string>>(new Set())
   const [itemBulkConfirm, setItemBulkConfirm] = useState(false)
   const [itemEditMode, setItemEditMode] = useState(false)
@@ -97,20 +99,21 @@ export function AuditPlanView({
   const [phaseFormPlanId, setPhaseFormPlanId] = useState("")
   const [itemFormPlanId, setItemFormPlanId] = useState("")
   const [itemFormPhaseId, setItemFormPhaseId] = useState("")
+  const [pendingItemPhaseId, setPendingItemPhaseId] = useState<string | null>(null)
   const [itemFormStatus, setItemFormStatus] = useState("planned")
 
   const visiblePlanId = openPlanId
   const currentPlan = plans.find((p) => p.id === openPlanId) ?? null
 
   useEffect(() => { if (showPlanForm) setPlanFormStatus("planned") }, [showPlanForm])
-  useEffect(() => { if (showPhaseForm) setPhaseFormPlanId(visiblePlanId) }, [showPhaseForm, visiblePlanId])
+  useEffect(() => { if (showPhaseForm) setPhaseFormPlanId(editingPhase?.auditPlanId ?? visiblePlanId) }, [showPhaseForm, visiblePlanId, editingPhase])
   useEffect(() => {
     if (showItemForm) {
       setItemFormPlanId(editingItem?.auditPlanId ?? visiblePlanId)
-      setItemFormPhaseId(editingItem?.phaseId ?? "")
+      setItemFormPhaseId(editingItem?.phaseId ?? pendingItemPhaseId ?? "")
       setItemFormStatus(editingItem?.status ?? "planned")
     }
-  }, [showItemForm, editingItem, visiblePlanId])
+  }, [showItemForm, editingItem, visiblePlanId, pendingItemPhaseId])
   const scopedItems = useMemo(
     () => items.filter((it) => (!visiblePlanId || it.auditPlanId === visiblePlanId) && (!search || it.name.toLowerCase().includes(search.toLowerCase()) || (it.assignee ?? "").toLowerCase().includes(search.toLowerCase()))),
     [items, visiblePlanId, search],
@@ -183,8 +186,8 @@ export function AuditPlanView({
     startTransition(async () => { await saveAuditPlan(input); setShowPlanForm(false) })
   }
   function submitPhase(formData: FormData) {
-    const input = { auditPlanId: String(formData.get("auditPlanId") || ""), name: String(formData.get("name") || ""), order: formData.get("order") ? Number(formData.get("order")) : null }
-    startTransition(async () => { await saveAuditPhase(input); setShowPhaseForm(false) })
+    const input = { id: editingPhase?.id, auditPlanId: String(formData.get("auditPlanId") || ""), name: String(formData.get("name") || ""), order: formData.get("order") ? Number(formData.get("order")) : null }
+    startTransition(async () => { await saveAuditPhase(input); setShowPhaseForm(false); setEditingPhase(null) })
   }
   function submitItem(formData: FormData) {
     const input = {
@@ -200,7 +203,7 @@ export function AuditPlanView({
       actualEnd: String(formData.get("actualEnd") || "") || null,
       note: String(formData.get("note") || ""),
     }
-    startTransition(async () => { await saveAuditItem(input); setShowItemForm(false); setEditingItem(null) })
+    startTransition(async () => { await saveAuditItem(input); setShowItemForm(false); setEditingItem(null); setPendingItemPhaseId(null) })
   }
   function toggleItemSelect(id: string) {
     setItemSelected((prev) => {
@@ -229,7 +232,7 @@ export function AuditPlanView({
     // Sua loi header/du lieu bi lech cot: header cu ghi "No" nhung gia tri
     // thuc te la ten Giai doan; bo sung cot T.luong (ngay) cho khop voi bang
     // chi tiet/popup (dung 10 cot nhu renderAuditPlan/openApTaskForm ban goc).
-    const header = ["Giai đoạn", "Hạng m��c", "Phụ trách", "Bắt đầu KH", "Kết thúc KH", "Bắt đầu TT", "Kết thúc TT", "T.lượng (ngày)", "Trạng thái", "Ghi chú"]
+    const header = ["Giai đoạn", "Hạng m����c", "Phụ trách", "Bắt đầu KH", "Kết thúc KH", "Bắt đầu TT", "Kết thúc TT", "T.lượng (ngày)", "Trạng thái", "Ghi chú"]
     const rows = scopedItems.map((it) => [
       it.phase?.name ?? "",
       it.name,
@@ -282,17 +285,15 @@ export function AuditPlanView({
   ]
 
   return (
-    <PageShell
-      title="Kế hoạch kiểm toán nội bộ"
-      actions={!openPlanId ? (
-        <button type="button" className="btn-pri" onClick={() => setShowPlanForm(true)}>+ Kế hoạch</button>
-      ) : null}
-    >
+    <PageShell title="Kế hoạch kiểm toán nội bộ">
       {!openPlanId && (
       <>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
+      <div className="section-head">
         <h3 style={{ fontSize: 14, margin: 0 }}>Kế hoạch</h3>
-        <FilterBar search={{ value: planSearch, onChange: setPlanSearch, placeholder: "Tìm kế hoạch…" }} />
+        <div className="tools">
+          <FilterBar search={{ value: planSearch, onChange: setPlanSearch, placeholder: "Tìm kế hoạch…" }} />
+          <button type="button" className="btn-pri" onClick={() => setShowPlanForm(true)}>+ Kế hoạch</button>
+        </div>
       </div>
       {filteredPlans.length === 0 ? (
         <div className="empty">Chưa có kế hoạch nào.</div>
@@ -409,12 +410,46 @@ export function AuditPlanView({
             <h3 style={{ fontSize: 14, margin: "0 0 8px" }}>Tiến độ (Gantt)</h3>
             <AuditGanttChart items={scopedItems} phases={scopedPhases} onEditItem={(it) => { setEditingItem(it); setShowItemForm(true) }} />
           </div>
+
+          {/* Port cua renderApPhaseList() ban goc (dong ~6262-6288): danh sach
+              cac the "hang muc" (giai doan), rieng biet voi bang chi tiet dau
+              viec phia duoi - truoc day bi thieu hoan toan so voi file HTML goc. */}
+          <div className="card" style={{ marginBottom: 20 }}>
+            <div className="ch">
+              <div><h3>Kế hoạch theo hạng mục</h3><span>{scopedPhases.length} hạng mục</span></div>
+            </div>
+            <Perm minPerm="dept_head">
+              <div style={{ marginBottom: 12 }}>
+                <button type="button" className="btn-pri" onClick={() => { setEditingPhase(null); setShowPhaseForm(true) }}>+ Thêm hạng mục</button>
+              </div>
+            </Perm>
+            {scopedPhases.length === 0 ? (
+              <div className="empty">Chưa có hạng mục nào.</div>
+            ) : scopedPhases.map((ph) => {
+              const phItems = scopedItems.filter((it) => it.phaseId === ph.id)
+              const done = phItems.filter((it) => auditAutoStatus(it) === "done").length
+              return (
+                <div key={ph.id} className="pl-pack-card">
+                  <div className="ph">
+                    <b>{ph.name}</b>
+                    <span style={{ fontSize: 11.5, color: "var(--muted)" }}>{done}/{phItems.length} hoàn thành</span>
+                    <span style={{ flex: 1 }} />
+                    <Perm minPerm="dept_head">
+                      <button type="button" className="btn-line" style={{ padding: "6px 10px", fontSize: 12 }} onClick={() => { setEditingItem(null); setPendingItemPhaseId(ph.id); setShowItemForm(true) }}>+ Hạng mục</button>
+                      <button type="button" className="txt-act" onClick={() => { setEditingPhase(ph); setShowPhaseForm(true) }}>Sửa</button>
+                      <button type="button" className="txt-act del" onClick={() => setConfirmDeletePhaseId(ph.id)}>Xóa hạng mục</button>
+                    </Perm>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         </>
       )}
 
       {openPlanId && currentPlan && (
       <>
-      <h3 style={{ fontSize: 14, margin: "24px 0 8px" }}>Hạng mục kiểm toán</h3>
+      <h3 style={{ fontSize: 14, margin: "24px 0 8px" }}>Chi tiết đầu việc</h3>
       <div style={{ marginBottom: 12 }}>
         <FilterBar search={{ value: search, onChange: setSearch, placeholder: "Tìm theo tên hạng mục hoặc phụ trách…" }}>
           <div style={{ display: "flex", gap: 8, marginLeft: "auto" }}>
@@ -424,8 +459,8 @@ export function AuditPlanView({
                 <button type="button" className="btn-danger" disabled={!itemSelected.size} onClick={() => setItemBulkConfirm(true)} style={{ opacity: itemSelected.size ? 1 : 0.5 }}>Xoá mục đã chọn</button>
               )}
               <button type="button" className={itemEditMode ? "btn-success" : "btn-line"} onClick={toggleItemEditMode}>{itemEditMode ? "Xong" : "Chỉnh sửa"}</button>
-              <button type="button" className="btn-line" onClick={() => setShowPhaseForm(true)}>+ Giai đoạn</button>
-              <button type="button" className="btn-pri" onClick={() => { setEditingItem(null); setShowItemForm(true) }}>+ Thêm hạng mục</button>
+              <button type="button" className="btn-line" onClick={() => { setEditingPhase(null); setShowPhaseForm(true) }}>+ Giai đoạn</button>
+              <button type="button" className="btn-pri" onClick={() => { setEditingItem(null); setPendingItemPhaseId(null); setShowItemForm(true) }}>+ Thêm hạng mục</button>
             </Perm>
           </div>
         </FilterBar>
@@ -450,23 +485,23 @@ export function AuditPlanView({
         </form>
       </FormModal>
 
-      <FormModal open={showPhaseForm} title="Thêm giai đoạn" onClose={() => setShowPhaseForm(false)} onSubmit={() => { const f = document.getElementById("tf-auditphase-form") as HTMLFormElement | null; if (f) submitPhase(new FormData(f)) }} submitting={pending}>
-        <form id="tf-auditphase-form" onSubmit={(e) => e.preventDefault()} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <FormModal open={showPhaseForm} title={editingPhase ? "Sửa hạng mục" : "Thêm hạng mục"} onClose={() => { setShowPhaseForm(false); setEditingPhase(null) }} onSubmit={() => { const f = document.getElementById("tf-auditphase-form") as HTMLFormElement | null; if (f) submitPhase(new FormData(f)) }} submitting={pending}>
+        <form key={editingPhase?.id ?? "new"} id="tf-auditphase-form" onSubmit={(e) => e.preventDefault()} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <input type="hidden" name="auditPlanId" value={phaseFormPlanId} />
           <div className="field">
             <label>Kế hoạch *</label>
             <CustomSelect value={phaseFormPlanId} onChange={setPhaseFormPlanId} width="100%" options={[{ value: "", label: "—" }, ...plans.map((p) => ({ value: p.id, label: p.title }))]} />
           </div>
-          <label style={{ fontSize: 12, fontWeight: 600 }}>Tên giai đoạn *
-            <input name="name" required style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+          <label style={{ fontSize: 12, fontWeight: 600 }}>Tên hạng mục *
+            <input name="name" required defaultValue={editingPhase?.name ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
           </label>
           <label style={{ fontSize: 12, fontWeight: 600 }}>Thứ tự
-            <input type="number" name="order" style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+            <input type="number" name="order" defaultValue={editingPhase?.order ?? undefined} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
           </label>
         </form>
       </FormModal>
 
-      <FormModal open={showItemForm} title={editingItem ? "Sửa hạng mục" : "Thêm hạng mục"} onClose={() => { setShowItemForm(false); setEditingItem(null) }} onSubmit={() => { const f = document.getElementById("tf-audititem-form") as HTMLFormElement | null; if (f) submitItem(new FormData(f)) }} submitting={pending}>
+      <FormModal open={showItemForm} title={editingItem ? "Sửa hạng mục" : "Thêm hạng mục"} onClose={() => { setShowItemForm(false); setEditingItem(null); setPendingItemPhaseId(null) }} onSubmit={() => { const f = document.getElementById("tf-audititem-form") as HTMLFormElement | null; if (f) submitItem(new FormData(f)) }} submitting={pending}>
         <form key={editingItem?.id ?? "new"} id="tf-audititem-form" onSubmit={(e) => e.preventDefault()} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <input type="hidden" name="auditPlanId" value={itemFormPlanId} />
           <input type="hidden" name="phaseId" value={itemFormPhaseId} />
@@ -515,6 +550,7 @@ export function AuditPlanView({
 
       <ConfirmDialog open={!!confirmDeletePlanId} title="Xoá kế hoạch?" description="Các giai đoạn và hạng mục liên quan cũng sẽ bị xoá." danger onConfirm={() => { const id = confirmDeletePlanId!; startTransition(async () => { await deleteAuditPlan(id); setConfirmDeletePlanId(null) }) }} onCancel={() => setConfirmDeletePlanId(null)} />
       <ConfirmDialog open={!!confirmDeleteItemId} title="Xoá hạng mục?" danger onConfirm={() => { const id = confirmDeleteItemId!; startTransition(async () => { await deleteAuditItem(id); setConfirmDeleteItemId(null) }) }} onCancel={() => setConfirmDeleteItemId(null)} />
+      <ConfirmDialog open={!!confirmDeletePhaseId} title="Xoá hạng mục kế hoạch?" description="Toàn bộ đầu việc thuộc hạng mục này cũng sẽ bị xoá." danger onConfirm={() => { const id = confirmDeletePhaseId!; startTransition(async () => { await deleteAuditPhase(id); setConfirmDeletePhaseId(null) }) }} onCancel={() => setConfirmDeletePhaseId(null)} />
       <ConfirmDialog open={itemBulkConfirm} title="Xoá các hạng mục đã chọn?" description={`Sẽ xoá ${itemSelected.size} hạng mục đã chọn. Hành động này không thể hoàn tác.`} danger onConfirm={confirmItemBulkDelete} onCancel={() => setItemBulkConfirm(false)} />
     </PageShell>
   )
