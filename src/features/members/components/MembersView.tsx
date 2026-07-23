@@ -38,6 +38,10 @@ export function MembersView({
   const [mGroupId, setMGroupId] = useState("")
   const [mGender, setMGender] = useState("")
   const [mAccessRole, setMAccessRole] = useState("")
+  // Bao cao 1:40 PM muc 5b: gop lua chon "Tat ca trung tam" vao chinh droplist
+  // Trung tam thay vi chi co checkbox rieng o duoi - chon muc nay se tu dong
+  // bat allCenters va bo chon trung tam cu the.
+  const [mAllCenters, setMAllCenters] = useState(false)
   const [pending, startTransition] = useTransition()
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [bulkConfirm, setBulkConfirm] = useState(false)
@@ -94,8 +98,12 @@ export function MembersView({
   }, [members])
   const groupOptionsForForm = useMemo(() => groupOptions.filter((g) => !formCenterId || g.centerId === formCenterId), [groupOptions, formCenterId])
 
-  function openNew() { setEditing(null); setFormCenterId(""); setAvatarPreview(null); setAvatarError(null); setShowForm(true) }
-  function openEdit(m: MemberRow) { setEditing(m); setFormCenterId(m.centerId ?? ""); setAvatarPreview(m.avatar ?? null); setAvatarError(null); setShowForm(true) }
+  function openNew() { setEditing(null); setFormCenterId(""); setMGroupId(""); setMGender(""); setMAccessRole("viewer"); setMAllCenters(false); setAvatarPreview(null); setAvatarError(null); setShowForm(true) }
+  // Fix bao cao 1:40 PM muc 5a: Gioi tinh/Phan quyen (va Nhom van hanh/Tat ca
+  // trung tam) la CustomSelect dieu khien boi state rieng (mGender/mAccessRole/
+  // mGroupId/mAllCenters) chu khong dung defaultValue nhu cac input thuong, nen
+  // truoc day openEdit khong set lai cac state nay -> luon hien trong khi sua.
+  function openEdit(m: MemberRow) { setEditing(m); setFormCenterId(m.allCenters ? "" : (m.centerId ?? "")); setMGroupId(m.groupId ?? ""); setMGender(m.gender ?? ""); setMAccessRole(m.accessRole ?? "viewer"); setMAllCenters(m.allCenters ?? false); setAvatarPreview(m.avatar ?? null); setAvatarError(null); setShowForm(true) }
   // Additive — doc file anh nguoi dung chon, nen kich thuoc xuong toi da 240x240 (giu ty le,
   // qua canvas) roi xuat ra JPEG chat luong 0.85 truoc khi luu data URI vao avatarPreview, de
   // tranh luu anh goc qua nang (co the vai MB) vao DB dang text.
@@ -312,7 +320,12 @@ export function MembersView({
           <div className="row">
             <div className="field" style={{ flex: 1 }}>
               <label>Trung tâm</label>
-              <CustomSelect value={formCenterId} onChange={setFormCenterId} width="100%" options={[{ value: "", label: "— Chưa gán —" }, ...centerOptions.map((c) => ({ value: c.id, label: c.name }))]} />
+              <CustomSelect
+                value={mAllCenters ? "__ALL__" : formCenterId}
+                onChange={(v) => { if (v === "__ALL__") { setMAllCenters(true); setFormCenterId("") } else { setMAllCenters(false); setFormCenterId(v) } }}
+                width="100%"
+                options={[{ value: "", label: "— Chưa gán —" }, { value: "__ALL__", label: "Tất cả trung tâm" }, ...centerOptions.map((c) => ({ value: c.id, label: c.name }))]}
+              />
             </div>
             <div className="field" style={{ flex: 1 }}>
               <label>Nhóm vận hành (trong Trung tâm)</label>
@@ -324,8 +337,8 @@ export function MembersView({
             Thuộc Nhóm vận hành (xem chéo tất cả Trung tâm ở các module dùng chung: thiết bị, khấu hao, chi phí biến đổi, chất lượng, kế hoạch kiểm toán)
           </label>
           <label style={{ fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 8 }}>
-            <input type="checkbox" name="allCenters" defaultChecked={editing?.allCenters ?? false} />
-            Toàn bộ Trung tâm (xem/thao tác dữ liệu ở TẤT CẢ Trung tâm, mọi module — không giới hạn theo Trung tâm/Nhóm, không đổi Phân quyền)
+            <input type="checkbox" name="allCenters" checked={mAllCenters} onChange={(e) => setMAllCenters(e.target.checked)} />
+            Toàn bộ Trung tâm (xem/thao tác dữ liệu ở TẤT CẢ Trung tâm, mọi module — không giới hạn theo Trung tâm/Nhóm, không đổi Phân quyền) — có thể chọn nhanh qua mục "Tất cả trung tâm" ở droplist Trung tâm phía trên
           </label>
           <input type="hidden" name="gender" value={mGender} />
           <input type="hidden" name="accessRole" value={mAccessRole} />

@@ -62,16 +62,12 @@ export function AuditPlanView({
   const [itemSelected, setItemSelected] = useState<Set<string>>(new Set())
   const [itemBulkConfirm, setItemBulkConfirm] = useState(false)
   const [itemEditMode, setItemEditMode] = useState(false)
+  // Bao cao 1:40 PM muc 1: khoi "Ke hoach theo giai doan" gio dung cung mau
+  // "Chinh sua"/"Xong" nhu bang dau viec - Sua/Xoa tung dong chi hien khi bat che do nay.
+  const [phaseEditMode, setPhaseEditMode] = useState(false)
   const [openPlanId, setOpenPlanId] = useState<string>("")
   const [search, setSearch] = useState("")
   const [planSearch, setPlanSearch] = useState("")
-  // Port cua apOverviewHidden/apOverviewTitle ban goc (dong ~6033-6035, 6165,
-  // 6371-6389): an/hien khoi tong quan + doi ten tieu de, luu tam theo phien
-  // xem (khong phai du lieu nghiep vu nen khong can luu server).
-  const [overviewHidden, setOverviewHidden] = useState(false)
-  const [overviewTitle, setOverviewTitle] = useState("Tổng quan tiến độ")
-  const [editingOverviewTitle, setEditingOverviewTitle] = useState(false)
-  const [overviewTitleDraft, setOverviewTitleDraft] = useState(overviewTitle)
 
   // Port cua #page-title.title-back ban goc (giong PlanView.tsx): khi da mo 1
   // ke hoach cu the, tieu de trang tro thanh nut "back" - bam vao tieu de la
@@ -395,28 +391,9 @@ export function AuditPlanView({
             <KpiCard label="Quá hạn" value={kpi.overdue} tone="danger" trend={kpiTrends.overdue} />
           </div>
 
-          {overviewHidden ? (
-            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 20 }}>
-              <button type="button" className="btn-line" onClick={() => setOverviewHidden(false)}>+ Hiện lại phần tổng quan</button>
-            </div>
-          ) : (
           <div style={{ border: "1px solid #e6e9ee", borderRadius: 10, padding: 16, marginBottom: 20 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-              {editingOverviewTitle ? (
-                <div style={{ display: "flex", gap: 6, alignItems: "center", flex: 1 }}>
-                  <input value={overviewTitleDraft} onChange={(e) => setOverviewTitleDraft(e.target.value)} style={{ flex: 1, padding: "5px 8px", borderRadius: 6, border: "1px solid #dfe3e8", fontSize: 13, fontWeight: 700 }} />
-                  <button type="button" onClick={() => { setOverviewTitle(overviewTitleDraft || overviewTitle); setEditingOverviewTitle(false) }} style={{ padding: "5px 10px", borderRadius: 6, border: "none", background: "#1d5fd6", color: "#fff", fontSize: 12 }}>Lưu</button>
-                  <button type="button" onClick={() => { setOverviewTitleDraft(overviewTitle); setEditingOverviewTitle(false) }} style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid #dfe3e8", background: "#fff", fontSize: 12 }}>Hủy</button>
-                </div>
-              ) : (
-                <div style={{ fontSize: 14, fontWeight: 700 }}>{overviewTitle}</div>
-              )}
-              {!editingOverviewTitle && (
-                <span style={{ display: "flex", gap: 10 }}>
-                  <button type="button" className="txt-act" onClick={() => { setOverviewTitleDraft(overviewTitle); setEditingOverviewTitle(true) }}>Sửa</button>
-                  <button type="button" className="txt-act del" onClick={() => { if (window.confirm("Ẩn phần tổng quan này?")) setOverviewHidden(true) }}>Xóa</button>
-                </span>
-              )}
+              <div style={{ fontSize: 14, fontWeight: 700 }}>Tổng quan tiến độ</div>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr", gap: 16, alignItems: "center" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
@@ -449,7 +426,6 @@ export function AuditPlanView({
             </div>
             </div>
           </div>
-          )}
 
           {/* Gantt keo dan het chieu ngang man hinh (khong con chia cot voi panel
               workload rieng - workload da gop vao khoi tong quan phia tren, giong
@@ -465,15 +441,16 @@ export function AuditPlanView({
               viec phia duoi - truoc day bi thieu hoan toan so voi file HTML goc. */}
           <div className="card" style={{ marginBottom: 20 }}>
             <div className="ch">
-              <div><h3>Kế hoạch theo hạng mục</h3><span>{scopedPhases.length} hạng mục</span></div>
+              <div><h3>Kế hoạch theo giai đoạn</h3><span>{scopedPhases.length} giai đoạn</span></div>
             </div>
             <Perm minPerm="dept_head">
-              <div style={{ marginBottom: 12 }}>
-                <button type="button" className="btn-pri" onClick={() => { setEditingPhase(null); setShowPhaseForm(true) }}>+ Thêm hạng mục</button>
+              <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+                <button type="button" className="btn-pri" onClick={() => { setEditingPhase(null); setShowPhaseForm(true) }}>+ Thêm giai đoạn</button>
+                <button type="button" className={phaseEditMode ? "btn-success" : "btn-line"} onClick={() => setPhaseEditMode((v) => !v)}>{phaseEditMode ? "Xong" : "Chỉnh sửa"}</button>
               </div>
             </Perm>
             {scopedPhases.length === 0 ? (
-              <div className="empty">Chưa có hạng mục nào.</div>
+              <div className="empty">Chưa có giai đoạn nào.</div>
             ) : scopedPhases.map((ph) => {
               const phItems = scopedItems.filter((it) => it.phaseId === ph.id)
               const done = phItems.filter((it) => auditAutoStatus(it) === "done").length
@@ -485,8 +462,12 @@ export function AuditPlanView({
                     <span style={{ flex: 1 }} />
                     <Perm minPerm="dept_head">
                       <button type="button" className="btn-line" style={{ padding: "6px 10px", fontSize: 12 }} onClick={() => { setEditingItem(null); setPendingItemPhaseId(ph.id); setShowItemForm(true) }}>+ Hạng mục</button>
-                      <button type="button" className="txt-act" onClick={() => { setEditingPhase(ph); setShowPhaseForm(true) }}>Sửa</button>
-                      <button type="button" className="txt-act del" onClick={() => setConfirmDeletePhaseId(ph.id)}>Xóa hạng mục</button>
+                      {phaseEditMode && (
+                        <>
+                          <button type="button" className="txt-act" onClick={() => { setEditingPhase(ph); setShowPhaseForm(true) }}>Sửa</button>
+                          <button type="button" className="txt-act del" onClick={() => setConfirmDeletePhaseId(ph.id)}>Xóa giai đoạn</button>
+                        </>
+                      )}
                     </Perm>
                   </div>
                 </div>
@@ -534,14 +515,10 @@ export function AuditPlanView({
         </form>
       </FormModal>
 
-      <FormModal open={showPhaseForm} title={editingPhase ? "Sửa hạng mục" : "Thêm hạng mục"} onClose={() => { setShowPhaseForm(false); setEditingPhase(null) }} onSubmit={() => { const f = document.getElementById("tf-auditphase-form") as HTMLFormElement | null; if (f) submitPhase(new FormData(f)) }} submitting={pending}>
+      <FormModal open={showPhaseForm} title={editingPhase ? "Sửa giai đoạn" : "Thêm giai đoạn"} onClose={() => { setShowPhaseForm(false); setEditingPhase(null) }} onSubmit={() => { const f = document.getElementById("tf-auditphase-form") as HTMLFormElement | null; if (f) submitPhase(new FormData(f)) }} submitting={pending}>
         <form key={editingPhase?.id ?? "new"} id="tf-auditphase-form" onSubmit={(e) => e.preventDefault()} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <input type="hidden" name="auditPlanId" value={phaseFormPlanId} />
-          <div className="field">
-            <label>Kế hoạch *</label>
-            <CustomSelect value={phaseFormPlanId} onChange={setPhaseFormPlanId} width="100%" options={[{ value: "", label: "—" }, ...plans.map((p) => ({ value: p.id, label: p.title }))]} />
-          </div>
-          <label style={{ fontSize: 12, fontWeight: 600 }}>Tên hạng mục *
+          <label style={{ fontSize: 12, fontWeight: 600 }}>Tên giai đoạn *
             <input name="name" required defaultValue={editingPhase?.name ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
           </label>
           <label style={{ fontSize: 12, fontWeight: 600 }}>Thứ tự
@@ -554,14 +531,6 @@ export function AuditPlanView({
         <form key={editingItem?.id ?? "new"} id="tf-audititem-form" onSubmit={(e) => e.preventDefault()} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <input type="hidden" name="auditPlanId" value={itemFormPlanId} />
           <input type="hidden" name="phaseId" value={itemFormPhaseId} />
-          <div className="field">
-            <label>Kế hoạch *</label>
-            <CustomSelect value={itemFormPlanId} onChange={setItemFormPlanId} width="100%" options={[{ value: "", label: "—" }, ...plans.map((p) => ({ value: p.id, label: p.title }))]} />
-          </div>
-          <div className="field">
-            <label>Giai đoạn</label>
-            <CustomSelect value={itemFormPhaseId} onChange={setItemFormPhaseId} width="100%" options={[{ value: "", label: "—" }, ...phases.map((ph) => ({ value: ph.id, label: ph.name }))]} />
-          </div>
           <label style={{ fontSize: 12, fontWeight: 600 }}>Tên hạng mục *
             <input name="name" required defaultValue={editingItem?.name ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
           </label>
@@ -599,7 +568,7 @@ export function AuditPlanView({
 
       <ConfirmDialog open={!!confirmDeletePlanId} title="Xoá kế hoạch?" description="Các giai đoạn và hạng mục liên quan cũng sẽ bị xoá." danger onConfirm={() => { const id = confirmDeletePlanId!; startTransition(async () => { await deleteAuditPlan(id); setConfirmDeletePlanId(null) }) }} onCancel={() => setConfirmDeletePlanId(null)} />
       <ConfirmDialog open={!!confirmDeleteItemId} title="Xoá hạng mục?" danger onConfirm={() => { const id = confirmDeleteItemId!; startTransition(async () => { await deleteAuditItem(id); setConfirmDeleteItemId(null) }) }} onCancel={() => setConfirmDeleteItemId(null)} />
-      <ConfirmDialog open={!!confirmDeletePhaseId} title="Xoá hạng mục kế hoạch?" description="Toàn bộ đầu việc thuộc hạng mục này cũng sẽ bị xoá." danger onConfirm={() => { const id = confirmDeletePhaseId!; startTransition(async () => { await deleteAuditPhase(id); setConfirmDeletePhaseId(null) }) }} onCancel={() => setConfirmDeletePhaseId(null)} />
+      <ConfirmDialog open={!!confirmDeletePhaseId} title="Xoá giai đoạn?" description="Toàn bộ đầu việc thuộc giai đoạn này cũng sẽ bị xoá." danger onConfirm={() => { const id = confirmDeletePhaseId!; startTransition(async () => { await deleteAuditPhase(id); setConfirmDeletePhaseId(null) }) }} onCancel={() => setConfirmDeletePhaseId(null)} />
       <ConfirmDialog open={itemBulkConfirm} title="Xoá các hạng mục đã chọn?" description={`Sẽ xoá ${itemSelected.size} hạng mục đã chọn. Hành động này không thể hoàn tác.`} danger onConfirm={confirmItemBulkDelete} onCancel={() => setItemBulkConfirm(false)} />
     </PageShell>
   )

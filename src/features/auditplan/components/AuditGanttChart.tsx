@@ -307,6 +307,9 @@ export function AuditGanttChart({
                       gridRow: row,
                       background: color,
                       opacity: actS ? 0.42 : 0.9,
+                      alignSelf: actS ? "start" : "center",
+                      height: actS ? 15 : 22,
+                      margin: actS ? "2px 2px 0" : "6px 2px",
                     }}
                   >
                     <span>{it.name}</span>
@@ -321,7 +324,9 @@ export function AuditGanttChart({
                       gridColumn: `${colIndexForDate(cols, actS) + 2} / span ${actSpan}`,
                       gridRow: row,
                       background: color,
-                      top: -18,
+                      alignSelf: planS ? "end" : "center",
+                      height: planS ? 15 : 22,
+                      margin: planS ? "0 2px 2px" : "6px 2px",
                     }}
                   >
                     {overrunPct != null && (

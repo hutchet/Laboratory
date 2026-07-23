@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation"
 import { PageShell } from "@/shared/ui/page-shell"
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { ActionIcon } from "@/shared/ui/icons"
-import { PlainSelect } from "@/shared/ui/plain-select"
+import { CustomSelect } from "@/shared/ui/custom-select"
 import { saveTheme, resetTheme, setSimRole, saveLanguage, requestFullBackup, restoreFullBackup, clearAllData } from "../actions"
 import { FONT_OPTIONS, SIM_ROLE_OPTIONS, LANGUAGE_OPTIONS } from "../types"
 import type { AppSettings, FontKey, Language, SimRole, ThemeMode } from "../types"
@@ -170,11 +170,13 @@ export function SettingsView({ settings }: { settings: AppSettings }) {
         <div className="ch"><h3>Vai trò &amp; phân quyền</h3><span>Chọn vai trò bạn muốn xem thử giao diện trong phiên này</span></div>
         <div className="th-row">
           <label>Vai trò hiện tại của bạn</label>
-          <PlainSelect value={simRole} disabled={pending} onChange={(e) => handleSimRoleChange(e.target.value as SimRole)} wrapStyle={{ marginTop: 0 }}>
-            {SIM_ROLE_OPTIONS.map((opt) => (
-              <option key={opt.value || "default"} value={opt.value}>{opt.label}</option>
-            ))}
-          </PlainSelect>
+          <CustomSelect
+            value={simRole}
+            disabled={pending}
+            width={240}
+            options={SIM_ROLE_OPTIONS.map((opt) => ({ value: opt.value, label: opt.label }))}
+            onChange={(v) => handleSimRoleChange(v as SimRole)}
+          />
         </div>
         <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 6, lineHeight: 1.6 }}>
           Vai trò hiện tại: <b style={{ color: "var(--ink)" }}>{settings.activeRoleLabel}</b><br />
@@ -189,39 +191,40 @@ export function SettingsView({ settings }: { settings: AppSettings }) {
           <b>Chỉ xem</b>: chỉ xem, không chỉnh sửa được.<br />
           Thành viên thuộc <b>Nhóm vận hành</b> (đánh dấu đặc biệt ở trang Thành viên) được xem chéo dữ liệu thiết bị, khấu hao, chi phí biến đổi, chất lượng và kế hoạch kiểm toán giữa tất cả Trung tâm, thay vì chỉ giới hạn trong Trung tâm của mình.
         </div>
-        <div className="note" style={{ marginTop: 12 }}>
-          Khác với bản gốc (chạy 1 mình trên máy, không có server): ứng dụng này có RBAC thật theo
-          tài khoản đăng nhập. Lựa chọn ở đây chỉ đổi cách hiển thị giao diện để xem thử, không thể
-          dùng để có thêm quyền thao tác thật.
-        </div>
       </div>
 
       <div className="card" style={{ marginBottom: 18 }}>
         <div className="ch"><h3>Giao diện</h3><span>Áp dụng cho toàn bộ ứng dụng, lưu trên trình duyệt này</span></div>
         <div className="th-seg">
-          <button type="button" className={mode === "device" ? "btn-pri" : "btn-line"} disabled={pending} onClick={() => applyTheme("device", font)}>🖥️ Theo thiết bị</button>
-          <button type="button" className={mode === "light" ? "btn-pri" : "btn-line"} disabled={pending} onClick={() => applyTheme("light", font)}>☀️ Sáng</button>
-          <button type="button" className={mode === "dark" ? "btn-pri" : "btn-line"} disabled={pending} onClick={() => applyTheme("dark", font)}>🌙 Tối</button>
+          <button type="button" className={mode === "device" ? "btn-pri" : "btn-line"} disabled={pending} onClick={() => applyTheme("device", font)}>
+            <ActionIcon name="desktop" size={16} style={{ marginRight: 6, color: mode === "device" ? undefined : "#2563eb" }} />Theo thiết bị
+          </button>
+          <button type="button" className={mode === "light" ? "btn-pri" : "btn-line"} disabled={pending} onClick={() => applyTheme("light", font)}>
+            <ActionIcon name="lightMode" size={16} style={{ marginRight: 6, color: mode === "light" ? undefined : "#f59e0b" }} />Sáng
+          </button>
+          <button type="button" className={mode === "dark" ? "btn-pri" : "btn-line"} disabled={pending} onClick={() => applyTheme("dark", font)}>
+            <ActionIcon name="darkMode" size={16} style={{ marginRight: 6, color: mode === "dark" ? undefined : "#4f46e5" }} />Tối
+          </button>
         </div>
         <div className="th-row">
           <label>Phông chữ</label>
-          <PlainSelect value={font} disabled={pending} onChange={(e) => applyTheme(mode, e.target.value as FontKey)} wrapStyle={{ marginTop: 0 }}>
-            {FONT_OPTIONS.map((f) => (
-              <option key={f.key} value={f.key}>{f.label}</option>
-            ))}
-          </PlainSelect>
+          <CustomSelect
+            value={font}
+            disabled={pending}
+            width={200}
+            options={FONT_OPTIONS.map((f) => ({ value: f.key, label: f.label }))}
+            onChange={(v) => applyTheme(mode, v as FontKey)}
+          />
         </div>
         <div className="th-row">
           <label>Ngôn ngữ</label>
-          <PlainSelect value={lang} disabled={pending} onChange={(e) => handleLanguageChange(e.target.value as Language)} wrapStyle={{ marginTop: 0 }}>
-            {LANGUAGE_OPTIONS.map((l) => (
-              <option key={l.value} value={l.value}>{l.label}</option>
-            ))}
-          </PlainSelect>
-        </div>
-        <div className="note" style={{ marginTop: 12 }}>
-          Bảng màu Material được khóa theo chế độ Sáng/Tối để bảo đảm độ tương phản. Nền thẻ luôn đặc
-          100%; hiệu ứng trong suốt, kính mờ và ảnh nền đã được loại bỏ.
+          <CustomSelect
+            value={lang}
+            disabled={pending}
+            width={160}
+            options={LANGUAGE_OPTIONS.map((l) => ({ value: l.value, label: l.label }))}
+            onChange={(v) => handleLanguageChange(v as Language)}
+          />
         </div>
         <div style={{ marginTop: 16 }}>
           <button type="button" className="btn-line" disabled={pending} onClick={handleReset}>↺ Khôi phục mặc định</button>
@@ -230,18 +233,9 @@ export function SettingsView({ settings }: { settings: AppSettings }) {
 
       <div className="card">
         <div className="ch"><h3>Sao lưu &amp; khôi phục dữ liệu</h3><span>Toàn bộ dữ liệu nghiệp vụ</span></div>
-        <div className="eqinfo-note">
-          <span>ℹ️</span>
-          <div>
-            Dữ liệu (công việc, dự án, thành viên, báo cáo, khách hàng, trung tâm, thiết bị, lịch đặt,
-            báo giá, kế hoạch/bài thử, kiểm toán, mua hàng, chất lượng...) được lưu trên cơ sở dữ liệu
-            server (Postgres) — không phụ thuộc trình duyệt hay thiết bị này như bản gốc. Vẫn nên sao
-            lưu định kỳ ra file JSON để phòng ngừa và có thể mang đi.
-          </div>
-        </div>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
           <button type="button" className="btn-pri" disabled={!settings.canBackup || pending || backupBusy} onClick={handleBackup}>
-            {backupBusy ? "Đang sao lưu..." : "⬇ Sao lưu toàn bộ dữ liệu"}
+            {backupBusy ? "Đang sao lưu..." : (<><ActionIcon name="download" size={16} style={{ marginRight: 6 }} />Sao lưu toàn bộ dữ liệu</>)}
           </button>
           <button
             type="button"
@@ -253,7 +247,7 @@ export function SettingsView({ settings }: { settings: AppSettings }) {
             <ActionIcon name="delete" size={16} style={{marginRight:4}} />Xóa toàn bộ dữ liệu
           </button>
           <button type="button" className="btn-line" disabled={!settings.canRestore || pending || restoreBusy} onClick={() => fileRef.current?.click()}>
-            {restoreBusy ? "Đang khôi phục..." : "⬆ Khôi phục dữ liệu"}
+            {restoreBusy ? "Đang khôi phục..." : (<><ActionIcon name="upload" size={16} style={{ marginRight: 6 }} />Khôi phục dữ liệu</>)}
           </button>
           <input ref={fileRef} type="file" accept=".json" style={{ display: "none" }} onChange={handleFileChosen} />
         </div>
@@ -263,23 +257,6 @@ export function SettingsView({ settings }: { settings: AppSettings }) {
         <div className="eqbackup-meta" style={{ marginTop: 10 }}>
           {settings.lastBackupAt ? `Lần sao lưu gần nhất: ${formatStamp(settings.lastBackupAt)}` : "Chưa có bản sao lưu nào trong phiên này."}
         </div>
-      </div>
-
-      <div className="card" style={{ marginTop: 18 }}>
-        <div className="ch"><h3>Thư mục Database (offline)</h3><span>Lưu dữ liệu ra một thư mục trên máy, không chỉ trong trình duyệt</span></div>
-        <div className="eqinfo-note">
-          <span>ℹ️</span>
-          <div>
-            Tính năng này thuộc bản HTML gốc chạy 1 mình trên máy (không có server), dùng để tự sao
-            lưu ra một thư mục cạnh file dữ liệu gốc. Ứng dụng này đã có cơ sở dữ liệu server thật
-            (Postgres) làm nơi lưu trữ chính, nên tính năng thư mục offline không còn áp dụng — dùng
-            Sao lưu/Khôi phục ở trên thay thế.
-          </div>
-        </div>
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginTop: 10 }}>
-          <button className="btn-pri" type="button" disabled>📁 Chọn thư mục database</button>
-        </div>
-        <div style={{ marginTop: 10, fontSize: 12.5, fontWeight: 600, color: "var(--muted)" }}>Không áp dụng cho bản chạy trên server/Vercel</div>
       </div>
 
       <ConfirmDialog

@@ -94,7 +94,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
             </div>
             <div className="top-r" style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <TopSearch />
-              <OnlineAvatars />
+              <OnlineAvatars currentEmail={email} />
               <NotificationBell tasks={overdueTasks} />
               <div className="me" style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 10px 4px 4px", borderRadius: 10, background: "var(--bg, #f4f5f7)" }}>
                 <AvatarInitials name={name} size={34} />

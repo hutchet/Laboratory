@@ -326,11 +326,21 @@ export function PlanView({
   return (
     <PageShell title="Kế hoạch thử nghiệm">
       {!projectFilter ? (
-        /* Luoi the tom tat ke hoach theo tung du an (#plan-card-overview) - da chuan hoa
-           theo dung nguyen tac chung 4 the/hang PC - 3/laptop - 2/ipad - 1/mobile
-           (CSS dong ~3316, giong .proj-grid/#ap-plan-cards/#eq-center-cards) - bam vao
-           1 the de vao dung ke hoach cua du an do. */
-        <div id="plan-card-overview">
+        <>
+          {/* Fix bao cao 1:40 PM muc 7: trang tong quan (chua chon du an) truoc day khong co
+              the KPI nao - dung lai dung 4 gia tri kpi/planTrends da tinh san (khi projectFilter
+              rong thi scopedItems = toan bo items nen cac gia tri nay dung la tong quan chung). */}
+          <div className="kpis-tier" style={{ marginBottom: 18 }}>
+            <KpiCard label="Tổng bài thử" value={kpi.total} hint="Toàn bộ kế hoạch" tone="blue" trend={planTrends.total} />
+            <KpiCard label="Đạt" value={kpi.pass} hint="Số bài đạt" tone="success" trend={planTrends.pass} />
+            <KpiCard label="Không đạt" value={kpi.fail} hint="Số bài không đạt" tone="danger" trend={planTrends.fail} />
+            <KpiCard label="Đang thực hiện" value={kpi.ongoing} hint="Đang triển khai" tone="warning" trend={planTrends.ongoing} />
+          </div>
+          {/* Luoi the tom tat ke hoach theo tung du an (#plan-card-overview) - da chuan hoa
+              theo dung nguyen tac chung 4 the/hang PC - 3/laptop - 2/ipad - 1/mobile
+              (CSS dong ~3316, giong .proj-grid/#ap-plan-cards/#eq-center-cards) - bam vao
+              1 the de vao dung ke hoach cua du an do. */}
+          <div id="plan-card-overview">
           {projectCards.map(({ project, status, packCount, itemCount, passCount, doneCount, avgProgress }) => (
             <PlanCard
               key={project.id}
@@ -344,7 +354,8 @@ export function PlanView({
               onClick={() => setProjectFilter(project.id)}
             />
           ))}
-        </div>
+          </div>
+        </>
       ) : (
         <>
           <div className="kpis-tier" style={{ marginBottom: 18 }}>
