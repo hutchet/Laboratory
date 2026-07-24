@@ -2,7 +2,7 @@ import { db } from "@/shared/lib/db"
 import crypto from "crypto"
 import type {
   QuoteRow, TestCatalogRow, PersonnelRateConfigRow, PersonnelRoutingRow,
-  DepreciationAssetRow, VariableCostRow, Option,
+  DepreciationAssetRow, VariableCostRow, Option, CustomerOption,
 } from "./types"
 
 export async function listQuotes(): Promise<QuoteRow[]> {
@@ -22,12 +22,14 @@ export async function listQuotes(): Promise<QuoteRow[]> {
     createdAt: q.createdAt.toISOString(),
     customer: q.customer ? { id: q.customer.id, name: q.customer.name } : null,
     project: q.project ? { id: q.project.id, name: q.project.name } : null,
-    items: q.catalogItems.map((it) => ({ id: it.id, quoteId: it.quoteId, name: it.name, standard: it.standard, price: it.price, quantity: it.quantity })),
+    items: q.catalogItems.map((it) => ({ id: it.id, quoteId: it.quoteId, name: it.name, standard: it.standard, price: it.price, quantity: it.quantity, code: it.code, sampleQty: it.sampleQty, leadTime: it.leadTime })),
   }))
 }
 
-export async function listCustomerOptions(): Promise<Option[]> {
-  return db.customer.findMany({ select: { id: true, name: true } })
+export async function listCustomerOptions(): Promise<CustomerOption[]> {
+  return db.customer.findMany({
+    select: { id: true, name: true, contact: true, email: true, phone: true, address: true, legalRepresentative: true, invoicingAddress: true },
+  })
 }
 
 export async function listProjectOptions(): Promise<Option[]> {

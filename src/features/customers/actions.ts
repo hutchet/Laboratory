@@ -20,6 +20,8 @@ export type SaveCustomerInput = {
   email?: string | null
   phone?: string | null
   address?: string | null
+  legalRepresentative?: string | null
+  invoicingAddress?: string | null
   value?: number | null
   notes?: string | null
 }
@@ -32,6 +34,8 @@ export async function saveCustomer(input: SaveCustomerInput) {
     email: input.email || null,
     phone: input.phone || null,
     address: input.address || null,
+    legalRepresentative: input.legalRepresentative || null,
+    invoicingAddress: input.invoicingAddress || null,
     value: input.value ?? null,
     notes: input.notes || null,
   }

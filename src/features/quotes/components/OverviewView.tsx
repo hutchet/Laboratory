@@ -12,7 +12,7 @@ import { computeSimpleTrend } from "@/shared/lib/trend"
 import { DirectionIcon } from "@/shared/ui/icons"
 import { Perm } from "@/shared/lib/rbac-client"
 import { saveQuote, deleteQuote, addQuoteItem, updateQuoteItemQty, removeQuoteItem, exportQuoteOverviewExcel } from "../actions"
-import { QUOTE_STATUS_LABEL, type QuoteRow, type Option, type TestCatalogRow } from "../types"
+import { QUOTE_STATUS_LABEL, type QuoteRow, type Option, type CustomerOption, type TestCatalogRow } from "../types"
 import { useCurrency } from "@/shared/ui/currency-provider"
 
 // Khớp đúng hàm fmtDate() bản gốc (dd-mm-yyyy)
@@ -44,7 +44,7 @@ export function OverviewView({
   quotes, customers, projects, testCatalog,
 }: {
   quotes: QuoteRow[]
-  customers: Option[]
+  customers: CustomerOption[]
   projects: Option[]
   testCatalog: TestCatalogRow[]
 }) {
@@ -146,7 +146,7 @@ export function OverviewView({
     const cat = testCatalog[Number(addSelect)]
     if (!cat) return
     const quoteId = editing.id
-    startTransition(async () => { await addQuoteItem({ quoteId, name: cat.name, standard: cat.standard, price: cat.price, quantity: Number(addQty) || 1 }) })
+    startTransition(async () => { await addQuoteItem({ quoteId, name: cat.name, standard: cat.standard, price: cat.price, quantity: Number(addQty) || 1, code: cat.code, sampleQty: cat.sampleQty, leadTime: cat.leadTime }) })
     setAddSelect(""); setAddQty("1")
   }
   function handleQtyChange(itemId: string, qty: string) {
@@ -162,6 +162,7 @@ export function OverviewView({
     const vatPct = editing ? editing.vatPercent ?? 10 : 10
     const vatAmt = Math.round((itemsSubtotal * vatPct) / 100)
     const grand = itemsSubtotal + vatAmt
+    const selectedCustomer = customers.find((c) => c.id === fCustomerId) ?? null
     return (
       <PageShell
         title={editing ? editing.title : "Thêm báo giá"}
@@ -243,27 +244,27 @@ export function OverviewView({
                 </tr>
                 <tr>
                   <td colSpan={3} className="qpd-label">Address / Địa chỉ</td>
-                  <td colSpan={6}></td>
+                  <td colSpan={6}>{selectedCustomer?.address ?? "—"}</td>
                 </tr>
                 <tr>
                   <td colSpan={3} className="qpd-label">Legal Representative / Người đại diện pháp luật</td>
-                  <td colSpan={6}></td>
+                  <td colSpan={6}>{selectedCustomer?.legalRepresentative ?? "—"}</td>
                 </tr>
                 <tr>
                   <td colSpan={3} className="qpd-label">Contact person / Người liên hệ</td>
-                  <td colSpan={6} className="qpd-yellow"></td>
+                  <td colSpan={6} className="qpd-yellow">{selectedCustomer?.contact ?? "—"}</td>
                 </tr>
                 <tr>
                   <td colSpan={3} className="qpd-label">Email / Địa chỉ email</td>
-                  <td colSpan={6} className="qpd-yellow"></td>
+                  <td colSpan={6} className="qpd-yellow">{selectedCustomer?.email ?? "—"}</td>
                 </tr>
                 <tr>
                   <td colSpan={3} className="qpd-label">Tel / Số điện thoại</td>
-                  <td colSpan={6} className="qpd-yellow"></td>
+                  <td colSpan={6} className="qpd-yellow">{selectedCustomer?.phone ?? "—"}</td>
                 </tr>
                 <tr>
                   <td colSpan={3} className="qpd-label">Invoicing Address / Thông tin xuất hóa đơn</td>
-                  <td colSpan={6} className="qpd-yellow"></td>
+                  <td colSpan={6} className="qpd-yellow">{selectedCustomer?.invoicingAddress ?? selectedCustomer?.address ?? "—"}</td>
                 </tr>
 
                 <tr><td colSpan={9} className="qpd-section">II. NỘI DUNG CÔNG VIỆC / WORK REQUIRED</td></tr>
@@ -286,11 +287,11 @@ export function OverviewView({
                 ) : editing.items.map((it, i) => (
                   <tr key={it.id}>
                     <td style={{ textAlign: "center" }}>{i + 1}</td>
-                    <td style={{ textAlign: "center" }}>—</td>
+                    <td style={{ textAlign: "center" }}>{it.code ?? "—"}</td>
                     <td>{it.name}</td>
                     <td>{it.standard ?? "—"}</td>
-                    <td style={{ textAlign: "center" }}>—</td>
-                    <td style={{ textAlign: "center" }}>—</td>
+                    <td style={{ textAlign: "center" }}>{it.sampleQty ?? "—"}</td>
+                    <td style={{ textAlign: "center" }}>{it.leadTime ?? "—"}</td>
                     <td style={{ textAlign: "right" }}>{fmtVND(it.price ?? 0)}</td>
                     <td style={{ textAlign: "right" }}>{it.quantity ?? 1}</td>
                     <td style={{ textAlign: "right" }}>{fmtVND(itemTotal(it))}</td>
@@ -413,8 +414,8 @@ export function OverviewView({
                 <CustomSelect
                   value={addSelect}
                   onChange={setAddSelect}
-                  width={320}
-                  options={[{ value: "", label: "— Chọn mã bài thử để thêm —" }, ...testCatalog.map((c, i) => ({ value: String(i), label: `${c.code ?? "—"} — ${c.name} (${fmtVND(c.price ?? 0)})` }))]}
+                  width={420}
+                  options={[{ value: "", label: "— Chọn mã bài thử để thêm —" }, ...testCatalog.map((c, i) => ({ value: String(i), label: `${c.code ?? "—"} — ${c.name} · ${c.standard ?? "—"} (${fmtVND(c.price ?? 0)})` }))]}
                 />
                 <input type="number" min={1} value={addQty} onChange={(e) => setAddQty(e.target.value)} style={{ width: 80 }} />
                 <button type="button" className="btn-line" onClick={handleAddItem} disabled={!addSelect}>+ Thêm hạng mục</button>

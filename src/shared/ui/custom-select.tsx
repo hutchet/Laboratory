@@ -47,6 +47,7 @@ export function CustomSelect({
     <div
       ref={ref}
       onClick={(e) => e.stopPropagation()}
+      className={`sys-custom-select${open ? " open" : ""}`}
       style={{
         position: "relative",
         display: "inline-block",
@@ -113,17 +114,20 @@ export function CustomSelect({
       </button>
       {open && (
         <div
+          className="sys-select-list"
           style={{
             position: "absolute",
             top: "calc(100% + 6px)",
             right: 0,
+            width: "max-content",
             minWidth: "100%",
+            maxWidth: "min(560px, 92vw)",
             background: "var(--surface-large, #fff)",
             border: "none",
             borderRadius: 12,
             boxShadow: "0 10px 28px rgba(20,25,50,.14)",
             padding: 6,
-            zIndex: 50,
+            zIndex: 9999,
             maxHeight: 260,
             overflowY: "auto",
           }}

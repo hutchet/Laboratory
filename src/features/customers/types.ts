@@ -5,6 +5,8 @@ export type CustomerRow = {
   email: string | null
   phone: string | null
   address: string | null
+  legalRepresentative: string | null
+  invoicingAddress: string | null
   value: number | null
   notes: string | null
   // Derived from linked Projects/Tasks (mirrors the original app's renderCustomers()).

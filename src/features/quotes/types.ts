@@ -1,5 +1,14 @@
 export type Option = { id: string; name: string }
 
+export type CustomerOption = Option & {
+  contact: string | null
+  email: string | null
+  phone: string | null
+  address: string | null
+  legalRepresentative: string | null
+  invoicingAddress: string | null
+}
+
 export type QuoteCatalogItemRow = {
   id: string
   quoteId: string
@@ -7,6 +16,9 @@ export type QuoteCatalogItemRow = {
   standard: string | null
   price: number | null
   quantity: number | null
+  code: string | null
+  sampleQty: string | null
+  leadTime: string | null
 }
 
 export type QuoteRow = {

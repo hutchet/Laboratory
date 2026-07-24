@@ -72,12 +72,12 @@ export async function bulkDeleteQuotes(ids: string[]) {
 // quantity or remove it. Values are snapshotted onto QuoteCatalogItem so a
 // later edit to the master catalog price does not retroactively change an
 // already-issued quote.
-export type AddQuoteItemInput = { quoteId: string; name: string; standard?: string | null; price?: number | null; quantity?: number | null }
+export type AddQuoteItemInput = { quoteId: string; name: string; standard?: string | null; price?: number | null; quantity?: number | null; code?: string | null; sampleQty?: string | null; leadTime?: string | null }
 
 export async function addQuoteItem(input: AddQuoteItemInput) {
   await requirePermission("edit")
   await db.quoteCatalogItem.create({
-    data: { quoteId: input.quoteId, name: input.name, standard: input.standard || null, price: input.price ?? null, quantity: input.quantity ?? 1 },
+    data: { quoteId: input.quoteId, name: input.name, standard: input.standard || null, price: input.price ?? null, quantity: input.quantity ?? 1, code: input.code || null, sampleQty: input.sampleQty || null, leadTime: input.leadTime || null },
   })
   revalidatePath("/quote")
 }
@@ -244,7 +244,7 @@ export async function exportQuoteOverviewExcel(quoteId: string): Promise<{ base6
     createdAt: q.createdAt.toISOString(),
     customer: q.customer ? { id: q.customer.id, name: q.customer.name } : null,
     project: q.project ? { id: q.project.id, name: q.project.name } : null,
-    items: q.catalogItems.map((it) => ({ id: it.id, quoteId: it.quoteId, name: it.name, standard: it.standard, price: it.price, quantity: it.quantity })),
+    items: q.catalogItems.map((it) => ({ id: it.id, quoteId: it.quoteId, name: it.name, standard: it.standard, price: it.price, quantity: it.quantity, code: it.code ?? null, sampleQty: it.sampleQty ?? null, leadTime: it.leadTime ?? null })),
   }
   const buffer = buildQuoteOverviewWorkbook(row)
   const safeCode = (q.code || q.title || "bao-gia").replace(/[^a-zA-Z0-9_\-]+/g, "_")

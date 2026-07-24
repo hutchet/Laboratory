@@ -25,6 +25,8 @@ export async function listCustomers(): Promise<CustomerRow[]> {
       email: c.email,
       phone: c.phone,
       address: c.address,
+      legalRepresentative: c.legalRepresentative,
+      invoicingAddress: c.invoicingAddress,
       value: c.value,
       notes: c.notes,
       projectCount,

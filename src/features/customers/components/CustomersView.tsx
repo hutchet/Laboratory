@@ -40,7 +40,7 @@ export function CustomersView({ customers }:{ customers:CustomerRow[] }) {
   const safePage=Math.min(page,pageCount)
   const pageItems=useMemo(()=>filtered.slice((safePage-1)*PAGE_SIZE,safePage*PAGE_SIZE),[filtered,safePage])
   function handleSubmit(fd:FormData){
-    const input={id:editing?.id,name:String(fd.get("name")||"")||"Khách hàng",contact:String(fd.get("contact")||"")||null,email:String(fd.get("email")||"")||null,phone:String(fd.get("phone")||"")||null,address:String(fd.get("address")||"")||null,value:fd.get("value")?Number(fd.get("value")):null,notes:String(fd.get("notes")||"")||null}
+    const input={id:editing?.id,name:String(fd.get("name")||"")||"Khách hàng",contact:String(fd.get("contact")||"")||null,email:String(fd.get("email")||"")||null,phone:String(fd.get("phone")||"")||null,address:String(fd.get("address")||"")||null,legalRepresentative:String(fd.get("legalRepresentative")||"")||null,invoicingAddress:String(fd.get("invoicingAddress")||"")||null,value:fd.get("value")?Number(fd.get("value")):null,notes:String(fd.get("notes")||"")||null}
     startTransition(async()=>{ await saveCustomer(input); setShowForm(false); setEditing(null) })
   }
   function confirmDelete(){ if(!confirmDeleteId) return; const id=confirmDeleteId; startTransition(async()=>{ await deleteCustomer(id); setConfirmDeleteId(null) }) }
@@ -73,6 +73,10 @@ export function CustomersView({ customers }:{ customers:CustomerRow[] }) {
           <div className="row" style={{marginTop:10}}>
             <div className="field" style={{flex:1,minWidth:200}}><label>Email</label><input name="email" type="email" defaultValue={editing?.email??""} placeholder="ten@congty.com" /></div>
             <div className="field" style={{flex:2,minWidth:220}}><label>Địa chỉ</label><input name="address" defaultValue={editing?.address??""} placeholder="Địa chỉ khách hàng" /></div>
+          </div>
+          <div className="row" style={{marginTop:10}}>
+            <div className="field" style={{flex:1,minWidth:220}}><label>Người đại diện pháp luật</label><input name="legalRepresentative" defaultValue={editing?.legalRepresentative??""} placeholder="VD: Nguyễn Văn A" /></div>
+            <div className="field" style={{flex:2,minWidth:220}}><label>Địa chỉ xuất hóa đơn</label><input name="invoicingAddress" defaultValue={editing?.invoicingAddress??""} placeholder="Địa chỉ xuất hóa đơn (nếu khác địa chỉ trên)" /></div>
           </div>
           <div className="row" style={{marginTop:10}}>
             <div className="field" style={{flex:1,minWidth:180}}><label>Giá trị hợp đồng (VNĐ)</label><input type="number" name="value" defaultValue={editing?.value??""} /></div>

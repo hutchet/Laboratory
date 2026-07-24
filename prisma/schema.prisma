@@ -315,6 +315,8 @@ model Customer {
   email   String?
   phone   String?
   address String?
+  legalRepresentative String?
+  invoicingAddress    String?
   value   Float?
   notes   String?
 
@@ -358,6 +360,9 @@ model QuoteCatalogItem {
   standard   String?
   price      Float?
   quantity   Int?
+  code       String?
+  sampleQty  String?
+  leadTime   String?
 
   quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
 }
