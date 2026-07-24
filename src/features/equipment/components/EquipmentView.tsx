@@ -536,6 +536,38 @@ export function EquipmentView({ equipment, centers, bookings = [] }: { equipment
               <input name="calVendor" placeholder="VD: Quatest 3" defaultValue={editing?.calVendor ?? ""} />
             </div>
           </div>
+          <div className="row" style={{ borderTop: "1px solid #dfe3e8", paddingTop: 12 }}>
+            <div className="field" style={{ flex: 1 }}>
+              <label>S/N</label>
+              <input name="serialNumber" defaultValue={editing?.serialNumber ?? ""} />
+            </div>
+            <div className="field" style={{ flex: 1 }}>
+              <label>Cách tính khấu hao</label>
+              <input name="depreciationMethod" placeholder="VD: Đích danh" defaultValue={editing?.depreciationMethod ?? ""} />
+            </div>
+            <div className="field" style={{ flex: 1 }}>
+              <label>Khấu hao/tháng (SAP)</label>
+              <input name="monthlyDepreciationSap" type="number" defaultValue={editing?.monthlyDepreciationSap ?? ""} />
+            </div>
+            <div className="field" style={{ flex: 1 }}>
+              <label>CC</label>
+              <input name="costCenterCode" defaultValue={editing?.costCenterCode ?? ""} />
+            </div>
+          </div>
+          <div className="row">
+            <div className="field" style={{ flex: 1 }}>
+              <label>GAP (kiểm tra)</label>
+              <input name="gapCheck" type="number" step="any" defaultValue={editing?.gapCheck ?? ""} />
+            </div>
+            <div className="field" style={{ flex: 1 }}>
+              <label>Trạng thái kiểm tra tài chính</label>
+              <input name="financeCheckStatus" defaultValue={editing?.financeCheckStatus ?? ""} />
+            </div>
+            <div className="field" style={{ flex: 2 }}>
+              <label>Ghi chú</label>
+              <input name="notes" defaultValue={editing?.notes ?? ""} />
+            </div>
+          </div>
         </form>
       </FormModal>
 

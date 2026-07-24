@@ -46,6 +46,20 @@ export type TestCatalogRow = {
   centerId: string | null
   center: { id: string; name: string } | null
   createdAt: string
+  group1: string | null
+  group2: string | null
+  vts: string | null
+  standardDays: number | null
+  priceCatarcQc: number | null
+  priceIdiadaChina: number | null
+  priceIdiadaSpain: number | null
+  priceMira: number | null
+  priceCalspan: number | null
+  priceImat: number | null
+  estimatedHours: number | null
+  machineHours: number | null
+  personnelHours: number | null
+  gapTiming: number | null
 }
 
 export type PersonnelRateConfigRow = {
@@ -68,6 +82,23 @@ export type PersonnelRoutingRow = {
   centerId: string | null
   center: { id: string; name: string } | null
   createdAt: string
+  group1: string | null
+  group2: string | null
+  phong: string | null
+  vts: string | null
+  standard: string | null
+  prepTechHours: string | null
+  prepEngHours: string | null
+  prepLeadHours: string | null
+  setupTechHours: string | null
+  setupEngHours: string | null
+  setupLeadHours: string | null
+  testTechHours: string | null
+  testEngHours: string | null
+  testLeadHours: string | null
+  reportTechHours: string | null
+  reportEngHours: string | null
+  reportLeadHours: string | null
 }
 
 // y/c 116.1: Tai san khau hao gio anh xa 1:1 tu Equipment (equipmentId) - assetName
@@ -82,6 +113,15 @@ export type DepreciationAssetRow = {
   centerId: string | null
   center: { id: string; name: string } | null
   equipmentId: string
+  // Cac truong lay tu Equipment lien ket (chi hien thi, sua o trang Thiet bi)
+  equipmentCode: string | null
+  serialNumber: string | null
+  depreciationMethod: string | null
+  notes: string | null
+  monthlyDepreciationSap: number | null
+  costCenterCode: string | null
+  gapCheck: number | null
+  financeCheckStatus: string | null
 }
 
 export type VariableCostRow = {

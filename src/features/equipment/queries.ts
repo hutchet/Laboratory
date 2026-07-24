@@ -24,6 +24,13 @@ export async function listEquipment(): Promise<EquipmentRow[]> {
     spec: e.spec,
     center: e.center ? { id: e.center.id, name: e.center.name } : null,
     createdAt: e.createdAt,
+    serialNumber: e.serialNumber,
+    depreciationMethod: e.depreciationMethod,
+    notes: e.notes,
+    monthlyDepreciationSap: e.monthlyDepreciationSap,
+    costCenterCode: e.costCenterCode,
+    gapCheck: e.gapCheck,
+    financeCheckStatus: e.financeCheckStatus,
   }))
 }
 

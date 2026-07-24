@@ -95,11 +95,23 @@ export async function removeQuoteItem(id: string) {
 }
 
 // ---- Test catalog ----
-export type SaveTestCatalogInput = { id?: string; code?: string | null; name: string; standard?: string | null; phong?: string | null; sampleQty?: string | null; leadTime?: string | null; price?: number | null; centerId?: string | null }
+export type SaveTestCatalogInput = {
+  id?: string; code?: string | null; name: string; standard?: string | null; phong?: string | null; sampleQty?: string | null; leadTime?: string | null; price?: number | null; centerId?: string | null
+  group1?: string | null; group2?: string | null; vts?: string | null; standardDays?: number | null
+  priceCatarcQc?: number | null; priceIdiadaChina?: number | null; priceIdiadaSpain?: number | null
+  priceMira?: number | null; priceCalspan?: number | null; priceImat?: number | null
+  estimatedHours?: number | null; machineHours?: number | null; personnelHours?: number | null; gapTiming?: number | null
+}
 
 export async function saveTestCatalogItem(input: SaveTestCatalogInput) {
   await requirePermission(input.id ? "edit" : "create")
-  const data = { code: input.code || null, name: input.name, standard: input.standard || null, phong: input.phong || null, sampleQty: input.sampleQty || null, leadTime: input.leadTime || null, price: input.price ?? null, centerId: input.centerId || null }
+  const data = {
+    code: input.code || null, name: input.name, standard: input.standard || null, phong: input.phong || null, sampleQty: input.sampleQty || null, leadTime: input.leadTime || null, price: input.price ?? null, centerId: input.centerId || null,
+    group1: input.group1 || null, group2: input.group2 || null, vts: input.vts || null, standardDays: input.standardDays ?? null,
+    priceCatarcQc: input.priceCatarcQc ?? null, priceIdiadaChina: input.priceIdiadaChina ?? null, priceIdiadaSpain: input.priceIdiadaSpain ?? null,
+    priceMira: input.priceMira ?? null, priceCalspan: input.priceCalspan ?? null, priceImat: input.priceImat ?? null,
+    estimatedHours: input.estimatedHours ?? null, machineHours: input.machineHours ?? null, personnelHours: input.personnelHours ?? null, gapTiming: input.gapTiming ?? null,
+  }
   if (input.id) await db.testCatalogItem.update({ where: { id: input.id }, data })
   else await db.testCatalogItem.create({ data })
   revalidatePath("/quote")
@@ -130,11 +142,25 @@ export async function savePersonnelRateConfig(input: SavePersonnelRateConfigInpu
   revalidatePath("/quote")
 }
 
-export type SavePersonnelRoutingInput = { id?: string; testCode?: string | null; testName: string; prepHours?: string | null; setupHours?: string | null; testHours?: string | null; reportHours?: string | null; centerId?: string | null }
+export type SavePersonnelRoutingInput = {
+  id?: string; testCode?: string | null; testName: string; prepHours?: string | null; setupHours?: string | null; testHours?: string | null; reportHours?: string | null; centerId?: string | null
+  group1?: string | null; group2?: string | null; phong?: string | null; vts?: string | null; standard?: string | null
+  prepTechHours?: string | null; prepEngHours?: string | null; prepLeadHours?: string | null
+  setupTechHours?: string | null; setupEngHours?: string | null; setupLeadHours?: string | null
+  testTechHours?: string | null; testEngHours?: string | null; testLeadHours?: string | null
+  reportTechHours?: string | null; reportEngHours?: string | null; reportLeadHours?: string | null
+}
 
 export async function savePersonnelRouting(input: SavePersonnelRoutingInput) {
   await requirePermission(input.id ? "edit" : "create")
-  const data = { testCode: input.testCode || null, testName: input.testName, prepHours: input.prepHours || null, setupHours: input.setupHours || null, testHours: input.testHours || null, reportHours: input.reportHours || null, centerId: input.centerId || null }
+  const data = {
+    testCode: input.testCode || null, testName: input.testName, prepHours: input.prepHours || null, setupHours: input.setupHours || null, testHours: input.testHours || null, reportHours: input.reportHours || null, centerId: input.centerId || null,
+    group1: input.group1 || null, group2: input.group2 || null, phong: input.phong || null, vts: input.vts || null, standard: input.standard || null,
+    prepTechHours: input.prepTechHours || null, prepEngHours: input.prepEngHours || null, prepLeadHours: input.prepLeadHours || null,
+    setupTechHours: input.setupTechHours || null, setupEngHours: input.setupEngHours || null, setupLeadHours: input.setupLeadHours || null,
+    testTechHours: input.testTechHours || null, testEngHours: input.testEngHours || null, testLeadHours: input.testLeadHours || null,
+    reportTechHours: input.reportTechHours || null, reportEngHours: input.reportEngHours || null, reportLeadHours: input.reportLeadHours || null,
+  }
   if (input.id) await db.personnelRouting.update({ where: { id: input.id }, data })
   else await db.personnelRouting.create({ data })
   revalidatePath("/quote")

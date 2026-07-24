@@ -48,6 +48,13 @@ export type SaveEquipmentInput = {
   calInterval?: number | null
   calCert?: string | null
   calVendor?: string | null
+  serialNumber?: string | null
+  depreciationMethod?: string | null
+  notes?: string | null
+  monthlyDepreciationSap?: number | null
+  costCenterCode?: string | null
+  gapCheck?: number | null
+  financeCheckStatus?: string | null
 }
 
 export async function saveEquipment(input: SaveEquipmentInput) {
@@ -70,6 +77,13 @@ export async function saveEquipment(input: SaveEquipmentInput) {
     calInterval: input.calInterval ?? null,
     calCert: input.calCert || null,
     calVendor: input.calVendor || null,
+    serialNumber: input.serialNumber || null,
+    depreciationMethod: input.depreciationMethod || null,
+    notes: input.notes || null,
+    monthlyDepreciationSap: input.monthlyDepreciationSap ?? null,
+    costCenterCode: input.costCenterCode || null,
+    gapCheck: input.gapCheck ?? null,
+    financeCheckStatus: input.financeCheckStatus || null,
   }
   let saved
   // y/c 116.1: moi lan luu Thiet bi (them moi hoac sua) phai TU DONG tao/dong bo

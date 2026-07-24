@@ -136,6 +136,7 @@ export function PersonnelView({ config, routing, centers = [] }: { config: Perso
   function openNew() { setEditing(null); setShowForm(true) }
   function openEdit(it: PersonnelRoutingRow) { setEditing(it); setShowForm(true) }
   function handleSubmit(formData: FormData) {
+    const s = (key: string) => String(formData.get(key) || "")
     const input = {
       id: editing?.id,
       testCode: String(formData.get("testCode") || ""),
@@ -145,6 +146,23 @@ export function PersonnelView({ config, routing, centers = [] }: { config: Perso
       testHours: String(formData.get("testHours") || ""),
       reportHours: String(formData.get("reportHours") || ""),
       centerId: fCenterId || null,
+      group1: s("group1"),
+      group2: s("group2"),
+      phong: s("phong"),
+      vts: s("vts"),
+      standard: s("standard"),
+      prepTechHours: s("prepTechHours"),
+      prepEngHours: s("prepEngHours"),
+      prepLeadHours: s("prepLeadHours"),
+      setupTechHours: s("setupTechHours"),
+      setupEngHours: s("setupEngHours"),
+      setupLeadHours: s("setupLeadHours"),
+      testTechHours: s("testTechHours"),
+      testEngHours: s("testEngHours"),
+      testLeadHours: s("testLeadHours"),
+      reportTechHours: s("reportTechHours"),
+      reportEngHours: s("reportEngHours"),
+      reportLeadHours: s("reportLeadHours"),
     }
     startTransition(async () => { await savePersonnelRouting(input); setShowForm(false); setEditing(null) })
   }
@@ -182,10 +200,19 @@ export function PersonnelView({ config, routing, centers = [] }: { config: Perso
       : []),
     { key: "testCode", header: "Mã", render: (it) => it.testCode ?? "—" },
     { key: "testName", header: "Bài thử", render: (it) => <span style={{ fontWeight: 600 }}>{it.testName}</span> },
+    { key: "group1", header: "Nhóm 1", render: (it) => it.group1 ?? "—" },
+    { key: "group2", header: "Nhóm 2", render: (it) => it.group2 ?? "—" },
+    { key: "phong", header: "Phòng", render: (it) => it.phong ?? "—" },
+    { key: "vts", header: "VTS", render: (it) => it.vts ?? "—" },
+    { key: "standard", header: "Tiêu chuẩn", render: (it) => it.standard ?? "—" },
     { key: "prepHours", header: "Giờ chuẩn bị", render: (it) => it.prepHours ?? "—" },
+    { key: "prepTELHours", header: "CB (T/E/L)", render: (it) => `${it.prepTechHours ?? "—"} / ${it.prepEngHours ?? "—"} / ${it.prepLeadHours ?? "—"}` },
     { key: "setupHours", header: "Giờ lắp đặt", render: (it) => it.setupHours ?? "—" },
+    { key: "setupTELHours", header: "Lắđặt (T/E/L)", render: (it) => `${it.setupTechHours ?? "—"} / ${it.setupEngHours ?? "—"} / ${it.setupLeadHours ?? "—"}` },
     { key: "testHours", header: "Giờ thử", render: (it) => it.testHours ?? "—" },
+    { key: "testTELHours", header: "Thử (T/E/L)", render: (it) => `${it.testTechHours ?? "—"} / ${it.testEngHours ?? "—"} / ${it.testLeadHours ?? "—"}` },
     { key: "reportHours", header: "Giờ báo cáo", render: (it) => it.reportHours ?? "—" },
+    { key: "reportTELHours", header: "BC (T/E/L)", render: (it) => `${it.reportTechHours ?? "—"} / ${it.reportEngHours ?? "—"} / ${it.reportLeadHours ?? "—"}` },
     { key: "totalHours", header: "Tổng giờ", align: "right", render: (it) => computeRoutingCost(it, config).totalHours || "—" },
     { key: "laborCost", header: "CP nhân sự", align: "right", render: (it) => fmtVND(computeRoutingCost(it, config).withOverhead) },
     {
@@ -231,7 +258,7 @@ export function PersonnelView({ config, routing, centers = [] }: { config: Perso
             <label style={{ fontSize: 12, fontWeight: 600 }}>Phụ phí chung (%)
               <input type="number" name="overheadPct" defaultValue={config.overheadPct} style={{ width: 100, padding: 6, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4, display: "block" }} />
             </label>
-            <Perm minPerm="dept_head"><button type="submit" className="btn-pri" disabled={pending}>Lưu đơn giá</button></Perm>
+            <Perm minPerm="dept_head"><button type="submit" className="btn-pri" disabled={pending} style={{ minHeight: 48, boxSizing: "border-box" }}>Lưu đơn giá</button></Perm>
           </form>
           {groups.length === 0 ? (
             <div className="empty">Chưa có trung tâm nào — thêm trung tâm ở trang Trung tâm để tạo định tuyến theo từng trung tâm.</div>
@@ -308,11 +335,50 @@ export function PersonnelView({ config, routing, centers = [] }: { config: Perso
             <CustomSelect value={fCenterId} onChange={setFCenterId} width="100%" options={[{ value: "", label: NO_CENTER_LABEL }, ...centers.map((c) => ({ value: c.id, label: c.name }))]} />
           </label>
           <div style={{ display: "flex", gap: 12 }}>
+            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Nhóm 1
+              <input name="group1" defaultValue={editing?.group1 ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+            </label>
+            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Nhóm 2
+              <input name="group2" defaultValue={editing?.group2 ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+            </label>
+            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Phòng
+              <input name="phong" defaultValue={editing?.phong ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+            </label>
+          </div>
+          <div style={{ display: "flex", gap: 12 }}>
+            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>VTS
+              <input name="vts" defaultValue={editing?.vts ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+            </label>
+            <label style={{ fontSize: 12, fontWeight: 600, flex: 2 }}>Tiêu chuẩn
+              <input name="standard" defaultValue={editing?.standard ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+            </label>
+          </div>
+          <div style={{ display: "flex", gap: 12 }}>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Giờ chuẩn bị
               <input name="prepHours" defaultValue={editing?.prepHours ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
             </label>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Giờ lắp đặt
               <input name="setupHours" defaultValue={editing?.setupHours ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+            </label>
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <label style={{ fontSize: 11, fontWeight: 600, flex: 1 }}>CB-Tech
+              <input name="prepTechHours" defaultValue={editing?.prepTechHours ?? ""} style={{ width: "100%", padding: 6, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+            </label>
+            <label style={{ fontSize: 11, fontWeight: 600, flex: 1 }}>CB-Eng
+              <input name="prepEngHours" defaultValue={editing?.prepEngHours ?? ""} style={{ width: "100%", padding: 6, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+            </label>
+            <label style={{ fontSize: 11, fontWeight: 600, flex: 1 }}>CB-Lead
+              <input name="prepLeadHours" defaultValue={editing?.prepLeadHours ?? ""} style={{ width: "100%", padding: 6, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+            </label>
+            <label style={{ fontSize: 11, fontWeight: 600, flex: 1 }}>Lắđặt-Tech
+              <input name="setupTechHours" defaultValue={editing?.setupTechHours ?? ""} style={{ width: "100%", padding: 6, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+            </label>
+            <label style={{ fontSize: 11, fontWeight: 600, flex: 1 }}>Lắđặt-Eng
+              <input name="setupEngHours" defaultValue={editing?.setupEngHours ?? ""} style={{ width: "100%", padding: 6, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+            </label>
+            <label style={{ fontSize: 11, fontWeight: 600, flex: 1 }}>Lắđặt-Lead
+              <input name="setupLeadHours" defaultValue={editing?.setupLeadHours ?? ""} style={{ width: "100%", padding: 6, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
             </label>
           </div>
           <div style={{ display: "flex", gap: 12 }}>
@@ -321,6 +387,26 @@ export function PersonnelView({ config, routing, centers = [] }: { config: Perso
             </label>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Giờ báo cáo
               <input name="reportHours" defaultValue={editing?.reportHours ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+            </label>
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <label style={{ fontSize: 11, fontWeight: 600, flex: 1 }}>Thử-Tech
+              <input name="testTechHours" defaultValue={editing?.testTechHours ?? ""} style={{ width: "100%", padding: 6, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+            </label>
+            <label style={{ fontSize: 11, fontWeight: 600, flex: 1 }}>Thử-Eng
+              <input name="testEngHours" defaultValue={editing?.testEngHours ?? ""} style={{ width: "100%", padding: 6, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+            </label>
+            <label style={{ fontSize: 11, fontWeight: 600, flex: 1 }}>Thử-Lead
+              <input name="testLeadHours" defaultValue={editing?.testLeadHours ?? ""} style={{ width: "100%", padding: 6, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+            </label>
+            <label style={{ fontSize: 11, fontWeight: 600, flex: 1 }}>BC-Tech
+              <input name="reportTechHours" defaultValue={editing?.reportTechHours ?? ""} style={{ width: "100%", padding: 6, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+            </label>
+            <label style={{ fontSize: 11, fontWeight: 600, flex: 1 }}>BC-Eng
+              <input name="reportEngHours" defaultValue={editing?.reportEngHours ?? ""} style={{ width: "100%", padding: 6, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+            </label>
+            <label style={{ fontSize: 11, fontWeight: 600, flex: 1 }}>BC-Lead
+              <input name="reportLeadHours" defaultValue={editing?.reportLeadHours ?? ""} style={{ width: "100%", padding: 6, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
             </label>
           </div>
         </form>

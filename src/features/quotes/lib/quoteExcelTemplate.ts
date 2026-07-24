@@ -83,6 +83,7 @@ export function buildQuoteOverviewWorkbook(quote: QuoteRow): Buffer {
     ["Contact person / Người liên hệ", ""],
     ["Email / Địa chỉ email", ""],
     ["Tel / Số điện thoại", ""],
+    ["Invoicing Address / Thông tin xuất hóa đơn", ""],
   ]
   for (const [label, value] of custRows) {
     r += 1

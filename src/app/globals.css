@@ -112,7 +112,7 @@
   #page-dash .spotlight-avatars .av{width:30px;height:30px;font-size:11px;font-weight:600;color:#fff;border:2px solid #1c2033;margin-left:-8px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none}
   #page-dash .spotlight-avatars .av:first-child{margin-left:0}
   #page-dash .spotlight-avatars .av-more{width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.16);color:#fff;font-size:10.5px;display:flex;align-items:center;justify-content:center;margin-left:-8px;border:2px solid #1c2033}
-  #page-dash .exp-summary{display:flex;align-items:center;gap:56px;flex-wrap:wrap;justify-content:center;min-height:150px;padding:0 10px}
+  #page-dash .exp-summary{display:flex;align-items:center;gap:28px;flex-wrap:nowrap;justify-content:center;min-height:150px;padding:0 10px}
 html[data-viewport="mobile"] #page-dash .exp-summary{flex-wrap:nowrap!important;gap:16px!important;justify-content:space-between!important;padding:0 6px!important;min-height:0!important}
 html[data-viewport="mobile"] #page-dash .exp-summary>svg{flex:0 0 auto!important;width:92px!important;height:92px!important;max-width:92px!important}
 html[data-viewport="mobile"] #page-dash .exp-summary .exp-legend{flex:1 1 auto!important;min-width:0!important;gap:6px!important}
@@ -730,14 +730,21 @@ html[data-viewport="mobile"] #page-dash .exp-summary .exp-legend .exp-row{font-s
     body.printing-quote-report .main{padding:0}
     body.printing-quote-report .quote-print-doc{display:block!important}
     body.printing-quote-report .quote-print-doc,body.printing-quote-report .quote-print-doc *{color:#111!important;background:#fff!important;box-shadow:none!important}
-    body.printing-quote-report .quote-print-doc table{width:100%;border-collapse:collapse;font-size:11px;margin:10px 0}
-    body.printing-quote-report .quote-print-doc th,body.printing-quote-report .quote-print-doc td{border:1px solid #333!important;padding:6px 8px}
-    body.printing-quote-report .quote-print-doc .qpd-section{font-weight:700;background:#e8ecf3!important;padding:6px 8px;border:1px solid #333!important;margin-top:12px}
-    body.printing-quote-report .quote-print-doc .qpd-row{display:flex;border:1px solid #333;border-top:none}
-    body.printing-quote-report .quote-print-doc .qpd-row:first-of-type{border-top:1px solid #333}
-    body.printing-quote-report .quote-print-doc .qpd-row .qpd-label{flex:0 0 260px;padding:5px 8px;font-weight:600;border-right:1px solid #333}
-    body.printing-quote-report .quote-print-doc .qpd-row .qpd-value{flex:1;padding:5px 8px}
-    body.printing-quote-report .quote-print-doc .qpd-total-row td{font-weight:700;background:#fff3d6!important}
+    body.printing-quote-report .quote-print-doc{font-family:Arial,Helvetica,sans-serif}
+    body.printing-quote-report .quote-print-doc table.qpd-doc{width:100%;border-collapse:collapse;table-layout:fixed;font-size:10.5px;margin:0}
+    body.printing-quote-report .quote-print-doc table.qpd-doc td,body.printing-quote-report .quote-print-doc table.qpd-doc th{border:1px solid #333!important;padding:4px 6px;vertical-align:middle;word-break:break-word}
+    body.printing-quote-report .quote-print-doc .qpd-plain td{border:none!important}
+    body.printing-quote-report .quote-print-doc .qpd-h1{font-weight:700;font-size:13px;text-align:center}
+    body.printing-quote-report .quote-print-doc .qpd-h2{font-size:9.5px;text-align:center}
+    body.printing-quote-report .quote-print-doc .qpd-logo{text-align:center;font-weight:800;font-size:15px;letter-spacing:1px}
+    body.printing-quote-report .quote-print-doc .qpd-title{font-weight:700;font-size:14px;text-align:center;padding:10px 6px}
+    body.printing-quote-report .quote-print-doc .qpd-section{font-weight:700;background:#d9e1f2!important;padding:5px 6px}
+    body.printing-quote-report .quote-print-doc .qpd-label{font-weight:600;background:#f2f2f2!important}
+    body.printing-quote-report .quote-print-doc .qpd-yellow{background:#ffff99!important}
+    body.printing-quote-report .quote-print-doc th.qpd-th{background:#dbe5f1!important;font-weight:700;font-size:9.5px;text-align:center}
+    body.printing-quote-report .quote-print-doc .qpd-total-label{font-weight:700;text-align:right}
+    body.printing-quote-report .quote-print-doc .qpd-total-value{font-weight:700;text-align:right;background:#fff3d6!important}
+    body.printing-quote-report .quote-print-doc .qpd-box{vertical-align:top;height:70px}
   }
   .txt-act{border:1px solid var(--line);background:#fff;border-radius:8px;padding:5px 10px;font-size:11.5px;font-weight:600;cursor:pointer;color:#5b637a;white-space:nowrap}
   .txt-act.pri{color:var(--pri);border-color:#d4ddfc}

@@ -79,9 +79,13 @@ export async function listDepreciationAssets(): Promise<DepreciationAssetRow[]> 
 
   const rows = await db.$queryRawUnsafe<any[]>(
     `SELECT d.id, d."assetName", d."assetGroup", d."totalValue", d."years", d."centerId", d."equipmentId",
-            c.id as "c_id", c.name as "c_name"
+            c.id as "c_id", c.name as "c_name",
+            e."code" as "e_code", e."serialNumber" as "e_serialNumber", e."depreciationMethod" as "e_depreciationMethod",
+            e."notes" as "e_notes", e."monthlyDepreciationSap" as "e_monthlyDepreciationSap",
+            e."costCenterCode" as "e_costCenterCode", e."gapCheck" as "e_gapCheck", e."financeCheckStatus" as "e_financeCheckStatus"
      FROM "DepreciationAsset" d
      LEFT JOIN "Center" c ON c.id = d."centerId"
+     LEFT JOIN "Equipment" e ON e.id = d."equipmentId"
      ORDER BY d."createdAt" DESC`,
   )
   return rows.map((r) => ({
@@ -93,6 +97,14 @@ export async function listDepreciationAssets(): Promise<DepreciationAssetRow[]> 
     centerId: r.centerId ?? null,
     equipmentId: r.equipmentId,
     center: r.c_id ? { id: r.c_id, name: r.c_name } : null,
+    equipmentCode: r.e_code ?? null,
+    serialNumber: r.e_serialNumber ?? null,
+    depreciationMethod: r.e_depreciationMethod ?? null,
+    notes: r.e_notes ?? null,
+    monthlyDepreciationSap: r.e_monthlyDepreciationSap ?? null,
+    costCenterCode: r.e_costCenterCode ?? null,
+    gapCheck: r.e_gapCheck ?? null,
+    financeCheckStatus: r.e_financeCheckStatus ?? null,
   }))
 }
 

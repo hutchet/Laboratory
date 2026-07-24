@@ -1,9 +1,26 @@
 import { db } from "@/shared/lib/db"
 import quoteImportData from "./data/quote-import-data.json"
 
-type CatalogRow = { code: string; name: string; standard: string | null; price: number | null; center: string | null; phong: string | null }
-type PersonnelRow = { code: string; name: string; prep: number | null; setup: number | null; test: number | null; report: number | null; center: string | null }
-type MachineRow = { code: string; name: string; hourlyRate: number | null; area: number | null; power: number | null; center: string | null }
+type CatalogRow = {
+  code: string; name: string; standard: string | null; price: number | null; center: string | null; phong: string | null
+  group1?: string | null; group2?: string | null; vts?: string | null; standardDays?: number | null
+  priceCatarcQc?: number | null; priceIdiadaChina?: number | null; priceIdiadaSpain?: number | null
+  priceMira?: number | null; priceCalspan?: number | null; priceImat?: number | null
+  estimatedHours?: number | null; machineHours?: number | null; personnelHours?: number | null; gapTiming?: number | null
+}
+type PersonnelRow = {
+  code: string; name: string; prep: number | null; setup: number | null; test: number | null; report: number | null; center: string | null
+  group1?: string | null; group2?: string | null; phong?: string | null; vts?: string | null; standard?: string | null
+  prepTechHours?: number | null; prepEngHours?: number | null; prepLeadHours?: number | null
+  setupTechHours?: number | null; setupEngHours?: number | null; setupLeadHours?: number | null
+  testTechHours?: number | null; testEngHours?: number | null; testLeadHours?: number | null
+  reportTechHours?: number | null; reportEngHours?: number | null; reportLeadHours?: number | null
+}
+type MachineRow = {
+  code: string; name: string; hourlyRate: number | null; area: number | null; power: number | null; center: string | null
+  serialNumber?: string | number | null; depreciationMethod?: string | null; notes?: string | null
+  monthlyDepreciationSap?: number | null; costCenterCode?: string | null; gapCheck?: number | null; financeCheckStatus?: string | null
+}
 
 type ImportData = {
   catalog: CatalogRow[]
@@ -53,6 +70,20 @@ export async function seedQuoteData() {
       phong: c.phong ?? undefined,
       price: c.price ?? undefined,
       centerId: c.center ? centerIdByName.get(c.center) ?? null : null,
+      group1: c.group1 ?? undefined,
+      group2: c.group2 ?? undefined,
+      vts: c.vts ?? undefined,
+      standardDays: c.standardDays ?? undefined,
+      priceCatarcQc: c.priceCatarcQc ?? undefined,
+      priceIdiadaChina: c.priceIdiadaChina ?? undefined,
+      priceIdiadaSpain: c.priceIdiadaSpain ?? undefined,
+      priceMira: c.priceMira ?? undefined,
+      priceCalspan: c.priceCalspan ?? undefined,
+      priceImat: c.priceImat ?? undefined,
+      estimatedHours: c.estimatedHours ?? undefined,
+      machineHours: c.machineHours ?? undefined,
+      personnelHours: c.personnelHours ?? undefined,
+      gapTiming: c.gapTiming ?? undefined,
     })),
   })
   log.push(`TestCatalogItem: ${data.catalog.length} rows imported`)
@@ -71,6 +102,23 @@ export async function seedQuoteData() {
       testHours: p.test != null ? String(p.test) : undefined,
       reportHours: p.report != null ? String(p.report) : undefined,
       centerId: p.center ? centerIdByName.get(p.center) ?? null : null,
+      group1: p.group1 ?? undefined,
+      group2: p.group2 ?? undefined,
+      phong: p.phong ?? undefined,
+      vts: p.vts ?? undefined,
+      standard: p.standard ?? undefined,
+      prepTechHours: p.prepTechHours != null ? String(p.prepTechHours) : undefined,
+      prepEngHours: p.prepEngHours != null ? String(p.prepEngHours) : undefined,
+      prepLeadHours: p.prepLeadHours != null ? String(p.prepLeadHours) : undefined,
+      setupTechHours: p.setupTechHours != null ? String(p.setupTechHours) : undefined,
+      setupEngHours: p.setupEngHours != null ? String(p.setupEngHours) : undefined,
+      setupLeadHours: p.setupLeadHours != null ? String(p.setupLeadHours) : undefined,
+      testTechHours: p.testTechHours != null ? String(p.testTechHours) : undefined,
+      testEngHours: p.testEngHours != null ? String(p.testEngHours) : undefined,
+      testLeadHours: p.testLeadHours != null ? String(p.testLeadHours) : undefined,
+      reportTechHours: p.reportTechHours != null ? String(p.reportTechHours) : undefined,
+      reportEngHours: p.reportEngHours != null ? String(p.reportEngHours) : undefined,
+      reportLeadHours: p.reportLeadHours != null ? String(p.reportLeadHours) : undefined,
     })),
   })
   log.push(`PersonnelRouting: ${data.personnel.length} rows imported`)
@@ -94,7 +142,10 @@ export async function seedQuoteData() {
   })
   log.push("PersonnelRateConfig updated")
 
-  // 5. Đơn giá thiết bị (Equipment.hourlyRate/area/power) <- sheet "Matrix sử dụng máy"
+  // 5. Đơn giá thiết bị (Equipment.hourlyRate/area/power) <- sheet "DM MMTB"
+  // (334 máy, rà soát lại 24/07 — trước đó chỉ nhập 186/334; 3 mã tài sản SAP dùng
+  // chung cho nhiều máy vật lý khác nhau trong file gốc được tách thành *_dup1/2/3
+  // để không bị đè dữ liệu khi upsert theo "code").
   let machineCreated = 0
   let machineUpdated = 0
   for (const m of data.machines) {
@@ -108,6 +159,13 @@ export async function seedQuoteData() {
           area: m.area ?? undefined,
           power: m.power ?? undefined,
           centerId: existing.centerId ?? centerId,
+          serialNumber: m.serialNumber != null ? String(m.serialNumber) : undefined,
+          depreciationMethod: m.depreciationMethod ?? undefined,
+          notes: m.notes ?? undefined,
+          monthlyDepreciationSap: m.monthlyDepreciationSap ?? undefined,
+          costCenterCode: m.costCenterCode ?? undefined,
+          gapCheck: m.gapCheck ?? undefined,
+          financeCheckStatus: m.financeCheckStatus ?? undefined,
         },
       })
       machineUpdated++
@@ -120,12 +178,19 @@ export async function seedQuoteData() {
           area: m.area ?? undefined,
           power: m.power ?? undefined,
           centerId,
+          serialNumber: m.serialNumber != null ? String(m.serialNumber) : undefined,
+          depreciationMethod: m.depreciationMethod ?? undefined,
+          notes: m.notes ?? undefined,
+          monthlyDepreciationSap: m.monthlyDepreciationSap ?? undefined,
+          costCenterCode: m.costCenterCode ?? undefined,
+          gapCheck: m.gapCheck ?? undefined,
+          financeCheckStatus: m.financeCheckStatus ?? undefined,
         },
       })
       machineCreated++
     }
   }
-  log.push(`Equipment (Matrix sử dụng máy): ${machineCreated} created, ${machineUpdated} updated`)
+  log.push(`Equipment (DM MMTB): ${machineCreated} created, ${machineUpdated} updated`)
 
   return log
 }

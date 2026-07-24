@@ -8,6 +8,7 @@ import { ConfirmDialog } from "@/shared/ui/confirm-dialog"
 import { EmptyState } from "@/shared/ui/empty-state"
 import { KpiCard } from "@/shared/ui/kpi-card"
 import { DirectionIcon } from "@/shared/ui/icons"
+import { Perm } from "@/shared/lib/rbac-client"
 import { computeSimpleTrend } from "@/shared/lib/trend"
 import { createReportProject, renameReportProject, deleteReportProject, saveReportRows } from "../actions"
 import { REPORT_COLUMNS, emptyReportRow } from "../types"
@@ -109,46 +110,132 @@ export function ReportView({
   return (
     <PageShell
       title="Báo cáo thử nghiệm theo dự án"
-      subtitle="Danh sách dự án được liên kết từ trang Dự án. Nhấn vào dự án để nhập bảng dự liệu báo cáo."
-      actions={<button type="button" onClick={openNewProjectForm} style={{ padding: "8px 14px", borderRadius: 8, border: "none", background: "#1d5fd6", color: "#fff" }}>+ Thêm dự án</button>}
-      filters={<FilterBar search={{ value: q, onChange: setQ, placeholder: "Tìm dự án..." }} />}
+      subtitle={openProject ? undefined : "Danh sách dự án được liên kết từ trang Dự án. Nhấn vào dự án để nhập bảng dữ liệu báo cáo."}
+      filters={openProject ? undefined : <FilterBar search={{ value: q, onChange: setQ, placeholder: "Tìm dự án..." }} />}
     >
-      <div className="kpis-tier" style={{ marginBottom: 16 }}>
-        <KpiCard label="Tổng dự án" value={overview.total} tone="blue" trend={reportTrends.total} />
-        <KpiCard label="Có dữ liệu" value={overview.withData} tone="success" trend={reportTrends.withData} />
-        <KpiCard label="Tổng dòng dữ liệu" value={overview.totalRows} tone="blue" />
-        <KpiCard label="TB dòng / dự án" value={overview.avgRows.toFixed(1)} tone="warning" />
-      </div>
+      {openProject ? (
+        <div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <button type="button" className="btn-line" onClick={closeSpreadsheet}>‹ Quay lại</button>
+              <div style={{ fontSize: 16, fontWeight: 700 }}>Báo cáo thử nghiệm · {openProject.name}</div>
+            </div>
+            <Perm minPerm="dept_head">
+              <span style={{ display: "flex", gap: 8 }}>
+                <button type="button" className="btn-line" onClick={() => openRenameForm(openProject)}>Sửa</button>
+                <button type="button" className="btn-line" onClick={() => setConfirmDeleteId(openProject.id)}>Xoá</button>
+              </span>
+            </Perm>
+          </div>
 
-      {filtered.length === 0 ? (
-        <EmptyState title="Chưa có dự án nào" />
-      ) : (
-        <div id="rp-project-cards" className="cu-grid">
-          {filtered.map((p) => {
-            const initial = p.name.trim().slice(0, 2).toUpperCase() || "DA"
-            return (
-              <div key={p.id} className="hub-card" onClick={() => openSpreadsheet(p)} style={{ cursor: "pointer" }}>
-                <div className="hub-top">
-                  <div className="hub-icon">{initial}</div>
-                  <div className="hub-title"><h4>{p.name}</h4><p>{p.rowCount ? `${p.rowCount} dòng dữ liệu` : "Chưa có dữ liệu"}</p></div>
-                  <span className="hub-arrow sys-arrow-glyph"><DirectionIcon name="chevronRight" size={20} /></span>
-                </div>
-                <div className="hub-tags">
-                  <StatusBadge label={p.rowCount ? "Có dữ liệu" : "Chưa có dữ liệu"} tone={p.rowCount ? "success" : "neutral"} />
-                </div>
-                <div className="hub-stats">
-                  <div className="hub-stat"><b>{p.rowCount}</b><span>Dòng dữ liệu</span></div>
-                  <div className="hub-stat"><b>{REPORT_COLUMNS.length}</b><span>Cột báo cáo</span></div>
-                </div>
-                <div onClick={(e) => e.stopPropagation()} style={{ display: "flex", gap: 8, borderTop: "1px solid var(--line)", paddingTop: 12, marginTop: 12 }}>
-                  <button type="button" className="btn-line" style={{ flex: 1 }} onClick={() => openSpreadsheet(p)}>Xem chi tiết</button>
-                  <button type="button" className="btn-line" onClick={() => openRenameForm(p)}>Sửa</button>
-                  <button type="button" className="btn-line" onClick={() => setConfirmDeleteId(p.id)}>Xoá</button>
+          {!isEditingRows ? (
+            <>
+              <div style={{ overflowX: "auto", border: "1px solid var(--line, #e7eaee)", borderRadius: 10 }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ background: "var(--bg, #f7f8fa)", textAlign: "left" }}>
+                      <th style={{ padding: "10px 12px", width: 38 }}>#</th>
+                      {REPORT_COLUMNS.map((c) => <th key={c.key} style={{ padding: "10px 12px", fontWeight: 600 }}>{c.label}</th>)}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {displayRows.length === 0 ? (
+                      <tr><td style={{ padding: 14, color: "var(--muted, #8a8f98)" }}>—</td><td colSpan={REPORT_COLUMNS.length} style={{ padding: 14, color: "var(--muted, #8a8f98)" }}>Chưa có dữ liệu. Nhấn “Chỉnh sửa” để nhập.</td></tr>
+                    ) : displayRows.map((r, i) => (
+                      <tr key={i} style={{ borderBottom: "1px solid var(--line, #f0f1f3)" }}>
+                        <td style={{ padding: "10px 12px" }}>{i + 1}</td>
+                        {REPORT_COLUMNS.map((c) => <td key={c.key} style={{ padding: "10px 12px", whiteSpace: "pre-wrap" }}>{r[c.key] || "—"}</td>)}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 16 }}>
+                <button type="button" onClick={() => setIsEditingRows(true)} style={{ padding: "8px 14px", borderRadius: 8, border: "none", background: "#1d5fd6", color: "#fff" }}>Chỉnh sửa</button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={{ overflowX: "auto", border: "1px solid var(--line, #e7eaee)", borderRadius: 10 }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ background: "var(--bg, #f7f8fa)", textAlign: "left" }}>
+                      <th style={{ padding: "10px 12px", width: 38 }}>#</th>
+                      {REPORT_COLUMNS.map((c) => <th key={c.key} style={{ padding: "10px 12px", fontWeight: 600 }}>{c.label}</th>)}
+                      <th style={{ padding: "10px 12px", width: 40 }} />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(rows.length ? rows : [emptyReportRow()]).map((r, i) => (
+                      <tr key={i}>
+                        <td style={{ padding: "10px 12px" }}>{i + 1}</td>
+                        {REPORT_COLUMNS.map((c) => (
+                          <td key={c.key} style={{ padding: 6 }}>
+                            <textarea
+                              rows={3}
+                              value={r[c.key] || ""}
+                              onChange={(e) => updateCell(i, c.key, e.target.value)}
+                              style={{ width: "100%", padding: 6, borderRadius: 6, border: "1px solid var(--line, #dfe3e8)", background: "var(--card, #fff)", color: "var(--ink, #1c2337)", fontSize: 12.5, resize: "vertical" }}
+                            />
+                          </td>
+                        ))}
+                        <td style={{ padding: 6, textAlign: "center" }}>
+                          <button type="button" onClick={() => removeRow(i)} style={{ border: "none", background: "none", color: "#c62828", cursor: "pointer" }}>✕</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 14 }}>
+                <button type="button" onClick={addRow} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid var(--line, #dfe3e8)", background: "var(--card, #fff)", color: "var(--ink, #1c2337)" }}>+ Thêm dòng</button>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button type="button" onClick={cancelEditRows} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid var(--line, #dfe3e8)", background: "var(--card, #fff)", color: "var(--ink, #1c2337)" }}>Hủy</button>
+                  <button type="button" disabled={pending} onClick={handleSaveRows} style={{ padding: "8px 14px", borderRadius: 8, border: "none", background: "#1d5fd6", color: "#fff", opacity: pending ? 0.6 : 1 }}>{pending ? "Đang lưu..." : "Lưu báo cáo"}</button>
                 </div>
               </div>
-            )
-          })}
+            </>
+          )}
         </div>
+      ) : (
+        <>
+          <div className="kpis-tier" style={{ marginBottom: 16 }}>
+            <KpiCard label="Tổng dự án" value={overview.total} tone="blue" trend={reportTrends.total} />
+            <KpiCard label="Có dữ liệu" value={overview.withData} tone="success" trend={reportTrends.withData} />
+            <KpiCard label="Tổng dòng dữ liệu" value={overview.totalRows} tone="blue" />
+            <KpiCard label="TB dòng / dự án" value={overview.avgRows.toFixed(1)} tone="warning" />
+          </div>
+
+          <div style={{ marginBottom: 16 }}>
+            <button type="button" onClick={openNewProjectForm} style={{ padding: "8px 14px", borderRadius: 8, border: "none", background: "#1d5fd6", color: "#fff" }}>+ Thêm dự án báo cáo</button>
+          </div>
+
+          {filtered.length === 0 ? (
+            <EmptyState title="Chưa có dự án nào" />
+          ) : (
+            <div id="rp-project-cards" className="cu-grid">
+              {filtered.map((p) => {
+                const initial = p.name.trim().slice(0, 2).toUpperCase() || "DA"
+                return (
+                  <div key={p.id} className="hub-card" onClick={() => openSpreadsheet(p)} style={{ cursor: "pointer" }}>
+                    <div className="hub-top">
+                      <div className="hub-icon">{initial}</div>
+                      <div className="hub-title"><h4>{p.name}</h4><p>{p.rowCount ? `${p.rowCount} dòng dữ liệu` : "Chưa có dữ liệu"}</p></div>
+                      <span className="hub-arrow sys-arrow-glyph"><DirectionIcon name="chevronRight" size={20} /></span>
+                    </div>
+                    <div className="hub-tags">
+                      <StatusBadge label={p.rowCount ? "Có dữ liệu" : "Chưa có dữ liệu"} tone={p.rowCount ? "success" : "neutral"} />
+                    </div>
+                    <div className="hub-stats">
+                      <div className="hub-stat"><b>{p.rowCount}</b><span>Dòng dữ liệu</span></div>
+                      <div className="hub-stat"><b>{REPORT_COLUMNS.length}</b><span>Cột báo cáo</span></div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </>
       )}
 
       <FormModal
@@ -171,89 +258,9 @@ export function ReportView({
         onConfirm={confirmDelete}
         onCancel={() => setConfirmDeleteId(null)}
       />
-
-      {openProject ? (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(15,18,22,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 16 }} onClick={closeSpreadsheet}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: "var(--card, #fff)", color: "var(--ink, #1c2337)", borderRadius: 12, padding: 20, width: "min(96vw, 1100px)", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 12px 40px rgba(0,0,0,0.2)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-              <div style={{ fontSize: 16, fontWeight: 700 }}>Báo cáo thử nghiệm · {openProject.name}</div>
-              <button type="button" className="modal-x" onClick={closeSpreadsheet} aria-label="Đóng">✕</button>
-            </div>
-
-            {!isEditingRows ? (
-              <>
-                <div style={{ overflowX: "auto", border: "1px solid var(--line, #e7eaee)", borderRadius: 10 }}>
-                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-                    <thead>
-                      <tr style={{ background: "var(--bg, #f7f8fa)", textAlign: "left" }}>
-                        <th style={{ padding: "10px 12px", width: 38 }}>#</th>
-                        {REPORT_COLUMNS.map((c) => <th key={c.key} style={{ padding: "10px 12px", fontWeight: 600 }}>{c.label}</th>)}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {displayRows.length === 0 ? (
-                        <tr><td style={{ padding: 14, color: "var(--muted, #8a8f98)" }}>—</td><td colSpan={REPORT_COLUMNS.length} style={{ padding: 14, color: "var(--muted, #8a8f98)" }}>Chưa có dữ liệu. Nhấn “Chỉnh sửa” để nhập.</td></tr>
-                      ) : displayRows.map((r, i) => (
-                        <tr key={i} style={{ borderBottom: "1px solid var(--line, #f0f1f3)" }}>
-                          <td style={{ padding: "10px 12px" }}>{i + 1}</td>
-                          {REPORT_COLUMNS.map((c) => <td key={c.key} style={{ padding: "10px 12px", whiteSpace: "pre-wrap" }}>{r[c.key] || "—"}</td>)}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 16 }}>
-                  <button type="button" onClick={closeSpreadsheet} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid var(--line, #dfe3e8)", background: "var(--card, #fff)", color: "var(--ink, #1c2337)" }}>Đóng</button>
-                  <button type="button" onClick={() => setIsEditingRows(true)} style={{ padding: "8px 14px", borderRadius: 8, border: "none", background: "#1d5fd6", color: "#fff" }}>Chỉnh sửa</button>
-                </div>
-              </>
-            ) : (
-              <>
-                <div style={{ overflowX: "auto", border: "1px solid var(--line, #e7eaee)", borderRadius: 10 }}>
-                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-                    <thead>
-                      <tr style={{ background: "var(--bg, #f7f8fa)", textAlign: "left" }}>
-                        <th style={{ padding: "10px 12px", width: 38 }}>#</th>
-                        {REPORT_COLUMNS.map((c) => <th key={c.key} style={{ padding: "10px 12px", fontWeight: 600 }}>{c.label}</th>)}
-                        <th style={{ padding: "10px 12px", width: 40 }} />
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(rows.length ? rows : [emptyReportRow()]).map((r, i) => (
-                        <tr key={i}>
-                          <td style={{ padding: "10px 12px" }}>{i + 1}</td>
-                          {REPORT_COLUMNS.map((c) => (
-                            <td key={c.key} style={{ padding: 6 }}>
-                              <textarea
-                                rows={3}
-                                value={r[c.key] || ""}
-                                onChange={(e) => updateCell(i, c.key, e.target.value)}
-                                style={{ width: "100%", padding: 6, borderRadius: 6, border: "1px solid var(--line, #dfe3e8)", background: "var(--card, #fff)", color: "var(--ink, #1c2337)", fontSize: 12.5, resize: "vertical" }}
-                              />
-                            </td>
-                          ))}
-                          <td style={{ padding: 6, textAlign: "center" }}>
-                            <button type="button" onClick={() => removeRow(i)} style={{ border: "none", background: "none", color: "#c62828", cursor: "pointer" }}>✕</button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", marginTop: 14 }}>
-                  <button type="button" onClick={addRow} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid var(--line, #dfe3e8)", background: "var(--card, #fff)", color: "var(--ink, #1c2337)" }}>+ Thêm dòng</button>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <button type="button" onClick={cancelEditRows} style={{ padding: "8px 14px", borderRadius: 8, border: "1px solid var(--line, #dfe3e8)", background: "var(--card, #fff)", color: "var(--ink, #1c2337)" }}>Hủy</button>
-                    <button type="button" disabled={pending} onClick={handleSaveRows} style={{ padding: "8px 14px", borderRadius: 8, border: "none", background: "#1d5fd6", color: "#fff", opacity: pending ? 0.6 : 1 }}>{pending ? "Đang lưu..." : "Lưu báo cáo"}</button>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      ) : null}
     </PageShell>
   )
+
 }
 
 export default ReportView

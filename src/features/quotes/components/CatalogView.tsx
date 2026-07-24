@@ -133,6 +133,7 @@ export function CatalogView({ items, personnelConfig, routing, centers = [] }: {
   function openNew() { setEditing(null); setShowForm(true) }
   function openEdit(it: TestCatalogRow) { setEditing(it); setShowForm(true) }
   function handleSubmit(formData: FormData) {
+    const num = (key: string) => (formData.get(key) ? Number(formData.get(key)) : null)
     const input = {
       id: editing?.id,
       code: String(formData.get("code") || ""),
@@ -143,6 +144,20 @@ export function CatalogView({ items, personnelConfig, routing, centers = [] }: {
       leadTime: String(formData.get("leadTime") || ""),
       price: formData.get("price") ? Number(formData.get("price")) : null,
       centerId: fCenterId || null,
+      group1: String(formData.get("group1") || ""),
+      group2: String(formData.get("group2") || ""),
+      vts: String(formData.get("vts") || ""),
+      standardDays: num("standardDays"),
+      priceCatarcQc: num("priceCatarcQc"),
+      priceIdiadaChina: num("priceIdiadaChina"),
+      priceIdiadaSpain: num("priceIdiadaSpain"),
+      priceMira: num("priceMira"),
+      priceCalspan: num("priceCalspan"),
+      priceImat: num("priceImat"),
+      estimatedHours: num("estimatedHours"),
+      machineHours: num("machineHours"),
+      personnelHours: num("personnelHours"),
+      gapTiming: num("gapTiming"),
     }
     startTransition(async () => { await saveTestCatalogItem(input); setShowForm(false); setEditing(null) })
   }
@@ -182,9 +197,23 @@ export function CatalogView({ items, personnelConfig, routing, centers = [] }: {
     { key: "name", header: "Tên bài thử", render: (it) => <span style={{ fontWeight: 600 }}>{it.name}</span> },
     { key: "standard", header: "Tiêu chuẩn", render: (it) => it.standard ?? "—" },
     { key: "phong", header: "Phòng", render: (it) => it.phong ?? "—" },
+    { key: "group1", header: "Nhóm 1", render: (it) => it.group1 ?? "—" },
+    { key: "group2", header: "Nhóm 2", render: (it) => it.group2 ?? "—" },
+    { key: "vts", header: "VTS", render: (it) => it.vts ?? "—" },
     { key: "sampleQty", header: "Cấp mẫu", render: (it) => it.sampleQty ?? "—" },
     { key: "leadTime", header: "Thời gian xử lý", render: (it) => it.leadTime ?? "—" },
-    { key: "price", header: "Đơn giá", align: "right", render: (it) => (it.price != null ? fmtVND(it.price) : "—") },
+    { key: "standardDays", header: "TG chuẩn (ngày)", align: "right", render: (it) => it.standardDays ?? "—" },
+    { key: "price", header: "Đơn giá (VinFast)", align: "right", render: (it) => (it.price != null ? fmtVND(it.price) : "—") },
+    { key: "priceCatarcQc", header: "CATARC QC", align: "right", render: (it) => (it.priceCatarcQc != null ? fmtVND(it.priceCatarcQc) : "—") },
+    { key: "priceIdiadaChina", header: "IDIADA China", align: "right", render: (it) => (it.priceIdiadaChina != null ? fmtVND(it.priceIdiadaChina) : "—") },
+    { key: "priceIdiadaSpain", header: "IDIADA Spain", align: "right", render: (it) => (it.priceIdiadaSpain != null ? fmtVND(it.priceIdiadaSpain) : "—") },
+    { key: "priceMira", header: "MIRA", align: "right", render: (it) => (it.priceMira != null ? fmtVND(it.priceMira) : "—") },
+    { key: "priceCalspan", header: "CALSPAN", align: "right", render: (it) => (it.priceCalspan != null ? fmtVND(it.priceCalspan) : "—") },
+    { key: "priceImat", header: "IMAT", align: "right", render: (it) => (it.priceImat != null ? fmtVND(it.priceImat) : "—") },
+    { key: "estimatedHours", header: "TG dự kiến (h)", align: "right", render: (it) => it.estimatedHours ?? "—" },
+    { key: "machineHours", header: "TG máy chạy", align: "right", render: (it) => it.machineHours ?? "—" },
+    { key: "personnelHours", header: "TG NS triển khai", align: "right", render: (it) => it.personnelHours ?? "—" },
+    { key: "gapTiming", header: "Gap timing", align: "right", render: (it) => it.gapTiming ?? "—" },
     {
       key: "actions", header: "", align: "right",
       render: (it) => (
@@ -293,14 +322,64 @@ export function CatalogView({ items, personnelConfig, routing, centers = [] }: {
             <input name="phong" defaultValue={editing?.phong ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
           </label>
           <div style={{ display: "flex", gap: 12 }}>
+            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Nhóm 1
+              <input name="group1" defaultValue={editing?.group1 ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+            </label>
+            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Nhóm 2
+              <input name="group2" defaultValue={editing?.group2 ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+            </label>
+            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>VTS
+              <input name="vts" defaultValue={editing?.vts ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+            </label>
+          </div>
+          <div style={{ display: "flex", gap: 12 }}>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Số lượng mẫu
               <input name="sampleQty" defaultValue={editing?.sampleQty ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
             </label>
             <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Thời gian
               <input name="leadTime" defaultValue={editing?.leadTime ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
             </label>
-            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Đơn giá
+            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>TG chuẩn (ngày)
+              <input type="number" step="any" name="standardDays" defaultValue={editing?.standardDays ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+            </label>
+          </div>
+          <div style={{ display: "flex", gap: 12 }}>
+            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Đơn giá (VinFast)
               <input type="number" name="price" defaultValue={editing?.price ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+            </label>
+            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>CATARC QC
+              <input type="number" name="priceCatarcQc" defaultValue={editing?.priceCatarcQc ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+            </label>
+            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>IDIADA China
+              <input type="number" name="priceIdiadaChina" defaultValue={editing?.priceIdiadaChina ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+            </label>
+          </div>
+          <div style={{ display: "flex", gap: 12 }}>
+            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>IDIADA Spain
+              <input type="number" name="priceIdiadaSpain" defaultValue={editing?.priceIdiadaSpain ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+            </label>
+            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>MIRA
+              <input type="number" name="priceMira" defaultValue={editing?.priceMira ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+            </label>
+            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>CALSPAN
+              <input type="number" name="priceCalspan" defaultValue={editing?.priceCalspan ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+            </label>
+            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>IMAT
+              <input type="number" name="priceImat" defaultValue={editing?.priceImat ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+            </label>
+          </div>
+          <div style={{ display: "flex", gap: 12 }}>
+            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>TG dự kiến (h)
+              <input type="number" step="any" name="estimatedHours" defaultValue={editing?.estimatedHours ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+            </label>
+            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>TG máy chạy
+              <input type="number" step="any" name="machineHours" defaultValue={editing?.machineHours ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+            </label>
+            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>TG NS triển khai
+              <input type="number" step="any" name="personnelHours" defaultValue={editing?.personnelHours ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
+            </label>
+            <label style={{ fontSize: 12, fontWeight: 600, flex: 1 }}>Gap timing
+              <input type="number" step="any" name="gapTiming" defaultValue={editing?.gapTiming ?? ""} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #dfe3e8", marginTop: 4 }} />
             </label>
           </div>
         </form>

@@ -209,46 +209,179 @@ export function OverviewView({
             nhap lieu tren man hinh. */}
         {editing && (
           <div className="quote-print-doc">
-            <div style={{ textAlign: "center", fontWeight: 700, fontSize: 14 }}>CÔNG TY CỔ PHẦN VINFAST VIỆT NAM / VINFAST VIETNAM JSC</div>
-            <div style={{ textAlign: "center", fontSize: 11 }}>Khu Kinh tế Đình Vũ – Cát Hải, đảo Cát Hải, Đặc khu Cát Hải, Thành phố Hải Phòng, Việt Nam</div>
-            <div style={{ textAlign: "center", fontWeight: 700, fontSize: 16, background: "#1d5fd6", color: "#fff", padding: "8px 0", margin: "12px 0" }}>BẢNG BÁO GIÁ DỊ CH VỤ / SERVICES PROPOSAL</div>
-
-            <div className="qpd-row"><div className="qpd-label">Số báo giá / Proposal No.</div><div className="qpd-value">{editing.code ?? "—"}</div></div>
-            <div className="qpd-row"><div className="qpd-label">Ngày / Date</div><div className="qpd-value">{fmtDate(editing.quoteDate)}</div></div>
-            <div className="qpd-row"><div className="qpd-label">Subject / Yêu cầu</div><div className="qpd-value">{editing.title}</div></div>
-            <div className="qpd-row"><div className="qpd-label">Project Name / Tên dự án</div><div className="qpd-value">{projects.find((p) => p.id === fProjectId)?.name ?? "—"}</div></div>
-
-            <div className="qpd-section">I. THÔNG TIN KHÁCH HÀNG (BÊN A) / CUSTOMER INFORMATION (PARTY A)</div>
-            <div className="qpd-row"><div className="qpd-label">Company / Công ty</div><div className="qpd-value">{customers.find((c) => c.id === fCustomerId)?.name ?? "—"}</div></div>
-
-            <div className="qpd-section">II. NỘI DUNG CÔNG VIỆC / WORK REQUIRED</div>
-            <div className="qpd-row"><div className="qpd-label">Ghi chú / Notes</div><div className="qpd-value">{editing.notes ?? "—"}</div></div>
-
-            <div className="qpd-section">III. CHI PHÍ DịCH VỤ / SERVICE FEES</div>
-            <table>
-              <thead>
-                <tr><th>No</th><th>Test Item</th><th>Method</th><th>Unit price (VND)</th><th>Quantity</th><th>Total (VND)</th></tr>
-              </thead>
+            <table className="qpd-doc">
               <tbody>
+                <tr className="qpd-plain">
+                  <td colSpan={7}>
+                    <div className="qpd-h1">CÔNG TY CỔ PHẦN VINFAST VIỆT NAM/ VINFAST VIETNAM JSC</div>
+                    <div className="qpd-h2">[Địa chỉ / Address]: Khu Kinh tế Đình Vũ – Cát Hải, đảo Cát Hải, Đặc khu Cát Hải, Thành phố Hải Phòng, Việt Nam</div>
+                    <div className="qpd-h2">[Mã số thuế / Tax Registration Number]: 0202357718</div>
+                  </td>
+                  <td colSpan={2} className="qpd-logo">VINFAST</td>
+                </tr>
+                <tr><td colSpan={9} className="qpd-title">BẢNG BÁO GIÁ DỊCH VỤ / SERVICES PROPOSAL</td></tr>
+
+                <tr>
+                  <td colSpan={2} className="qpd-label">Số báo giá / Proposal No.:</td>
+                  <td colSpan={3}>{editing.code ?? "—"}</td>
+                  <td colSpan={2} className="qpd-label">Ngày / Date:</td>
+                  <td colSpan={2}>{fmtDate(editing.quoteDate)}</td>
+                </tr>
+                <tr>
+                  <td colSpan={2} className="qpd-label">Subject / Yêu cầu:</td>
+                  <td colSpan={7}>{editing.title}</td>
+                </tr>
+                <tr>
+                  <td colSpan={2} className="qpd-label">Project Name / Tên dự án:</td>
+                  <td colSpan={7}>{projects.find((p) => p.id === fProjectId)?.name ?? "—"}</td>
+                </tr>
+
+                <tr><td colSpan={9} className="qpd-section">I. THÔNG TIN KHÁCH HÀNG (BÊN A) / CUSTOMER INFORMATION (PARTY A)</td></tr>
+                <tr>
+                  <td colSpan={3} className="qpd-label">Company / Công ty</td>
+                  <td colSpan={6}>{customers.find((c) => c.id === fCustomerId)?.name ?? "—"}</td>
+                </tr>
+                <tr>
+                  <td colSpan={3} className="qpd-label">Address / Địa chỉ</td>
+                  <td colSpan={6}></td>
+                </tr>
+                <tr>
+                  <td colSpan={3} className="qpd-label">Legal Representative / Người đại diện pháp luật</td>
+                  <td colSpan={6}></td>
+                </tr>
+                <tr>
+                  <td colSpan={3} className="qpd-label">Contact person / Người liên hệ</td>
+                  <td colSpan={6} className="qpd-yellow"></td>
+                </tr>
+                <tr>
+                  <td colSpan={3} className="qpd-label">Email / Địa chỉ email</td>
+                  <td colSpan={6} className="qpd-yellow"></td>
+                </tr>
+                <tr>
+                  <td colSpan={3} className="qpd-label">Tel / Số điện thoại</td>
+                  <td colSpan={6} className="qpd-yellow"></td>
+                </tr>
+                <tr>
+                  <td colSpan={3} className="qpd-label">Invoicing Address / Thông tin xuất hóa đơn</td>
+                  <td colSpan={6} className="qpd-yellow"></td>
+                </tr>
+
+                <tr><td colSpan={9} className="qpd-section">II. NỘI DUNG CÔNG VIỆC / WORK REQUIRED</td></tr>
+                <tr><td colSpan={9}>{editing.notes ?? ""}</td></tr>
+
+                <tr><td colSpan={9} className="qpd-section">III. CHI PHÍ DỊCH VỤ / SERVICE FEES</td></tr>
+                <tr>
+                  <th className="qpd-th">No</th>
+                  <th className="qpd-th">Code</th>
+                  <th className="qpd-th">Test Item (Model)</th>
+                  <th className="qpd-th">Method</th>
+                  <th className="qpd-th">Sample</th>
+                  <th className="qpd-th">TAT (working days)</th>
+                  <th className="qpd-th">Unit price (VND)</th>
+                  <th className="qpd-th">Quantity</th>
+                  <th className="qpd-th">Total (VND)</th>
+                </tr>
                 {editing.items.length === 0 ? (
-                  <tr><td colSpan={6} style={{ textAlign: "center" }}>—</td></tr>
+                  <tr><td colSpan={9} style={{ textAlign: "center" }}>—</td></tr>
                 ) : editing.items.map((it, i) => (
                   <tr key={it.id}>
                     <td style={{ textAlign: "center" }}>{i + 1}</td>
+                    <td style={{ textAlign: "center" }}>—</td>
                     <td>{it.name}</td>
                     <td>{it.standard ?? "—"}</td>
+                    <td style={{ textAlign: "center" }}>—</td>
+                    <td style={{ textAlign: "center" }}>—</td>
                     <td style={{ textAlign: "right" }}>{fmtVND(it.price ?? 0)}</td>
                     <td style={{ textAlign: "right" }}>{it.quantity ?? 1}</td>
                     <td style={{ textAlign: "right" }}>{fmtVND(itemTotal(it))}</td>
                   </tr>
                 ))}
-                <tr className="qpd-total-row"><td colSpan={5}>Total Value Before VAT / Tổng giá trị trước thuế GTGT</td><td style={{ textAlign: "right" }}>{fmtVND(itemsSubtotal)}</td></tr>
-                <tr className="qpd-total-row"><td colSpan={5}>VAT / Thuế GTGT ({vatPct}%)</td><td style={{ textAlign: "right" }}>{fmtVND(vatAmt)}</td></tr>
-                <tr className="qpd-total-row"><td colSpan={5}>Grand Total After VAT / Tổng giá trị bao gồm thuế GTGT</td><td style={{ textAlign: "right" }}>{fmtVND(grand)}</td></tr>
+                <tr>
+                  <td colSpan={8} className="qpd-total-label">Total Value Before VAT / Tổng giá trị trước thuế GTGT (VND)</td>
+                  <td className="qpd-total-value">{fmtVND(itemsSubtotal)}</td>
+                </tr>
+                <tr>
+                  <td colSpan={8} className="qpd-total-label">VAT / Thuế GTGT ({vatPct}%)</td>
+                  <td className="qpd-total-value">{fmtVND(vatAmt)}</td>
+                </tr>
+                <tr>
+                  <td colSpan={8} className="qpd-total-label">Grand Total After VAT / Tổng giá trị bao gồm thuế GTGT (VND)</td>
+                  <td className="qpd-total-value">{fmtVND(grand)}</td>
+                </tr>
+
+                <tr><td colSpan={9} className="qpd-section">IV. THỜI GIAN THỰC HIỆN & BÀN GIAO / TIMELINE & DELIVERY</td></tr>
+                <tr>
+                  <td colSpan={3} className="qpd-label">Ngày bắt đầu dự kiến / Expected start date</td>
+                  <td colSpan={6}>{fmtDate(editing.quoteDate)}</td>
+                </tr>
+                <tr>
+                  <td colSpan={3} className="qpd-label">Thời gian thực hiện / Execution duration</td>
+                  <td colSpan={6}>Theo thời gian test theo yêu cầu KH</td>
+                </tr>
+                <tr>
+                  <td colSpan={3} className="qpd-label">Thời gian bàn giao kết quả / Report delivery date & time</td>
+                  <td colSpan={6}>Trong vòng 5 ngày làm việc sau khi hoàn thành thử nghiệm</td>
+                </tr>
+                <tr>
+                  <td colSpan={3} className="qpd-label">Địa điểm bàn giao / Delivery location</td>
+                  <td colSpan={6}>Gửi qua email & bản cứng tại địa chỉ khách hàng / via email & hard copy to customer address</td>
+                </tr>
+                <tr>
+                  <td colSpan={3} className="qpd-label">Hiệu lực báo giá / Quotation validity</td>
+                  <td colSpan={6}>30 ngày kể từ ngày báo giá / 30 days from quotation date</td>
+                </tr>
+
+                <tr><td colSpan={9} className="qpd-section">V. GHI CHÚ / REMARKS</td></tr>
+                <tr><td colSpan={9}>{editing.notes ?? "Chưa có"}</td></tr>
+
+                <tr><td colSpan={9} className="qpd-section">VI. MẪU / TÀI LIỆU KHÁCH HÀNG CUNG CẤP / SAMPLES, MATERIAL OR DOCUMENTATION TO BE SUPPLIED BY THE CUSTOMER</td></tr>
+                <tr><td colSpan={9}>Mẫu phục vụ bài test theo yêu cầu mục III</td></tr>
+
+                <tr><td colSpan={9} className="qpd-section">VIII. ĐIỀU KHOẢN THANH TOÁN / PAYMENT TERMS</td></tr>
+                <tr>
+                  <td colSpan={9}>
+                    Thanh toán 100% tổng giá trị khi kết thúc dịch vụ / Unique Payment: 100% of the expected total amount at the end of the service.
+                    <br />
+                    Thanh toán bằng chuyển khoản, ghi rõ số báo giá / Payment by bank transfer, informing the present quotation number
+                  </td>
+                </tr>
+                <tr><td colSpan={9} className="qpd-section">THÔNG TIN TÀI KHOẢN NGÂN HÀNG / BANK ACCOUNT</td></tr>
+                <tr>
+                  <td colSpan={3} className="qpd-label">Account Name / Tên tài khoản</td>
+                  <td colSpan={6} className="qpd-yellow">CÔNG TY CỔ PHẦN VINFAST VIỆT NAM</td>
+                </tr>
+                <tr>
+                  <td colSpan={3} className="qpd-label">Bank / Ngân hàng</td>
+                  <td colSpan={6} className="qpd-yellow">TCB</td>
+                </tr>
+                <tr>
+                  <td colSpan={3} className="qpd-label">Account No. / Số tài khoản</td>
+                  <td colSpan={6} className="qpd-yellow">19040238738698</td>
+                </tr>
+                <tr>
+                  <td colSpan={3} className="qpd-label">Swift Code</td>
+                  <td colSpan={6} className="qpd-yellow"></td>
+                </tr>
+                <tr>
+                  <td colSpan={3} className="qpd-label">Bank Address / Địa chỉ ngân hàng</td>
+                  <td colSpan={6} className="qpd-yellow">Hội Sở chính</td>
+                </tr>
+
+                <tr><td colSpan={9} className="qpd-section">IX. ĐIỀU KHOẢN CHUNG / GENERAL TERMS AND CONDITIONS</td></tr>
+                <tr><td colSpan={9}>Theo hợp đồng khung đã kí giữa 2 công ty</td></tr>
+
+                <tr><td colSpan={9} className="qpd-section">X. XÁC NHẬN / APPROVAL</td></tr>
+                <tr>
+                  <td colSpan={4} rowSpan={2} className="qpd-box qpd-label">Customer's approval / Xác nhận của khách hàng:</td>
+                  <td colSpan={2} className="qpd-label">Customer Order no. / Số đơn hàng:</td>
+                  <td colSpan={3} className="qpd-yellow"></td>
+                </tr>
+                <tr>
+                  <td colSpan={2} className="qpd-label">Date / Ngày:</td>
+                  <td colSpan={3}></td>
+                </tr>
               </tbody>
             </table>
-
-            <div className="qpd-row" style={{ marginTop: 12 }}><div className="qpd-label">Người lập / Prepared by</div><div className="qpd-value">{editing.creator ?? "—"}</div></div>
           </div>
         )}
 

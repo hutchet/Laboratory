@@ -19,6 +19,13 @@ export type EquipmentRow = {
   calVendor: string | null
   center: { id: string; name: string } | null
   createdAt: Date
+  serialNumber: string | null
+  depreciationMethod: string | null
+  notes: string | null
+  monthlyDepreciationSap: number | null
+  costCenterCode: string | null
+  gapCheck: number | null
+  financeCheckStatus: string | null
 }
 
 // Ported from the original app's calStatus(e): due = calLast + calInterval*30 days.

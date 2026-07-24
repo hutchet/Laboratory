@@ -172,6 +172,13 @@ export function DepreciationView({ items, centers = [] }: { items: DepreciationA
     { key: "totalValue", header: `Tổng giá trị (${currency})`, align: "right", render: (it) => (it.totalValue != null ? fmtVND(it.totalValue) : "—") },
     { key: "years", header: "Số năm KH", align: "right", render: (it) => it.years ?? "—" },
     { key: "khPerHour", header: `Khấu hao/giờ (${currency})`, align: "right", render: (it) => <b>{fmtVND(khPerHour(it.totalValue, it.years))}</b> },
+    { key: "equipmentCode", header: "Mã TS SAP", render: (it) => it.equipmentCode ?? "—" },
+    { key: "serialNumber", header: "S/N", render: (it) => it.serialNumber ?? "—" },
+    { key: "depreciationMethod", header: "Cách tính KH", render: (it) => it.depreciationMethod ?? "—" },
+    { key: "monthlyDepreciationSap", header: "KH/tháng (SAP)", align: "right", render: (it) => (it.monthlyDepreciationSap != null ? it.monthlyDepreciationSap.toLocaleString("vi-VN") : "—") },
+    { key: "costCenterCode", header: "CC", render: (it) => it.costCenterCode ?? "—" },
+    { key: "gapCheck", header: "GAP", align: "right", render: (it) => it.gapCheck ?? "—" },
+    { key: "financeCheckStatus", header: "Ktra tài chính", render: (it) => it.financeCheckStatus ?? "—" },
     {
       key: "actions", header: "", align: "right",
       render: (it) => (
@@ -264,6 +271,47 @@ export function DepreciationView({ items, centers = [] }: { items: DepreciationA
             <label>Trung tâm</label>
             <input value={editing?.center?.name ?? NO_CENTER_LABEL} disabled style={{ background: "var(--bg-2, #f5f6f8)", color: "var(--muted)" }} />
           </div>
+          {/* y/c: cac truong nay lay tu Equipment lien ket (chi hien thi tai day, sua o
+              trang Thiet bi) - S/N, cach tinh khau hao, khau hao/thang SAP, CC, GAP,
+              trang thai kiem tra tai chinh, ghi chu. */}
+          <div className="row">
+            <div className="field" style={{ flex: 1 }}>
+              <label>Mã TS SAP</label>
+              <input value={editing?.equipmentCode ?? ""} disabled style={{ background: "var(--bg-2, #f5f6f8)", color: "var(--muted)" }} />
+            </div>
+            <div className="field" style={{ flex: 1 }}>
+              <label>S/N</label>
+              <input value={editing?.serialNumber ?? ""} disabled style={{ background: "var(--bg-2, #f5f6f8)", color: "var(--muted)" }} />
+            </div>
+            <div className="field" style={{ flex: 1 }}>
+              <label>Cách tính khấu hao</label>
+              <input value={editing?.depreciationMethod ?? ""} disabled style={{ background: "var(--bg-2, #f5f6f8)", color: "var(--muted)" }} />
+            </div>
+          </div>
+          <div className="row">
+            <div className="field" style={{ flex: 1 }}>
+              <label>Khấu hao/tháng (SAP)</label>
+              <input value={editing?.monthlyDepreciationSap != null ? editing.monthlyDepreciationSap.toLocaleString("vi-VN") : ""} disabled style={{ background: "var(--bg-2, #f5f6f8)", color: "var(--muted)" }} />
+            </div>
+            <div className="field" style={{ flex: 1 }}>
+              <label>CC</label>
+              <input value={editing?.costCenterCode ?? ""} disabled style={{ background: "var(--bg-2, #f5f6f8)", color: "var(--muted)" }} />
+            </div>
+            <div className="field" style={{ flex: 1 }}>
+              <label>GAP</label>
+              <input value={editing?.gapCheck ?? ""} disabled style={{ background: "var(--bg-2, #f5f6f8)", color: "var(--muted)" }} />
+            </div>
+            <div className="field" style={{ flex: 1 }}>
+              <label>Ktra tài chính</label>
+              <input value={editing?.financeCheckStatus ?? ""} disabled style={{ background: "var(--bg-2, #f5f6f8)", color: "var(--muted)" }} />
+            </div>
+          </div>
+          {editing?.notes && (
+            <div className="field">
+              <label>Ghi chú</label>
+              <input value={editing.notes} disabled style={{ background: "var(--bg-2, #f5f6f8)", color: "var(--muted)" }} />
+            </div>
+          )}
           <div className="row">
             <div className="field" style={{ flex: 1 }}>
               <label>Nhóm tài sản</label>

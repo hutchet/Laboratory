@@ -274,6 +274,16 @@ model Equipment {
   calVendor    String?
   centerId     String?
   hourlyRate   Float?
+  // Additive (ra soat 24/07, lan 84) — cac cot con thieu so voi sheet "DM MMTB"
+  // trong file Excel goc (S/N, cach tinh khau hao, ghi chu, khau hao/thang SAP,
+  // ma trung tam chi phi SAP, gia tri/trang thai kiem tra GAP).
+  serialNumber           String?
+  depreciationMethod     String?
+  notes                  String?
+  costCenterCode         String?
+  monthlyDepreciationSap Float?
+  gapCheck               Float?
+  financeCheckStatus     String?
   createdAt    DateTime @default(now())
 
   center    Center?            @relation(fields: [centerId], references: [id])
@@ -403,6 +413,23 @@ model TestCatalogItem {
   sampleQty  String?
   leadTime   String?
   price      Float?
+  // Additive (ra soat 24/07, lan 84) — cac cot con thieu so voi sheet "DM Bai thu
+  // nghiem" trong file Excel goc: nhom san pham, VTS, 6 don gia doi thu de benchmark,
+  // va cac cot thoi gian tieu chuan/du kien.
+  group1          String?
+  group2          String?
+  vts             String?
+  priceCatarcQc     Float?
+  priceIdiadaChina  Float?
+  priceIdiadaSpain  Float?
+  priceMira         Float?
+  priceCalspan      Float?
+  priceImat         Float?
+  standardDays      Float?
+  estimatedHours    Float?
+  machineHours      Float?
+  personnelHours    Float?
+  gapTiming         Float?
   // Additive — chỉ để gắn thẻ/hiển thị theo Trung tâm (Tầng 2, xem thiết kế mục 12), KHÔNG
   // dùng để chặn quyền xem/ghi — để trống = "Chung toàn lab".
   centerId   String?
@@ -429,6 +456,28 @@ model PersonnelRouting {
   setupHours  String?
   testHours   String?
   reportHours String?
+  // Additive (ra soat 24/07, lan 84) — cac cot con thieu so voi sheet "Nhan su"
+  // trong file Excel goc: nhom san pham, phong thu, VTS, tieu chuan, va tach gio
+  // theo 3 vai tro TECH/ENG/LEAD cho tung giai doan (cau truc chinh cua sheet goc).
+  // Khoi chu ky thu 2 (T3/T4) trong file goc gan nhu trong o moi dong nen CHUA
+  // dua vao day (xem ghi chu tren trang du an).
+  group1      String?
+  group2      String?
+  phong       String?
+  vts         String?
+  standard    String?
+  prepTechHours   String?
+  prepEngHours    String?
+  prepLeadHours   String?
+  setupTechHours  String?
+  setupEngHours   String?
+  setupLeadHours  String?
+  testTechHours   String?
+  testEngHours    String?
+  testLeadHours   String?
+  reportTechHours String?
+  reportEngHours  String?
+  reportLeadHours String?
   // Additive — gắn thẻ hiển thị theo Trung tâm (display-only, xem thiết kế mục 12).
   centerId    String?
 
