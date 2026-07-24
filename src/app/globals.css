@@ -794,9 +794,13 @@ html[data-viewport="mobile"] #page-dash .exp-summary .exp-legend .exp-row{font-s
      quy tac chuan la 4 the/PC - 3 the/laptop - 2 the/ipad - 1 the/mobile (giong .cu-grid) —
      ban 2026-07-23 truoc day bo mot moc 3 cot khien chuyen thang tu 4 xuong 2 la sai. */
   .kpis-tier{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  @media(max-width:1600px){.kpis-tier{grid-template-columns:repeat(3,1fr)}}
   @media(max-width:1100px){.kpis-tier{grid-template-columns:repeat(2,1fr)}}
   @media(max-width:680px){.kpis-tier{grid-template-columns:1fr}}
   .material-3 .kpis-tier{grid-template-columns:repeat(4,1fr)}
+  .material-3 .kpis-tier{grid-template-columns:repeat(4,1fr)!important}
+@media(max-width:1100px){.material-3 .kpis-tier{grid-template-columns:repeat(2,1fr)!important}}
+@media(max-width:600px){.material-3 .kpis-tier{grid-template-columns:1fr!important}}
   @media(max-width:1100px){.material-3 .kpis-tier{grid-template-columns:repeat(2,1fr)}}
   @media(max-width:680px){.material-3 .kpis-tier{grid-template-columns:1fr}}
   /* Trang popup (FormModal) — bố cục ngang, tối ưu PC/laptop: các field con bọc trong .field/.row
@@ -1960,7 +1964,9 @@ table{display:block;width:100%;overflow-x:auto!important}
 #page-quote-overview .sys-custom-select:has(#ql-add-select){min-width:0!important;width:100%!important;flex:1 1 100%!important}
 }
 @media(max-width:480px){
- .kpis-tier{grid-template-columns:1fr!important}
+.kpis-tier{grid-template-columns:repeat(4,1fr)!important}
+@media(max-width:1100px){.kpis-tier{grid-template-columns:repeat(2,1fr)!important}}
+@media(max-width:600px){.kpis-tier{grid-template-columns:1fr!important}}
 .analytics-metrics{grid-template-columns:repeat(2,1fr)!important}
 .kcard-hero .v{font-size:clamp(16px,5vw,22px)!important;word-break:break-word!important}
 h2#page-title{font-size:17px!important}

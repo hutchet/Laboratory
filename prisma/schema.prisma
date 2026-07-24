@@ -337,6 +337,19 @@ model Quote {
   vatPercent  Float?    @default(10)
   creator     String?
   notes       String?
+  executionDuration String?
+  deliveryTime      String?
+  deliveryLocation  String?
+  validityText      String?
+  paymentTerms      String?
+  bankAccountName   String?
+  bankName          String?
+  bankAccountNo     String?
+  bankSwiftCode     String?
+  bankAddress       String?
+  generalTerms      String?
+  customerOrderNo   String?
+  approvalDate      DateTime?
   status      String?
   totalAmount Float?
 

@@ -27,6 +27,19 @@ export type SaveQuoteInput = {
   projectId?: string | null
   creator?: string | null
   notes?: string | null
+  executionDuration?: string | null
+  deliveryTime?: string | null
+  deliveryLocation?: string | null
+  validityText?: string | null
+  paymentTerms?: string | null
+  bankAccountName?: string | null
+  bankName?: string | null
+  bankAccountNo?: string | null
+  bankSwiftCode?: string | null
+  bankAddress?: string | null
+  generalTerms?: string | null
+  customerOrderNo?: string | null
+  approvalDate?: string | null
 }
 
 export async function saveQuote(input: SaveQuoteInput) {
@@ -42,6 +55,19 @@ export async function saveQuote(input: SaveQuoteInput) {
     projectId: input.projectId || null,
     creator: input.creator || null,
     notes: input.notes || null,
+    executionDuration: input.executionDuration || null,
+    deliveryTime: input.deliveryTime || null,
+    deliveryLocation: input.deliveryLocation || null,
+    validityText: input.validityText || null,
+    paymentTerms: input.paymentTerms || null,
+    bankAccountName: input.bankAccountName || null,
+    bankName: input.bankName || null,
+    bankAccountNo: input.bankAccountNo || null,
+    bankSwiftCode: input.bankSwiftCode || null,
+    bankAddress: input.bankAddress || null,
+    generalTerms: input.generalTerms || null,
+    customerOrderNo: input.customerOrderNo || null,
+    approvalDate: input.approvalDate ? new Date(input.approvalDate) : null,
   }
   if (input.id) {
     await db.quote.update({ where: { id: input.id }, data })
@@ -241,6 +267,19 @@ export async function exportQuoteOverviewExcel(quoteId: string): Promise<{ base6
     projectId: q.projectId,
     creator: q.creator,
     notes: q.notes,
+    executionDuration: (q as any).executionDuration,
+    deliveryTime: (q as any).deliveryTime,
+    deliveryLocation: (q as any).deliveryLocation,
+    validityText: (q as any).validityText,
+    paymentTerms: (q as any).paymentTerms,
+    bankAccountName: (q as any).bankAccountName,
+    bankName: (q as any).bankName,
+    bankAccountNo: (q as any).bankAccountNo,
+    bankSwiftCode: (q as any).bankSwiftCode,
+    bankAddress: (q as any).bankAddress,
+    generalTerms: (q as any).generalTerms,
+    customerOrderNo: (q as any).customerOrderNo,
+    approvalDate: (q as any).approvalDate ? new Date((q as any).approvalDate).toISOString() : null,
     createdAt: q.createdAt.toISOString(),
     customer: q.customer ? { id: q.customer.id, name: q.customer.name } : null,
     project: q.project ? { id: q.project.id, name: q.project.name } : null,

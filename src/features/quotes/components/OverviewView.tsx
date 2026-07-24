@@ -122,6 +122,19 @@ export function OverviewView({
       vatPercent: formData.get("vatPercent") ? Number(formData.get("vatPercent")) : 10,
       creator: String(formData.get("creator") || "") || null,
       notes: String(formData.get("notes") || "") || null,
+      executionDuration: String(formData.get("executionDuration") || "") || null,
+      deliveryTime: String(formData.get("deliveryTime") || "") || null,
+      deliveryLocation: String(formData.get("deliveryLocation") || "") || null,
+      validityText: String(formData.get("validityText") || "") || null,
+      paymentTerms: String(formData.get("paymentTerms") || "") || null,
+      bankAccountName: String(formData.get("bankAccountName") || "") || null,
+      bankName: String(formData.get("bankName") || "") || null,
+      bankAccountNo: String(formData.get("bankAccountNo") || "") || null,
+      bankSwiftCode: String(formData.get("bankSwiftCode") || "") || null,
+      bankAddress: String(formData.get("bankAddress") || "") || null,
+      generalTerms: String(formData.get("generalTerms") || "") || null,
+      customerOrderNo: String(formData.get("customerOrderNo") || "") || null,
+      approvalDate: String(formData.get("approvalDate") || "") || null,
       totalAmount: editing ? quoteGrandTotal(editing) : null,
       status: fStatus,
     }
@@ -164,6 +177,7 @@ export function OverviewView({
     const grand = itemsSubtotal + vatAmt
     const selectedCustomer = customers.find((c) => c.id === fCustomerId) ?? null
     return (
+      <section id="page-quote-overview">
       <PageShell
         title={editing ? editing.title : "Thêm báo giá"}
         actions={
@@ -317,19 +331,19 @@ export function OverviewView({
                 </tr>
                 <tr>
                   <td colSpan={3} className="qpd-label">Thời gian thực hiện / Execution duration</td>
-                  <td colSpan={6}>Theo thời gian test theo yêu cầu KH</td>
+                  <td colSpan={6}>{editing.executionDuration ?? "Theo thời gian test theo yêu cầu KH"}</td>
                 </tr>
                 <tr>
                   <td colSpan={3} className="qpd-label">Thời gian bàn giao kết quả / Report delivery date & time</td>
-                  <td colSpan={6}>Trong vòng 5 ngày làm việc sau khi hoàn thành thử nghiệm</td>
+                  <td colSpan={6}>{editing.deliveryTime ?? "Trong vòng 5 ngày làm việc sau khi hoàn thành thử nghiệm"}</td>
                 </tr>
                 <tr>
                   <td colSpan={3} className="qpd-label">Địa điểm bàn giao / Delivery location</td>
-                  <td colSpan={6}>Gửi qua email & bản cứng tại địa chỉ khách hàng / via email & hard copy to customer address</td>
+                  <td colSpan={6}>{editing.deliveryLocation ?? "Gửi qua email & bản cứng tại địa chỉ khách hàng / via email & hard copy to customer address"}</td>
                 </tr>
                 <tr>
                   <td colSpan={3} className="qpd-label">Hiệu lực báo giá / Quotation validity</td>
-                  <td colSpan={6}>30 ngày kể từ ngày báo giá / 30 days from quotation date</td>
+                  <td colSpan={6}>{editing.validityText ?? "30 ngày kể từ ngày báo giá / 30 days from quotation date"}</td>
                 </tr>
 
                 <tr><td colSpan={9} className="qpd-section">V. GHI CHÚ / REMARKS</td></tr>
@@ -340,46 +354,42 @@ export function OverviewView({
 
                 <tr><td colSpan={9} className="qpd-section">VIII. ĐIỀU KHOẢN THANH TOÁN / PAYMENT TERMS</td></tr>
                 <tr>
-                  <td colSpan={9}>
-                    Thanh toán 100% tổng giá trị khi kết thúc dịch vụ / Unique Payment: 100% of the expected total amount at the end of the service.
-                    <br />
-                    Thanh toán bằng chuyển khoản, ghi rõ số báo giá / Payment by bank transfer, informing the present quotation number
-                  </td>
+                  <td colSpan={9}>{editing.paymentTerms ?? "Thanh toán 100% tổng giá trị khi kết thúc dịch vụ / Unique Payment: 100% of the expected total amount at the end of the service. Thanh toán bằng chuyển khoản, ghi rõ số báo giá / Payment by bank transfer, informing the present quotation number"}</td>
                 </tr>
                 <tr><td colSpan={9} className="qpd-section">THÔNG TIN TÀI KHOẢN NGÂN HÀNG / BANK ACCOUNT</td></tr>
                 <tr>
                   <td colSpan={3} className="qpd-label">Account Name / Tên tài khoản</td>
-                  <td colSpan={6} className="qpd-yellow">CÔNG TY CỔ PHẦN VINFAST VIỆT NAM</td>
+                  <td colSpan={6} className="qpd-yellow">{editing.bankAccountName ?? "CÔNG TY CỔ PHẦN VINFAST VIỆT NAM"}</td>
                 </tr>
                 <tr>
                   <td colSpan={3} className="qpd-label">Bank / Ngân hàng</td>
-                  <td colSpan={6} className="qpd-yellow">TCB</td>
+                  <td colSpan={6} className="qpd-yellow">{editing.bankName ?? "TCB"}</td>
                 </tr>
                 <tr>
                   <td colSpan={3} className="qpd-label">Account No. / Số tài khoản</td>
-                  <td colSpan={6} className="qpd-yellow">19040238738698</td>
+                  <td colSpan={6} className="qpd-yellow">{editing.bankAccountNo ?? "19040238738698"}</td>
                 </tr>
                 <tr>
                   <td colSpan={3} className="qpd-label">Swift Code</td>
-                  <td colSpan={6} className="qpd-yellow"></td>
+                  <td colSpan={6} className="qpd-yellow">{editing.bankSwiftCode ?? "—"}</td>
                 </tr>
                 <tr>
                   <td colSpan={3} className="qpd-label">Bank Address / Địa chỉ ngân hàng</td>
-                  <td colSpan={6} className="qpd-yellow">Hội Sở chính</td>
+                  <td colSpan={6} className="qpd-yellow">{editing.bankAddress ?? "Hội Sở chính"}</td>
                 </tr>
 
                 <tr><td colSpan={9} className="qpd-section">IX. ĐIỀU KHOẢN CHUNG / GENERAL TERMS AND CONDITIONS</td></tr>
-                <tr><td colSpan={9}>Theo hợp đồng khung đã kí giữa 2 công ty</td></tr>
+                <tr><td colSpan={9}>{editing.generalTerms ?? "Theo hợp đồng khung đã kí giữa 2 công ty"}</td></tr>
 
                 <tr><td colSpan={9} className="qpd-section">X. XÁC NHẬN / APPROVAL</td></tr>
                 <tr>
                   <td colSpan={4} rowSpan={2} className="qpd-box qpd-label">Customer's approval / Xác nhận của khách hàng:</td>
                   <td colSpan={2} className="qpd-label">Customer Order no. / Số đơn hàng:</td>
-                  <td colSpan={3} className="qpd-yellow"></td>
+                  <td colSpan={3} className="qpd-yellow">{editing.customerOrderNo ?? "—"}</td>
                 </tr>
                 <tr>
                   <td colSpan={2} className="qpd-label">Date / Ngày:</td>
-                  <td colSpan={3}></td>
+                  <td colSpan={3}>{fmtDate(editing.approvalDate)}</td>
                 </tr>
               </tbody>
             </table>
@@ -404,6 +414,41 @@ export function OverviewView({
               <div className="field" style={{ flex: 2, minWidth: 220 }}><label>Ghi chú</label><input name="notes" defaultValue={editing?.notes ?? ""} /></div>
             </div>
           </div>
+
+          {editing && (
+            <div className="card">
+              <div className="section-head" style={{ marginBottom: 10 }}>
+                <h3>Thông tin bổ sung cho PDF (mục IV, VIII, IX, X)</h3>
+              </div>
+              <div className="row" style={{ flexWrap: "wrap", gap: 12 }}>
+                <div className="field" style={{ flex: 1, minWidth: 240 }}><label>Thời gian thực hiện</label><input name="executionDuration" defaultValue={editing.executionDuration ?? "Theo thời gian test theo yêu cầu KH"} /></div>
+                <div className="field" style={{ flex: 1, minWidth: 260 }}><label>Thời gian bàn giao kết quả</label><input name="deliveryTime" defaultValue={editing.deliveryTime ?? "Trong vòng 5 ngày làm việc sau khi hoàn thành thử nghiệm"} /></div>
+              </div>
+              <div className="row" style={{ flexWrap: "wrap", gap: 12, marginTop: 12 }}>
+                <div className="field" style={{ flex: 2, minWidth: 280 }}><label>Địa điểm bàn giao</label><input name="deliveryLocation" defaultValue={editing.deliveryLocation ?? "Gửi qua email & bản cứng tại địa chỉ khách hàng / via email & hard copy to customer address"} /></div>
+                <div className="field" style={{ flex: 1, minWidth: 240 }}><label>Hiệu lực báo giá</label><input name="validityText" defaultValue={editing.validityText ?? "30 ngày kể từ ngày báo giá / 30 days from quotation date"} /></div>
+              </div>
+              <div className="row" style={{ flexWrap: "wrap", gap: 12, marginTop: 12 }}>
+                <div className="field" style={{ flex: 1, minWidth: 320 }}><label>Điều khoản thanh toán</label><input name="paymentTerms" defaultValue={editing.paymentTerms ?? "Thanh toán 100% tổng giá trị khi kết thúc dịch vụ / Unique Payment: 100% of the expected total amount at the end of the service. Thanh toán bằng chuyển khoản, ghi rõ số báo giá / Payment by bank transfer, informing the present quotation number"} /></div>
+              </div>
+              <div className="row" style={{ flexWrap: "wrap", gap: 12, marginTop: 12 }}>
+                <div className="field" style={{ flex: 1, minWidth: 240 }}><label>Tên tài khoản NH</label><input name="bankAccountName" defaultValue={editing.bankAccountName ?? "CÔNG TY CỔ PHẦN VINFAST VIỆT NAM"} /></div>
+                <div className="field" style={{ flex: "0 0 140px" }}><label>Ngân hàng</label><input name="bankName" defaultValue={editing.bankName ?? "TCB"} /></div>
+                <div className="field" style={{ flex: 1, minWidth: 200 }}><label>Số tài khoản</label><input name="bankAccountNo" defaultValue={editing.bankAccountNo ?? "19040238738698"} /></div>
+              </div>
+              <div className="row" style={{ flexWrap: "wrap", gap: 12, marginTop: 12 }}>
+                <div className="field" style={{ flex: "0 0 160px" }}><label>Swift Code</label><input name="bankSwiftCode" defaultValue={editing.bankSwiftCode ?? ""} /></div>
+                <div className="field" style={{ flex: 2, minWidth: 240 }}><label>Địa chỉ ngân hàng</label><input name="bankAddress" defaultValue={editing.bankAddress ?? "Hội Sở chính"} /></div>
+              </div>
+              <div className="row" style={{ flexWrap: "wrap", gap: 12, marginTop: 12 }}>
+                <div className="field" style={{ flex: 1, minWidth: 280 }}><label>Điều khoản chung</label><input name="generalTerms" defaultValue={editing.generalTerms ?? "Theo hợp đồng khung đã kí giữa 2 công ty"} /></div>
+              </div>
+              <div className="row" style={{ flexWrap: "wrap", gap: 12, marginTop: 12 }}>
+                <div className="field" style={{ flex: 1, minWidth: 220 }}><label>Số đơn hàng khách</label><input name="customerOrderNo" defaultValue={editing.customerOrderNo ?? ""} /></div>
+                <div className="field" style={{ flex: "0 0 180px" }}><label>Ngày xác nhận</label><DateField name="approvalDate" defaultValue={editing.approvalDate?.slice(0, 10) ?? ""} /></div>
+              </div>
+            </div>
+          )}
 
           {editing && (
             <div className="card">
@@ -455,26 +500,27 @@ export function OverviewView({
 
         <ConfirmDialog open={!!confirmDeleteId} title="Xóa báo giá?" description="Hành động này không thể hoàn tác." confirmLabel="Xóa" danger onConfirm={confirmDelete} onCancel={() => setConfirmDeleteId(null)} />
       </PageShell>
+      </section>
     )
   }
 
   // ---- Trang danh sách: 4 thẻ KPI + lưới thẻ báo giá (cu-grid, hệ thống hoá phần 3) ----
   return (
-    <>
+    <section id="page-quote-overview">
+    <PageShell
+      title="Tổng quan báo giá"
+      actions={<AddButton label="Thêm báo giá" onClick={openNew} />}
+      filters={<SearchInput value={q} onChange={setQ} placeholder="Tìm báo giá..." width={240} />}
+    >
       <div className="kpis-tier" style={{ marginBottom: 20 }}>
         <KpiCard label="Tổng số báo giá" value={kpis.total} tone="blue" trend={trends.total} />
         <KpiCard label="Tổng giá trị" value={fmtVND(kpis.value)} tone="neutral" />
         <KpiCard label="Đã duyệt" value={kpis.approved} tone="success" trend={trends.approved} />
         <KpiCard label="Bản nháp" value={kpis.draft} tone="warning" trend={trends.draft} />
       </div>
-      <PageShell title="Tổng quan báo giá">
-        <div className="section-head">
-          <h3>Tất cả báo giá</h3>
-          <div style={{ display: "flex", gap: 10, alignItems: "center", marginLeft: "auto" }}>
-            <SearchInput value={q} onChange={setQ} placeholder="Tìm báo giá..." width={240} />
-            <AddButton label="Thêm báo giá" onClick={openNew} />
-          </div>
-        </div>
+      <div className="section-head">
+        <h3>Tất cả báo giá</h3>
+      </div>
       {filtered.length === 0 ? (
         <div className="empty-state">Chưa có báo giá nào</div>
       ) : (
@@ -505,7 +551,7 @@ export function OverviewView({
         </div>
       )}
     </PageShell>
-    </>
+    </section>
   )
 }
 

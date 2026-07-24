@@ -33,6 +33,19 @@ export type QuoteRow = {
   projectId: string | null
   creator: string | null
   notes: string | null
+  executionDuration: string | null
+  deliveryTime: string | null
+  deliveryLocation: string | null
+  validityText: string | null
+  paymentTerms: string | null
+  bankAccountName: string | null
+  bankName: string | null
+  bankAccountNo: string | null
+  bankSwiftCode: string | null
+  bankAddress: string | null
+  generalTerms: string | null
+  customerOrderNo: string | null
+  approvalDate: string | null
   createdAt: string
   customer: { id: string; name: string } | null
   project: { id: string; name: string } | null
